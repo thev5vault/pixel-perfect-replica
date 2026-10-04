@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MOD_CATEGORIES, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
 import { Field, ImagePicker, Pill, Thumb } from "@/components/vault/ui-bits";
+import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/vault")({
@@ -20,6 +21,14 @@ export const Route = createFileRoute("/vault")({
 });
 
 function VaultPage() {
+  const { role } = useVault();
+
+  if (role !== "Pro") return <FeatureLock feature="vault" />;
+
+  return <ProVault />;
+}
+
+function ProVault() {
   const { mods, vehicle } = useVault();
   const [tab, setTab] = useState<"active" | "reverted">("active");
   const [adding, setAdding] = useState(false);

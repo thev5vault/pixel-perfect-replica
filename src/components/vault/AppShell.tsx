@@ -21,6 +21,11 @@ const TABS = [
 ] as const;
 
 const ROLES: Role[] = ["Owner", "Pro", "Garage"];
+const ROLE_LABELS: Record<Role, string> = {
+  Owner: "Everyday Driver",
+  Pro: "Pro Modder",
+  Garage: "Garage",
+};
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock } = useVault();
@@ -68,10 +73,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Switch role</DropdownMenuLabel>
+              <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
               {ROLES.map((r) => (
                 <DropdownMenuItem key={r} onClick={() => setRole(r)}>
-                  {r} {r === role && "✓"}
+                  {ROLE_LABELS[r]} {r === role && "✓"}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
@@ -83,9 +88,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 pb-28 pt-5">{children}</main>
+      <main className="mx-auto max-w-2xl px-4 pb-20 pt-5">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
         <div className="mx-auto grid max-w-2xl grid-cols-4">
           {TABS.map(({ to, label, icon: Icon }) => (
             <Link
