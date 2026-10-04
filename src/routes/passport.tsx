@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { fmtDate, fmtMiles, useVault } from "@/lib/vault-store";
 import { PageHeader, Pill, Plate, ShieldLogo } from "@/components/vault/ui-bits";
-import { TimelineItem } from "./index";
+import { TimelineItem } from "@/components/vault/TimelineItem";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/passport")({
