@@ -34,8 +34,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!unlocked) return <UnlockGate />;
 
   return (
-    <div className="min-h-screen animate-vault-open">
-      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-lg">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background animate-vault-open">
+      <header className="flex-none z-40 border-b bg-background/85 backdrop-blur-lg">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
             <ShieldLogo className="h-7 w-7" />
@@ -88,9 +88,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 pb-20 pt-5">{children}</main>
+      <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 pt-5 pb-24">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
         <div className="mx-auto grid max-w-2xl grid-cols-4">
           {TABS.map(({ to, label, icon: Icon }) => (
             <Link
