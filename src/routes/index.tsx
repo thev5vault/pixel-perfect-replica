@@ -187,7 +187,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
     const mileage = parseInt(form.mileage, 10);
     const cost = parseFloat(form.cost);
     if (!form.description.trim() || !Number.isFinite(mileage) || mileage < 0 || mileage > 2_000_000) {
-      return toast.error("Add a description and a valid mileage.");
+      { toast.error("Add a description and a valid mileage."); return; }
     }
     const lines = form.description.trim().slice(0, 1000).split(/\n+/).map((l) => l.trim()).filter(Boolean);
     addService({
@@ -195,7 +195,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       date: form.date,
       mileage,
       category: form.category,
-      description: lines[0].slice(0, 80),
+      description: (lines[0] ?? "").slice(0, 80),
       items: lines.slice(1),
       cost: Number.isFinite(cost) ? cost : undefined,
       garage: form.garage.trim().slice(0, 80) || "Self-logged",

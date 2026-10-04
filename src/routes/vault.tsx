@@ -137,7 +137,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const mi = parseInt(f.installMileage, 10);
-    if (!f.name.trim() || !Number.isFinite(mi)) return toast.error("Part name and install mileage are required.");
+    if (!f.name.trim() || !Number.isFinite(mi)) { toast.error("Part name and install mileage are required."); return; }
     addMod({
       vrm: vehicle.vrm,
       name: f.name.trim().slice(0, 80),
@@ -203,8 +203,8 @@ function RevertDialog({ mod, onClose }: { mod: Modification | null; onClose: () 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const mi = parseInt(mileage, 10);
-    if (!mod || !Number.isFinite(mi)) return;
-    if (mi < mod.installMileage) return toast.error("Removal mileage can't be lower than install mileage.");
+    if (!mod || !Number.isFinite(mi)) { return; }
+    if (mi < mod.installMileage) { toast.error("Removal mileage can't be lower than install mileage."); return; }
     revertMod(mod.id, date, mi);
     toast.success(`${mod.name} moved to Diagnostic History`);
     setMileage("");
