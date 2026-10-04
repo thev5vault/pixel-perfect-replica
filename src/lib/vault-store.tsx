@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import receiptService from "@/assets/receipt-service.jpg";
 import receiptBrakes from "@/assets/receipt-brakes.jpg";
@@ -133,7 +134,9 @@ interface VaultCtx extends Persisted {
   revertMod: (id: string, date: string, mileage: number) => void;
 }
 
-const Ctx = createContext<VaultCtx | null>(null);
+// Keep one context instance across hot reloads so provider and consumers always match.
+const g = globalThis as unknown as { __v5vaultCtx?: React.Context<VaultCtx | null> };
+const Ctx = (g.__v5vaultCtx ??= createContext<VaultCtx | null>(null));
 
 export const normalizeVrm = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "");
 export const formatVrm = (v: string) => {
