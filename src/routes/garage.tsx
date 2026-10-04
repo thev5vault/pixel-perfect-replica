@@ -27,21 +27,21 @@ function GaragePage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const mi = parseInt(f.mileage, 10);
-    if (!f.vrm || !Number.isFinite(mi) || !f.work.trim() || !f.workshop.trim()) return toast.error("All fields are required.");
+    if (!f.vrm || !Number.isFinite(mi) || !f.work.trim() || !f.workshop.trim()) { toast.error("All fields are required."); return; }
     const lines = f.work.trim().slice(0, 1000).split(/\n+/).map((l) => l.trim()).filter(Boolean);
     const ok = addService({
       vrm: f.vrm,
       date: today(),
       mileage: mi,
       category: "Servicing",
-      description: lines[0].slice(0, 80),
+      description: (lines[0] ?? "").slice(0, 80),
       items: lines.slice(1),
       garage: f.workshop.trim().slice(0, 80),
       verified: true,
       tier3: true,
       image,
     });
-    if (!ok) return toast.error(`No V5Vault passport found for ${formatVrm(f.vrm)}.`);
+    if (!ok) { toast.error(`No V5Vault passport found for ${formatVrm(f.vrm)}.`); return; }
     setStamped(formatVrm(f.vrm));
     toast.success("Record pushed to customer's timeline");
     setF(empty);

@@ -15,11 +15,11 @@ export interface ServiceRecord {
   category: ServiceCategory;
   description: string;
   items: string[];
-  cost?: number;
+  cost?: number | undefined;
   garage: string;
   verified: boolean;
-  tier3?: boolean;
-  image?: string;
+  tier3?: boolean | undefined;
+  image?: string | undefined;
 }
 
 export interface Modification {
@@ -31,7 +31,7 @@ export interface Modification {
   installMileage: number;
   gains: string;
   notes: string;
-  image?: string;
+  image?: string | undefined;
   status: "active" | "reverted";
   removalDate?: string;
   removalMileage?: number;
@@ -171,7 +171,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hydrated]);
 
-  const vehicle = VEHICLES.find((v) => v.vrm === state.activeVrm) ?? VEHICLES[0];
+  const vehicle = VEHICLES.find((v) => v.vrm === state.activeVrm) ?? VEHICLES[0]!;
 
   const unlock = useCallback((vrm: string, date: string) => {
     const match = VEHICLES.find((v) => v.vrm === normalizeVrm(vrm) && v.v5cDate === date);

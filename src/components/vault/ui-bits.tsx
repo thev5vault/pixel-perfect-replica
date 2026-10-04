@@ -38,7 +38,7 @@ export function Pill({ tone = "muted", children, className }: { tone?: Tone; chi
   );
 }
 
-export function VerifiedBadge({ tier3 }: { tier3?: boolean }) {
+export function VerifiedBadge({ tier3 }: { tier3?: boolean | undefined }) {
   return (
     <Pill tone="success">
       <BadgeCheck className="h-3 w-3" />
@@ -56,7 +56,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export function ImagePicker({ value, onChange, label = "Upload image" }: { value?: string; onChange: (v?: string) => void; label?: string }) {
+export function ImagePicker({ value, onChange, label = "Upload image" }: { value?: string | undefined; onChange: (v?: string) => void; label?: string }) {
   const [busy, setBusy] = useState(false);
   if (value)
     return (
