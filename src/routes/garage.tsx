@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { formatVrm, today, useVault } from "@/lib/vault-store";
+import { FeatureLock } from "@/components/vault/FeatureLock";
 import { Field, ImagePicker, PageHeader } from "@/components/vault/ui-bits";
 
 export const Route = createFileRoute("/garage")({
@@ -18,6 +19,14 @@ export const Route = createFileRoute("/garage")({
 });
 
 function GaragePage() {
+  const { role } = useVault();
+
+  if (role !== "Garage") return <FeatureLock feature="garage" />;
+
+  return <GaragePortal />;
+}
+
+function GaragePortal() {
   const { addService } = useVault();
   const empty = { vrm: "", mileage: "", work: "", workshop: "" };
   const [f, setF] = useState(empty);
