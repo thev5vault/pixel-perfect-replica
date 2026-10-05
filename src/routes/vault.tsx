@@ -23,7 +23,7 @@ export const Route = createFileRoute("/vault")({
 function VaultPage() {
   const { role } = useVault();
 
-  if (role !== "Pro") return <FeatureLock feature="vault" />;
+  if (role !== "Pro" && role !== "superadmin") return <FeatureLock feature="vault" />;
 
   return <ProVault />;
 }
