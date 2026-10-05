@@ -21,7 +21,7 @@ export const Route = createFileRoute("/garage")({
 function GaragePage() {
   const { role } = useVault();
 
-  if (role !== "Garage") return <FeatureLock feature="garage" />;
+  if (role !== "Garage" && role !== "superadmin") return <FeatureLock feature="garage" />;
 
   return <GaragePortal />;
 }

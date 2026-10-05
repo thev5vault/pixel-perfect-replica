@@ -6,7 +6,7 @@ import dynoSheet from "@/assets/dyno-sheet.jpg";
 
 export type ServiceCategory = "Servicing" | "Brakes" | "Repairs" | "Tyres";
 export type ModCategory = "Engine/ECU" | "Exhaust" | "Intake" | "Suspension" | "Brakes" | "Visual";
-export type Role = "Owner" | "Pro" | "Garage";
+export type Role = "Owner" | "Pro" | "Garage" | "superadmin";
 
 export interface ServiceRecord {
   id: string;
@@ -117,6 +117,10 @@ interface Persisted {
   mods: Modification[];
   role: Role;
   activeVrm: string;
+  v5cRefs: Record<string, string>;
+  pin?: string | undefined;
+  biometrics: boolean;
+  notice?: string | undefined;
 }
 
 const KEY = "v5vault:v1";
@@ -125,7 +129,10 @@ interface VaultCtx extends Persisted {
   hydrated: boolean;
   vehicles: Vehicle[];
   vehicle: Vehicle;
-  unlock: (vrm: string, date: string) => boolean;
+  unlock: (vrm: string, ref: string) => boolean;
+  setupSecurity: (pin: string, biometrics: boolean) => void;
+  simulateTransfer: () => void;
+  clearNotice: () => void;
   lock: () => void;
   setRole: (r: Role) => void;
   setActiveVrm: (v: string) => void;
@@ -153,6 +160,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     mods: SEED_MODS,
     role: "Owner",
     activeVrm: "AB14CDE",
+    v5cRefs: { AB14CDE: "12345678901" },
+    biometrics: false,
   });
 
   useEffect(() => {
@@ -176,11 +185,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const vehicle = VEHICLES.find((v) => v.vrm === state.activeVrm) ?? VEHICLES[0]!;
 
-  const unlock = useCallback((vrm: string, date: string) => {
-    const match = VEHICLES.find((v) => v.vrm === normalizeVrm(vrm) && v.v5cDate === date);
-    if (match) setState((s) => ({ ...s, unlocked: true, activeVrm: match.vrm }));
-    return !!match;
-  }, []);
+  const unlock = useCallback(
+    (vrm: string, ref: string) => {
+      const n = normalizeVrm(vrm);
+      const ok = VEHICLES.some((v) => v.vrm === n) && state.v5cRefs[n] === ref.replace(/\D/g, "");
+      if (ok) setState((s) => ({ ...s, unlocked: true, activeVrm: n, notice: undefined }));
+      return ok;
+    },
+    [state.v5cRefs],
+  );
 
   const value = useMemo<VaultCtx>(
     () => ({
@@ -189,6 +202,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       vehicles: VEHICLES,
       vehicle,
       unlock,
+      setupSecurity: (pin, biometrics) => setState((s) => ({ ...s, pin, biometrics })),
+      simulateTransfer: () =>
+        setState((s) => ({
+          ...s,
+          unlocked: false,
+          pin: undefined,
+          biometrics: false,
+          v5cRefs: { ...s.v5cRefs, [s.activeVrm]: String(Math.floor(1e10 + Math.random() * 9e10)) },
+          notice: "Ownership transfer detected. This vehicle has been unlinked from your account.",
+        })),
+      clearNotice: () => setState((s) => ({ ...s, notice: undefined })),
       lock: () => setState((s) => ({ ...s, unlocked: false })),
       setRole: (role) => setState((s) => ({ ...s, role })),
       setActiveVrm: (activeVrm) => setState((s) => ({ ...s, activeVrm })),

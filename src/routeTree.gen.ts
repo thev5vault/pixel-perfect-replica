@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as GarageRouteImport } from './routes/garage'
 import { Route as PassportRouteImport } from './routes/passport'
 import { Route as VaultRouteImport } from './routes/vault'
@@ -17,6 +18,11 @@ import { Route as VaultRouteImport } from './routes/vault'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GarageRoute = GarageRouteImport.update({
@@ -37,12 +43,14 @@ const VaultRoute = VaultRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/vault': typeof VaultRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/vault': typeof VaultRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/vault': typeof VaultRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/garage' | '/passport' | '/vault'
+  fullPaths: '/' | '/admin' | '/garage' | '/passport' | '/vault'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/garage' | '/passport' | '/vault'
-  id: '__root__' | '/' | '/garage' | '/passport' | '/vault'
+  to: '/' | '/admin' | '/garage' | '/passport' | '/vault'
+  id: '__root__' | '/' | '/admin' | '/garage' | '/passport' | '/vault'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   GarageRoute: typeof GarageRoute
   PassportRoute: typeof PassportRoute
   VaultRoute: typeof VaultRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/garage': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   GarageRoute: GarageRoute,
   PassportRoute: PassportRoute,
   VaultRoute: VaultRoute,
