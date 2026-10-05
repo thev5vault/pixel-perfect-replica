@@ -73,7 +73,7 @@ function AdminConsole() {
         className="vault-card space-y-4 p-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (vrm.replace(/\s/g, "").length < 2) return toast.error("Enter a valid VRM.");
+          if (vrm.replace(/\s/g, "").length < 2) { toast.error("Enter a valid VRM."); return; }
           toast.success(`${action} applied to ${vrm}`);
           setVrm("");
         }}
