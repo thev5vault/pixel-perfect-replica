@@ -63,6 +63,13 @@ function Dashboard() {
           <span className="font-display text-xl font-bold text-foreground">{fmtMiles(odometer)}</span>
           <span className="text-xs">odometer</span>
         </div>
+        <div className="relative mt-3 inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-semibold text-success">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+          </span>
+          DVLA Sync: Active (Last checked: Today)
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">

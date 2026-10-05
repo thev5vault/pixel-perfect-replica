@@ -1,6 +1,15 @@
-import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import { Car, ChevronDown, FileBadge, Lock, LogOut, Wrench } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, ShieldAlert, Terminal, Wrench } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,19 +28,25 @@ const TABS = [
   { to: "/garage", label: "Garage Portal", icon: Wrench },
   { to: "/passport", label: "Export Passport", icon: FileBadge },
 ] as const;
+const ADMIN_TAB = { to: "/admin", label: "Admin Console", icon: Terminal } as const;
 
-const ROLES: Role[] = ["Owner", "Pro", "Garage"];
+const ROLES: Role[] = ["Owner", "Pro", "Garage", "superadmin"];
 const ROLE_LABELS: Record<Role, string> = {
   Owner: "Everyday Driver",
   Pro: "Pro Modder",
   Garage: "Garage",
+  superadmin: "Dev Owner / Founder",
 };
+const ROLE_BADGE: Record<Role, string> = { Owner: "Driver", Pro: "Pro", Garage: "Garage", superadmin: "Dev" };
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock } = useVault();
+  const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock, pin, simulateTransfer } = useVault();
+  const [transfer, setTransfer] = useState(false);
+  const navigate = useNavigate();
 
   if (!hydrated) return <div className="min-h-screen" />;
-  if (!unlocked) return <UnlockGate />;
+  if (!unlocked || !pin) return <UnlockGate />;
+  const tabs = role === "superadmin" ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background animate-vault-open">
@@ -69,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 JD
               </span>
               <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-1.5 text-[9px] font-bold uppercase text-primary-foreground">
-                {role}
+                {ROLE_BADGE[role]}
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -80,6 +95,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTransfer(true)} className="text-xs text-muted-foreground">
+                <RefreshCcw className="h-4 w-4" /> Simulate DVLA Ownership Transfer
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={lock}>
                 <LogOut className="h-4 w-4" /> Lock vault
               </DropdownMenuItem>
@@ -91,13 +109,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 pt-5 pb-24">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
-        <div className="mx-auto grid max-w-2xl grid-cols-4">
-          {TABS.map(({ to, label, icon: Icon }) => (
+        <div className="mx-auto grid max-w-2xl" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+          {tabs.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: true }}
-              className="group flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-muted-foreground transition-colors data-[status=active]:text-primary"
+              className="group flex flex-col items-center gap-1 py-2.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
             >
               <Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />
               {label}
@@ -105,6 +123,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </div>
       </nav>
+
+      <AlertDialog open={transfer} onOpenChange={setTransfer}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive" /> DVLA update detected
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A new V5C has been issued for this VIN. Your Vault Master PIN and biometrics will be wiped and this vehicle record locked.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                simulateTransfer();
+                navigate({ to: "/" });
+              }}
+            >
+              Acknowledge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
