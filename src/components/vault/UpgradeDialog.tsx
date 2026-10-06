@@ -27,7 +27,7 @@ export function UpgradeDialog({
           </DialogTitle>
           <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
         </ModalHeader>
-        <div className="space-y-4 overflow-y-auto p-4 pb-8">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
         <ul className="space-y-2 text-sm">
           {perks.map((p) => (
             <li key={p} className="flex gap-2">
@@ -35,6 +35,8 @@ export function UpgradeDialog({
             </li>
           ))}
         </ul>
+        </div>
+        <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
         <button
           className="btn-primary w-full"
           onClick={() => {
@@ -44,7 +46,7 @@ export function UpgradeDialog({
         >
           Upgrade to {tier} ({price})
         </button>
-        </div>
+        </footer>
       </DialogContent>
     </Dialog>
   );

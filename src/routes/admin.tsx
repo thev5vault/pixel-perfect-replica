@@ -25,7 +25,6 @@ function AdminPage() {
   return (
     <div>
       {role !== "superadmin" ? <FeatureLock feature="garage" /> : <AdminConsole />}
-      <div className="h-24 w-full shrink-0" aria-hidden="true" />
     </div>
   );
 }
@@ -94,7 +93,7 @@ function AdminConsole() {
             <option>Restore verified status</option>
           </select>
         </Field>
-        <button type="submit" className="btn-primary mb-8 w-full">Apply Override</button>
+        <button type="submit" className="btn-primary w-full">Apply Override</button>
       </form>
     </div>
   );

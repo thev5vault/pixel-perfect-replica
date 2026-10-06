@@ -84,7 +84,6 @@ function PassportPage() {
         price={upsell?.price ?? ""}
         perks={upsell ? upsell.includes.split(", ") : []}
       />
-      <div className="h-24 w-full shrink-0 print:hidden" aria-hidden="true" />
     </div>
   );
 }

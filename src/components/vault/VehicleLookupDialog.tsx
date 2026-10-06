@@ -41,7 +41,8 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
           <DialogTitle className="flex items-center gap-2"><Car className="h-5 w-5 text-cyan-400" /> Add Vehicle</DialogTitle>
           <DialogDescription>Look up a UK registration and attach it to your vehicle list.</DialogDescription>
         </ModalHeader>
-        <form onSubmit={submit} className="space-y-4 overflow-y-auto p-4 pb-8">
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
           <label className="block space-y-2">
             <span className="text-sm font-semibold">Registration number</span>
             <input autoFocus required minLength={2} maxLength={12} disabled={busy}
@@ -53,10 +54,13 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
             Without API credentials, only AB14 CDE and BUL 200 are available as clearly labelled sample vehicles. A registration lookup does not verify ownership.
           </p>
           {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
-          <button disabled={busy} className="btn-primary mb-8 w-full" type="submit">
+          </div>
+          <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
+          <button disabled={busy} className="btn-primary w-full" type="submit">
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {busy ? "Looking up…" : "Lookup Vehicle"}
           </button>
+          </footer>
         </form>
       </DialogContent>
     </Dialog>

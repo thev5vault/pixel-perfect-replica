@@ -5,7 +5,8 @@ import { Route as PassportRoute } from "@/routes/passport";
 import { Route as HomeRoute } from "@/routes/index";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
-import { scrollFocusedFieldIntoView } from "@/components/vault/ui-bits";
+import { Route as VaultRoute } from "@/routes/vault";
+import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
 
 vi.mock("@/services/dvlaApi", () => ({ lookupVehicle: vi.fn(async () => ({
   vehicle: { vrm: "BUL200", make: "VW", model: "Golf", odometer: 100, v5cDate: "", motExpiry: "", motHistory: [], source: "demo" },
@@ -19,6 +20,7 @@ vi.mock("recharts", () => ({
 
 const Passport = PassportRoute.options.component!;
 const Dashboard = HomeRoute.options.component!;
+const Vault = VaultRoute.options.component!;
 
 describe("V1 polish", () => {
   beforeEach(() => localStorage.clear());
@@ -52,7 +54,10 @@ describe("V1 polish", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog.querySelector("header")).toHaveClass("sticky", "top-0");
-    expect(dialog.querySelector(".pb-48")).toHaveClass("overflow-y-auto");
+    const body = dialog.querySelector(".pb-6")!;
+    expect(body).toHaveClass("overflow-y-auto", "flex-1", "min-h-0");
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Save to Timeline" }));
+    expect(dialog).toHaveClass("max-h-[90dvh]", "flex-col", "rounded-t-3xl");
     expect(screen.getByRole("button", { name: "Save to Timeline" }).closest("footer")).toHaveClass("sticky", "bottom-0");
     fireEvent.click(screen.getByRole("button", { name: "Date" }));
     const calendar = screen.getByRole("dialog", { name: "" });
@@ -82,13 +87,24 @@ describe("V1 polish", () => {
     logged.mockRestore();
   });
 
-  it("scrolls a focused modal field to the visible center above the mobile keyboard", () => {
-    const scrollIntoView = vi.fn();
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1; });
-    render(<input aria-label="Active field" onFocus={scrollFocusedFieldIntoView} />);
-    const field = screen.getByRole("textbox", { name: "Active field" });
-    Object.defineProperty(field, "scrollIntoView", { value: scrollIntoView });
-    fireEvent.focus(field);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
+  it("keeps modification actions outside the scroll body without oversized padding", () => {
+    localStorage.setItem("v5vault:v1", JSON.stringify({ role: "Pro" }));
+    render(<VaultProvider><Vault /></VaultProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /add mod/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.querySelector("header")).toHaveClass("flex-none", "bg-slate-900");
+    const save = screen.getByRole("button", { name: "Add to Active Build" });
+    expect(save.closest("footer")).toHaveClass("flex-none", "bottom-0");
+    expect(dialog.querySelector(".pb-6")).not.toContainElement(save);
+    expect(dialog.querySelector(".pb-6")?.querySelector("textarea")).toBeInTheDocument();
+  });
+
+  it("keeps upgrade actions pinned below scrollable perks", () => {
+    render(<UpgradeDialog open onOpenChange={() => {}} />);
+    const dialog = screen.getByRole("dialog");
+    const upgrade = screen.getByRole("button", { name: "Upgrade to Pro DIY (£0.99/mo)" });
+    expect(upgrade.closest("footer")).toHaveClass("flex-none", "bottom-0");
+    expect(dialog.querySelector(".pb-6")).not.toContainElement(upgrade);
+    expect(dialog.parentElement).toHaveClass("items-end", "sm:items-center", "overscroll-none");
   });
 });

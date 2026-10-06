@@ -16,7 +16,7 @@ import {
   useVault,
   type ServiceCategory,
 } from "@/lib/vault-store";
-import { Field, ImagePicker, Pill, Plate, scrollFocusedFieldIntoView } from "@/components/vault/ui-bits";
+import { Field, ImagePicker, Pill, Plate } from "@/components/vault/ui-bits";
 import { TimelineItem } from "@/components/vault/TimelineItem";
 import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
 
@@ -145,7 +145,6 @@ function Dashboard() {
         description="Upgrade to Pro DIY (£0.99/mo) to upload receipts."
         perks={["Upload and keep high-resolution receipt photos"]}
       />
-      <div className="h-24 w-full shrink-0" aria-hidden="true" />
     </div>
   );
 }
@@ -247,7 +246,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <DialogDescription>Add a dated service record and receipt to your vehicle.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-48">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date">
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -265,7 +264,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               </Popover>
             </Field>
             <Field label="Mileage">
-              <input onFocus={scrollFocusedFieldIntoView} inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className="field" />
+              <input inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className="field" />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -277,27 +276,27 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               </select>
             </Field>
             <Field label="Garage Name">
-              <input onFocus={scrollFocusedFieldIntoView} required maxLength={80} value={form.garage} onChange={set("garage")} placeholder="Kwik Fit Leeds" className="field" />
+              <input required maxLength={80} value={form.garage} onChange={set("garage")} placeholder="Kwik Fit Leeds" className="field" />
             </Field>
           </div>
           <Field label="Work Description">
-            <textarea onFocus={scrollFocusedFieldIntoView} rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className="field" />
+            <textarea rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className="field" />
           </Field>
 
           {pro ? (
             <>
               <Field label="OEM Part Numbers (name | part no.)">
-                <textarea onFocus={scrollFocusedFieldIntoView} rows={3} maxLength={1200} value={form.parts} onChange={set("parts")} placeholder={"Oil filter | Bosch F 026 407 183\nPollen filter | Febi Bilstein 26600"} className="field font-mono text-xs" />
+                <textarea rows={3} maxLength={1200} value={form.parts} onChange={set("parts")} placeholder={"Oil filter | Bosch F 026 407 183\nPollen filter | Febi Bilstein 26600"} className="field font-mono text-xs" />
               </Field>
               <Field label="Fluid Specs">
-                <input onFocus={scrollFocusedFieldIntoView} maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className="field" />
+                <input maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className="field" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Parts (£)">
-                  <input onFocus={scrollFocusedFieldIntoView} inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className="field" />
+                  <input inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className="field" />
                 </Field>
                 <Field label="Labour (£)">
-                  <input onFocus={scrollFocusedFieldIntoView} inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className="field" />
+                  <input inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className="field" />
                 </Field>
               </div>
               <Field label="High-res Receipt">
@@ -312,8 +311,8 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             </div>
           )}
           </div>
-          <footer className="sticky bottom-0 shrink-0 border-t border-slate-800 bg-slate-900 p-4">
-            <button type="submit" className="btn-primary mb-8 w-full">Save to Timeline</button>
+          <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
+            <button type="submit" className="btn-primary w-full">Save to Timeline</button>
           </footer>
         </form>
         <UpgradeDialog open={upsell} onOpenChange={setUpsell} />

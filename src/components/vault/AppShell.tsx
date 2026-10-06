@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, ShieldAlert, Terminal, Wrench } from "lucide-react";
 import {
@@ -37,25 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock, pin, simulateTransfer } = useVault();
   const [transfer, setTransfer] = useState(false);
   const [addVehicleOpen, setAddVehicleOpen] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const isTextField = (target: EventTarget | null): target is HTMLElement =>
-      target instanceof HTMLElement && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-    const handleFocusIn = (event: FocusEvent) => {
-      if (isTextField(event.target)) setIsTyping(true);
-    };
-    const handleFocusOut = (event: FocusEvent) => {
-      if (!isTextField(event.relatedTarget)) setIsTyping(false);
-    };
-    window.addEventListener("focusin", handleFocusIn);
-    window.addEventListener("focusout", handleFocusOut);
-    return () => {
-      window.removeEventListener("focusin", handleFocusIn);
-      window.removeEventListener("focusout", handleFocusOut);
-    };
-  }, []);
 
   if (!hydrated) return <div className="min-h-screen" />;
   if (!unlocked || !pin) return <UnlockGate />;
@@ -119,9 +101,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-44">{children}</main>
+      <main className="mx-auto w-full max-w-2xl min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-24">{children}</main>
 
-      <nav className={`${isTyping ? "hidden" : "fixed bottom-4 inset-x-3 max-w-md mx-auto z-50 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2 py-2 flex justify-between items-center transform-gpu"} print:hidden`}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/90 backdrop-blur-md border-t border-slate-800 px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex justify-around items-center print:hidden">
         <div className="flex w-full justify-between">
           {tabs.map(({ to, label, icon: Icon }) => (
             <Link
