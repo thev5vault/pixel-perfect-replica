@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatVrm, useVault, type Role } from "@/lib/vault-store";
+import { ROLES, ROLE_LABELS, can, formatVrm, useVault, type Role } from "@/lib/vault-store";
 import { ShieldLogo } from "./ui-bits";
 import { UnlockGate } from "./UnlockGate";
 
@@ -30,14 +30,7 @@ const TABS = [
 ] as const;
 const ADMIN_TAB = { to: "/admin", label: "Admin Console", icon: Terminal } as const;
 
-const ROLES: Role[] = ["Owner", "Pro", "Garage", "superadmin"];
-const ROLE_LABELS: Record<Role, string> = {
-  Owner: "Everyday Driver",
-  Pro: "Pro Modder",
-  Garage: "Garage",
-  superadmin: "Dev Owner / Founder",
-};
-const ROLE_BADGE: Record<Role, string> = { Owner: "Driver", Pro: "Pro", Garage: "Garage", superadmin: "Dev" };
+const ROLE_BADGE: Record<Role, string> = { Owner: "Free", DIY: "DIY", Pro: "Pro", Garage: "Garage", superadmin: "Dev" };
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock, pin, simulateTransfer } = useVault();
@@ -46,11 +39,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!hydrated) return <div className="min-h-screen" />;
   if (!unlocked || !pin) return <UnlockGate />;
-  const tabs = role === "superadmin" ? [...TABS, ADMIN_TAB] : TABS;
+  const tabs = can.admin(role) ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-background animate-vault-open">
-      <header className="flex-none z-40 border-b bg-background/85 backdrop-blur-lg">
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between overflow-x-hidden bg-background animate-vault-open">
+      <header className="sticky top-0 flex-none z-40 border-b bg-background/85 backdrop-blur-lg">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
             <ShieldLogo className="h-7 w-7" />
@@ -106,16 +99,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto px-4 pt-5 pb-24">{children}</main>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-32">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 px-4 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md">
         <div className="mx-auto grid max-w-2xl" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
           {tabs.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: true }}
-              className="group flex flex-col items-center gap-1 py-2.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
+              className="group flex flex-col items-center gap-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
             >
               <Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />
               {label}
