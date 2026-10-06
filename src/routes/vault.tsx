@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { History, Lock, Plus, RotateCcw, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MOD_CATEGORIES, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
+import { MOD_CATEGORIES, can, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
 import { Field, ImagePicker, Pill, Thumb } from "@/components/vault/ui-bits";
 import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,8 @@ export const Route = createFileRoute("/vault")({
       { name: "description", content: "Log every modification, dyno sheet and power gain — and keep a diagnostic history of parts reverted to stock." },
       { property: "og:title", content: "Modder's Vault — V5Vault Pro" },
       { property: "og:description", content: "The build sheet for your car: active mods, dyno proof and reverted-part history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: VaultPage,
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/vault")({
 function VaultPage() {
   const { role } = useVault();
 
-  if (role !== "Pro" && role !== "superadmin") return <FeatureLock feature="vault" />;
+  if (!can.vault(role)) return <FeatureLock feature="vault" />;
 
   return <ProVault />;
 }
@@ -98,6 +100,7 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-1.5">
             <Pill tone="primary">{m.category}</Pill>
+            {m.stage && <Pill tone="success">{m.stage}</Pill>}
             {reverted && <Pill tone="warning">Reverted</Pill>}
           </div>
           <h3 className="mt-1.5 text-lg font-bold">{m.name}</h3>
@@ -125,6 +128,14 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
           </div>
         )}
       </dl>
+      {m.specs && <p className="mt-2 text-sm">{m.specs}</p>}
+      {m.tags && m.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {m.tags.map((t) => (
+            <Pill key={t}>{t}</Pill>
+          ))}
+        </div>
+      )}
       {m.notes && <p className="mt-2 text-sm text-muted-foreground">{m.notes}</p>}
       {!reverted && (
         <button onClick={onRevert} className="btn-ghost mt-3 w-full text-sm">
@@ -137,7 +148,7 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
 
 function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { addMod, vehicle } = useVault();
-  const empty = { name: "", category: "Engine/ECU" as ModCategory, installDate: today(), installMileage: "", gains: "", notes: "" };
+  const empty = { name: "", category: "Engine/ECU" as ModCategory, installDate: today(), installMileage: "", gains: "", notes: "", stage: "Stage 1", specs: "", tags: "" };
   const [f, setF] = useState(empty);
   const [image, setImage] = useState<string>();
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -156,6 +167,9 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
       gains: f.gains.trim().slice(0, 60),
       notes: f.notes.trim().slice(0, 1000),
       image,
+      stage: f.category === "Engine/ECU" ? f.stage : undefined,
+      specs: f.specs.trim().slice(0, 200) || undefined,
+      tags: f.tags.split(",").map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 5),
     });
     toast.success(`${f.name} added to your build`);
     setF(empty);
@@ -180,6 +194,20 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
               ))}
             </select>
           </Field>
+          {f.category === "Engine/ECU" && (
+            <Field label="ECU Stage">
+              <select value={f.stage} onChange={set("stage")} className="field">
+                {["Stage 1", "Stage 2", "Stage 2+", "Stage 3", "Custom"].map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          {(f.category === "Suspension" || f.category === "Exhaust") && (
+            <Field label={f.category === "Suspension" ? "Suspension Specs" : "Exhaust Specs"}>
+              <input maxLength={200} value={f.specs} onChange={set("specs")} placeholder={f.category === "Suspension" ? "KW V3 coilovers · -35mm F/R · 16 clicks rebound" : "Milltek 3\" downpipe-back · non-resonated"} className="field" />
+            </Field>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Install Date">
               <input type="date" required max={today()} value={f.installDate} onChange={set("installDate")} className="field" />
@@ -191,8 +219,11 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <Field label="Horsepower / Torque Gains">
             <input maxLength={60} value={f.gains} onChange={set("gains")} placeholder="+50 bhp / +80 Nm" className="field" />
           </Field>
-          <Field label="Dyno Graph / Spec Sheet">
-            <ImagePicker value={image} onChange={setImage} label="Upload dyno sheet" />
+          <Field label="Specialist Tags (comma separated)">
+            <input maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className="field" />
+          </Field>
+          <Field label="Dyno Curve Printout">
+            <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
           </Field>
           <Field label="Detailed Notes">
             <textarea rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className="field" />

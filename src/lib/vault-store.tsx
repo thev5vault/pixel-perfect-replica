@@ -6,7 +6,28 @@ import dynoSheet from "@/assets/dyno-sheet.jpg";
 
 export type ServiceCategory = "Servicing" | "Brakes" | "Repairs" | "Tyres";
 export type ModCategory = "Engine/ECU" | "Exhaust" | "Intake" | "Suspension" | "Brakes" | "Visual";
-export type Role = "Owner" | "Pro" | "Garage" | "superadmin";
+export type Role = "Owner" | "DIY" | "Pro" | "Garage" | "superadmin";
+
+export const ROLES: Role[] = ["Owner", "DIY", "Pro", "Garage", "superadmin"];
+export const ROLE_LABELS: Record<Role, string> = {
+  Owner: "Basic Driver (Free)",
+  DIY: "Pro DIY (£0.99/mo)",
+  Pro: "Pro Modder (£1.99/mo)",
+  Garage: "Verified Garage (£7.99/mo)",
+  superadmin: "Dev Owner / SuperAdmin (God Mode)",
+};
+/** Feature entitlements per tier. Pro Modder and Garage include Pro DIY features. */
+export const can = {
+  diy: (r: Role) => r !== "Owner",
+  vault: (r: Role) => r === "Pro" || r === "superadmin",
+  garage: (r: Role) => r === "Garage" || r === "superadmin",
+  admin: (r: Role) => r === "superadmin",
+};
+
+export interface PartLine {
+  name: string;
+  partNo: string;
+}
 
 export interface ServiceRecord {
   id: string;
@@ -21,6 +42,10 @@ export interface ServiceRecord {
   verified: boolean;
   tier3?: boolean | undefined;
   image?: string | undefined;
+  parts?: PartLine[] | undefined;
+  fluids?: string | undefined;
+  partsCost?: number | undefined;
+  labourCost?: number | undefined;
 }
 
 export interface Modification {
@@ -34,6 +59,9 @@ export interface Modification {
   notes: string;
   image?: string | undefined;
   status: "active" | "reverted";
+  stage?: string | undefined;
+  specs?: string | undefined;
+  tags?: string[] | undefined;
   removalDate?: string;
   removalMileage?: number;
 }
@@ -46,6 +74,17 @@ export interface Vehicle {
   v5cDate: string;
   motExpiry: string;
 }
+
+// Mock DVLA MOT history (auto-synced in production)
+export const MOT_READINGS = [
+  { date: "2018-11-14", mileage: 48210, result: "Pass" },
+  { date: "2019-11-12", mileage: 56980, result: "Pass" },
+  { date: "2020-11-20", mileage: 62340, result: "Pass" },
+  { date: "2021-11-18", mileage: 69110, result: "Pass with advisories" },
+  { date: "2022-11-16", mileage: 75020, result: "Pass" },
+  { date: "2023-11-15", mileage: 80480, result: "Pass" },
+  { date: "2025-11-18", mileage: 86900, result: "Pass" },
+];
 
 export const SERVICE_CATEGORIES: ServiceCategory[] = ["Servicing", "Brakes", "Repairs", "Tyres"];
 export const MOD_CATEGORIES: ModCategory[] = ["Engine/ECU", "Exhaust", "Intake", "Suspension", "Brakes", "Visual"];
@@ -64,6 +103,14 @@ const SEED_SERVICES: ServiceRecord[] = [
     description: "Full Service",
     items: ["Engine oil 5W-30 (5L)", "Oil filter", "Air filter", "Pollen filter", "Labour"],
     cost: 289,
+    partsCost: 154,
+    labourCost: 135,
+    fluids: "Castrol Edge 5W-30 LL (VW 504.00/507.00), 4.6L",
+    parts: [
+      { name: "Oil filter", partNo: "Bosch F 026 407 183" },
+      { name: "Air filter", partNo: "Mann C 30 005" },
+      { name: "Pollen filter", partNo: "Febi Bilstein 26600" },
+    ],
     garage: "Riverside Garage",
     verified: true,
     image: receiptService,
@@ -77,8 +124,16 @@ const SEED_SERVICES: ServiceRecord[] = [
     description: "Brembo Brake Replacement",
     items: ["Brembo front discs (pair)", "Brembo front pads", "Brake fluid flush (DOT 4)", "Labour"],
     cost: 642,
+    partsCost: 468,
+    labourCost: 174,
+    fluids: "Brembo LCF 600 Plus DOT 4, 1L",
+    parts: [
+      { name: "Front discs (pair)", partNo: "Brembo 09.C401.13" },
+      { name: "Front pads", partNo: "Brembo P 85 153" },
+    ],
     garage: "Apex Performance Ltd",
     verified: true,
+    tier3: true,
     image: receiptBrakes,
   },
 ];
@@ -95,6 +150,9 @@ const SEED_MODS: Modification[] = [
     notes: "Custom map on 99 RON. Requires DPF-safe tune and uprated intercooler hoses.",
     image: dynoSheet,
     status: "active",
+    stage: "Stage 2",
+    specs: "99 RON map · DPF-safe · uprated intercooler hoses",
+    tags: ["Tuned by Apex Performance", "Dyno verified"],
   },
   {
     id: "m2",
