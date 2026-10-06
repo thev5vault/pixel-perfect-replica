@@ -8,18 +8,18 @@ import { UpgradeDialog } from "./UpgradeDialog";
 export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookable?: boolean }) {
   const { role } = useVault();
   const pro = can.diy(role);
-  const [upsell, setUpsell] = useState<"parts" | "receipt" | "cost" | "fluids" | null>(null);
+  const [upsell, setUpsell] = useState<"parts" | "receipt" | "cost" | null>(null);
+  const hasOemSection = Boolean((s.parts?.length ?? 0) > 0 || s.fluids);
   const upsellCopy = {
-    parts: "Upgrade to Pro DIY (£0.99/mo) for part numbers.",
+    parts: "Upgrade to Pro DIY (£0.99/mo) for itemized parts and fluid specifications.",
     receipt: "Upgrade to Pro DIY (£0.99/mo) to view receipt photos.",
     cost: "Upgrade to Pro DIY (£0.99/mo) for itemized cost breakdowns.",
-    fluids: "Upgrade to Pro DIY (£0.99/mo) for fluid specifications.",
   };
 
   return (
     <li className="relative">
       <span className="absolute -left-[27px] top-4 h-3 w-3 rounded-full border-2 border-background bg-primary glow" />
-      <div className="vault-card p-4">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
@@ -28,29 +28,34 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             <h3 className="mt-0.5 font-bold">{s.description}</h3>
             <p className="text-sm text-muted-foreground">{s.garage}</p>
           </div>
-          {s.image &&
-            (pro ? (
-              <Thumb src={s.image} alt={`${s.description} receipt`} />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setUpsell("receipt")}
-                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
-                aria-label="Upgrade to Pro DIY to view receipt photo"
-              >
-                <img src={s.image} alt="" loading="lazy" className="h-full w-full scale-110 object-cover blur-[4px]" />
-                <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-slate-950/45 text-[9px] font-bold text-white">
-                  <LockKeyhole className="h-3.5 w-3.5" />
-                  Pro DIY
-                </span>
-              </button>
-            ))}
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {!pro && (hasOemSection || s.partsCost != null || s.labourCost != null || s.cost != null) && (
+              <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY</Pill>
+            )}
+            {s.image &&
+              (pro ? (
+                <Thumb src={s.image} alt={`${s.description} receipt`} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setUpsell("receipt")}
+                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
+                  aria-label="Upgrade to Pro DIY to view receipt photo"
+                >
+                  <img src={s.image} alt="" loading="lazy" className="h-full w-full scale-110 object-cover blur-[4px]" />
+                  <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-slate-950/45 text-[9px] font-bold text-white">
+                    <LockKeyhole className="h-3.5 w-3.5" />
+                    Pro DIY
+                  </span>
+                </button>
+              ))}
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {s.verified && <VerifiedBadge tier3={s.tier3} />}
           <Pill>{s.category}</Pill>
           {s.cost != null && pro && <Pill>£{s.cost.toFixed(2)}</Pill>}
-          {s.cost != null && !pro && (
+          {s.cost != null && !pro && !hasOemSection && (
             <button type="button" onClick={() => setUpsell("cost")} className="rounded-full">
               <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY cost breakdown</Pill>
             </button>
@@ -66,47 +71,46 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             ))}
           </ul>
         )}
-        {s.parts && s.parts.length > 0 && (
+        {hasOemSection && (
           <div className="mt-3 border-t pt-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OEM Parts</p>
-            <ul className="mt-1 space-y-1 text-sm">
-              {s.parts.map((p, i) => (
-                <li key={i} className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">{p.name}</span>
-                   <span className="flex flex-col items-end gap-1 text-right">
-                     {pro ? (
-                       <span className="font-mono text-xs text-primary">{p.partNo}</span>
-                     ) : (
-                       <>
-                         <span aria-hidden="true" className="select-none font-mono text-xs text-primary blur-[4px]">
-                           {p.partNo}
-                         </span>
-                         <button
-                           type="button"
-                           onClick={() => setUpsell("parts")}
-                           className="text-[10px] font-semibold leading-tight text-primary hover:underline"
-                         >
-                           🔒 Upgrade to Pro DIY (£0.99/mo) for part numbers
-                         </button>
-                       </>
-                     )}
-                   </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {(s.fluids || (pro && (s.partsCost != null || s.labourCost != null))) && (
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {s.fluids && (pro ? <p>Fluids: {s.fluids}</p> : (
-              <button type="button" onClick={() => setUpsell("fluids")} className="text-left text-primary hover:underline">
-                🔒 Upgrade to Pro DIY (£0.99/mo) for fluid specifications
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OEM Parts &amp; Fluid Specs</p>
+            <button
+              type="button"
+              disabled={pro}
+              onClick={() => !pro && setUpsell("parts")}
+              aria-label={pro ? undefined : "Unlock itemized OEM parts and fluid specifications"}
+              className="mt-1 block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-default"
+            >
+              <ul className="space-y-1 text-sm" aria-label="Itemized parts">
+                {(s.parts ?? []).map((p, i) => (
+                  <li key={i} className="flex items-center justify-between gap-3 py-1">
+                    <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
+                    <span className={`shrink-0 text-right font-mono text-xs ${pro ? "text-primary" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                      {p.partNo || "Part number unavailable"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {s.fluids && (
+                <p className={`py-1 text-xs ${pro ? "text-muted-foreground" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                  Fluids: {s.fluids}
+                </p>
+              )}
+            </button>
+            {!pro && (
+              <button
+                type="button"
+                onClick={() => setUpsell("parts")}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-2 text-xs font-medium text-cyan-400 shadow-sm transition-colors hover:bg-cyan-900/50"
+              >
+                🔒 Unlock Itemized Parts &amp; Fluid Specs (£0.99/mo)
               </button>
-            ))}
+            )}
             {pro && (s.partsCost != null || s.labourCost != null) && (
-              <p>
-                Parts £{(s.partsCost ?? 0).toFixed(2)} · Labour £{(s.labourCost ?? 0).toFixed(2)}
-              </p>
+              <div className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-xs text-muted-foreground">
+                {s.partsCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Parts cost</span><span>£{s.partsCost.toFixed(2)}</span></p>}
+                {s.labourCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Labour cost</span><span>£{s.labourCost.toFixed(2)}</span></p>}
+              </div>
             )}
           </div>
         )}
