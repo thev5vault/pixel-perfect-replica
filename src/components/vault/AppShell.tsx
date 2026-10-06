@@ -47,9 +47,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
     <div className="app-viewport flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
-      <header className="shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex justify-between items-center transform-gpu print:hidden">
-        <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
-          <div aria-hidden="true" className="h-10 w-10 shrink-0" />
+      <header className="h-14 shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 flex items-center justify-between gap-3 transform-gpu print:hidden">
+        <div className="mx-auto flex h-full w-full max-w-2xl items-center gap-3">
+          <div aria-hidden="true" className="h-12 w-12 shrink-0" />
           <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
 
           <DropdownMenu>
@@ -147,11 +147,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Link
         to="/"
         onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })}
-        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] flex h-10 w-10 items-center justify-center border-0 bg-transparent p-1 transition-opacity hover:opacity-80 active:scale-95"
+        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.25rem)] z-[60] flex shrink-0 items-center justify-center border-0 bg-transparent p-1 transition-opacity hover:opacity-80 active:scale-95"
         aria-label="V5Vault home — go to Vehicle overview"
         title="Return to Home Overview"
       >
-        <V5VaultLogo className="h-8 w-8" />
+        <V5VaultLogo className="h-10 w-10 text-cyan-400 drop-shadow-[0_0_10px_rgba(0,216,246,0.3)]" />
       </Link>,
       document.body,
     )}
