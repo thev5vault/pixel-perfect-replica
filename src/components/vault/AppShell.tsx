@@ -23,12 +23,12 @@ import { ShieldLogo } from "./ui-bits";
 import { UnlockGate } from "./UnlockGate";
 
 const TABS = [
-  { to: "/", label: "My Vehicle", icon: Car },
-  { to: "/vault", label: "The Vault", icon: Lock },
-  { to: "/garage", label: "Garage Portal", icon: Wrench },
-  { to: "/passport", label: "Export Passport", icon: FileBadge },
+  { to: "/", label: "Vehicle", icon: Car },
+  { to: "/vault", label: "Vault", icon: Lock },
+  { to: "/garage", label: "Garage", icon: Wrench },
+  { to: "/passport", label: "Passport", icon: FileBadge },
 ] as const;
-const ADMIN_TAB = { to: "/admin", label: "Admin Console", icon: Terminal } as const;
+const ADMIN_TAB = { to: "/admin", label: "Admin", icon: Terminal } as const;
 
 const ROLE_BADGE: Record<Role, string> = { Owner: "Free", DIY: "DIY", Pro: "Pro", Garage: "Garage", superadmin: "Dev" };
 
@@ -99,16 +99,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">{children}</main>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-36">{children}</main>
 
-      <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] inset-x-4 max-w-lg mx-auto z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl px-2 py-2 flex justify-around items-center print:hidden">
-        <div className="flex w-full justify-around">
+      <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 max-w-md mx-auto z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2 py-2 flex justify-between items-center print:hidden">
+        <div className="flex w-full justify-between">
           {tabs.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: true }}
-              className="group flex flex-col items-center gap-1 px-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
+              className="group flex flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:border-cyan-500/30 data-[status=active]:bg-cyan-500/10 data-[status=active]:text-cyan-400"
             >
               <Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />
               {label}
