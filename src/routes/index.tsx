@@ -4,7 +4,9 @@ import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, Wrench } from 
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
+  MOT_READINGS,
   SERVICE_CATEGORIES,
+  can,
   fmtDate,
   fmtMiles,
   today,
@@ -13,6 +15,7 @@ import {
 } from "@/lib/vault-store";
 import { Field, ImagePicker, Pill, Plate } from "@/components/vault/ui-bits";
 import { TimelineItem } from "@/components/vault/TimelineItem";
+import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +24,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Your car's health at a glance: servicing, brakes, MOT status and verified service history." },
       { property: "og:title", content: "My Vehicle — V5Vault" },
       { property: "og:description", content: "Traffic-light vehicle health and a verified UK service history in your pocket." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,
@@ -105,10 +110,25 @@ function Dashboard() {
         <h2 className="mb-3 text-lg font-bold">Service History</h2>
         <ol className="relative space-y-4 border-l border-primary/30 pl-5">
           {history.map((s) => (
-            <TimelineItem key={s.id} s={s} />
+            <TimelineItem key={s.id} s={s} bookable />
           ))}
           {history.length === 0 && <p className="text-sm text-muted-foreground">No records yet. Snap your first receipt.</p>}
         </ol>
+      </section>
+
+      <section className="vault-card p-4">
+        <h2 className="flex items-center justify-between font-bold">
+          MOT History <span className="text-xs font-semibold text-success">Auto-synced from DVLA</span>
+        </h2>
+        <ul className="mt-3 divide-y text-sm">
+          {[...MOT_READINGS].reverse().map((m) => (
+            <li key={m.date} className="flex justify-between gap-3 py-2">
+              <span>{fmtDate(m.date)}</span>
+              <span className="text-muted-foreground">{fmtMiles(m.mileage)}</span>
+              <span className={m.result === "Pass" ? "text-success" : "text-warning"}>{m.result}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <SnapReceiptDialog open={open} onOpenChange={setOpen} />
@@ -149,20 +169,37 @@ function HealthCard({
 
 
 function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { vehicle, addService } = useVault();
-  const [form, setForm] = useState({ date: today(), mileage: "", category: "Servicing" as ServiceCategory, description: "", cost: "", garage: "" });
+  const { vehicle, addService, role } = useVault();
+  const pro = can.diy(role);
+  const empty = { date: today(), mileage: "", category: "Servicing" as ServiceCategory, description: "", garage: "", parts: "", fluids: "", partsCost: "", labourCost: "" };
+  const [form, setForm] = useState(empty);
   const [image, setImage] = useState<string>();
+  const [upsell, setUpsell] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+  const money = (v: string) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) && n >= 0 && n < 1_000_000 ? Math.round(n * 100) / 100 : undefined;
+  };
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const mileage = parseInt(form.mileage, 10);
-    const cost = parseFloat(form.cost);
-    if (!form.description.trim() || !Number.isFinite(mileage) || mileage < 0 || mileage > 2_000_000) {
-      { toast.error("Add a description and a valid mileage."); return; }
+    if (!form.description.trim() || !form.garage.trim() || !Number.isFinite(mileage) || mileage < 0 || mileage > 2_000_000) {
+      toast.error("Add a description, garage name and a valid mileage.");
+      return;
     }
     const lines = form.description.trim().slice(0, 1000).split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const partsCost = pro ? money(form.partsCost) : undefined;
+    const labourCost = pro ? money(form.labourCost) : undefined;
+    const parts = pro
+      ? form.parts
+          .split(/\n+/)
+          .map((l) => l.split("|").map((x) => x.trim().slice(0, 60)))
+          .filter(([n]) => n)
+          .slice(0, 20)
+          .map(([name, partNo]) => ({ name: name!, partNo: partNo ?? "" }))
+      : undefined;
     addService({
       vrm: vehicle.vrm,
       date: form.date,
@@ -170,20 +207,24 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       category: form.category,
       description: (lines[0] ?? "").slice(0, 80),
       items: lines.slice(1),
-      cost: Number.isFinite(cost) ? cost : undefined,
-      garage: form.garage.trim().slice(0, 80) || "Self-logged",
+      cost: partsCost != null || labourCost != null ? (partsCost ?? 0) + (labourCost ?? 0) : undefined,
+      partsCost,
+      labourCost,
+      parts: parts?.length ? parts : undefined,
+      fluids: pro ? form.fluids.trim().slice(0, 120) || undefined : undefined,
+      garage: form.garage.trim().slice(0, 80),
       verified: false,
-      image,
+      image: pro ? image : undefined,
     });
-    toast.success("Receipt added to your timeline");
-    setForm({ date: today(), mileage: "", category: "Servicing", description: "", cost: "", garage: "" });
+    toast.success("Record added to your timeline");
+    setForm(empty);
     setImage(undefined);
     onOpenChange(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" /> Snap Receipt
@@ -206,21 +247,44 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                 ))}
               </select>
             </Field>
-            <Field label="Cost (£)">
-              <input inputMode="decimal" placeholder="0.00" value={form.cost} onChange={set("cost")} className="field" />
+            <Field label="Garage Name">
+              <input required maxLength={80} value={form.garage} onChange={set("garage")} placeholder="Kwik Fit Leeds" className="field" />
             </Field>
           </div>
-          <Field label="Garage (optional)">
-            <input maxLength={80} value={form.garage} onChange={set("garage")} placeholder="e.g. Kwik Fit Leeds" className="field" />
-          </Field>
           <Field label="Work Description">
-            <textarea rows={3} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className="field" />
+            <textarea rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className="field" />
           </Field>
-          <Field label="Invoice / Receipt">
-            <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
-          </Field>
+
+          {pro ? (
+            <>
+              <Field label="OEM Part Numbers (name | part no.)">
+                <textarea rows={3} maxLength={1200} value={form.parts} onChange={set("parts")} placeholder={"Oil filter | Bosch F 026 407 183\nPollen filter | Febi Bilstein 26600"} className="field font-mono text-xs" />
+              </Field>
+              <Field label="Fluid Specs">
+                <input maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className="field" />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Parts (£)">
+                  <input inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className="field" />
+                </Field>
+                <Field label="Labour (£)">
+                  <input inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className="field" />
+                </Field>
+              </div>
+              <Field label="High-res Receipt">
+                <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
+              </Field>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <LockedField label="OEM part numbers & fluid specs" onClick={() => setUpsell(true)} />
+              <LockedField label="Parts vs labour cost (£)" onClick={() => setUpsell(true)} />
+              <LockedField label="Receipt photo upload" onClick={() => setUpsell(true)} />
+            </div>
+          )}
           <button type="submit" className="btn-primary w-full">Save to Timeline</button>
         </form>
+        <UpgradeDialog open={upsell} onOpenChange={setUpsell} />
       </DialogContent>
     </Dialog>
   );

@@ -75,6 +75,17 @@ export interface Vehicle {
   motExpiry: string;
 }
 
+// Mock DVLA MOT history (auto-synced in production)
+export const MOT_READINGS = [
+  { date: "2018-11-14", mileage: 48210, result: "Pass" },
+  { date: "2019-11-12", mileage: 56980, result: "Pass" },
+  { date: "2020-11-20", mileage: 62340, result: "Pass" },
+  { date: "2021-11-18", mileage: 69110, result: "Pass with advisories" },
+  { date: "2022-11-16", mileage: 75020, result: "Pass" },
+  { date: "2023-11-15", mileage: 80480, result: "Pass" },
+  { date: "2025-11-18", mileage: 86900, result: "Pass" },
+];
+
 export const SERVICE_CATEGORIES: ServiceCategory[] = ["Servicing", "Brakes", "Repairs", "Tyres"];
 export const MOD_CATEGORIES: ModCategory[] = ["Engine/ECU", "Exhaust", "Intake", "Suspension", "Brakes", "Visual"];
 
