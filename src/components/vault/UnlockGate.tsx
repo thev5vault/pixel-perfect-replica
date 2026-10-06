@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Fingerprint, KeyRound, LockKeyhole, Loader2, ScanFace, ShieldAlert } from "lucide-react";
+import { Fingerprint, KeyRound, LockKeyhole, Loader2, ScanFace, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { formatVrm, useVault } from "@/lib/vault-store";
@@ -45,14 +45,14 @@ function VerifyForm() {
   return (
     <form onSubmit={submit} className="w-full max-w-sm animate-vault-open space-y-6">
       <div className="text-center">
-        <V5VaultLogo className="mx-auto mb-3 h-20 w-20 drop-shadow-[0_0_15px_rgba(0,216,246,0.3)] animate-shield" />
+        <V5VaultLogo className="mx-auto mb-3 h-24 w-24 drop-shadow-[0_0_20px_rgba(0,216,246,0.3)]" />
         <h1 className="mt-4 text-3xl font-bold">V5Vault</h1>
         <p className="text-sm text-muted-foreground">UK Digital Vehicle Passport</p>
       </div>
 
       {notice && (
         <div className="flex gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
-          <ShieldAlert className="h-5 w-5 shrink-0 text-destructive" />
+          <TriangleAlert className="h-5 w-5 shrink-0 text-destructive" />
           <div className="flex-1">
             <p className="font-semibold">Ownership Unlinked</p>
             <p className="text-muted-foreground">{notice}</p>

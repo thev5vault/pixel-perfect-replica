@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { BadgeCheck, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { QRCodeSVG } from "qrcode.react";
 import { MOT_READINGS, can, fmtDate, fmtMiles, today, useVault, type Role } from "@/lib/vault-store";
 import { PageHeader, Pill, Plate, Thumb } from "@/components/vault/ui-bits";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
+import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/passport")({
@@ -116,10 +117,10 @@ function Certificate({ cert }: { cert: Cert }) {
           <header className="passport-section space-y-4 p-5">
             <div className="flex items-center justify-between gap-2 border-b border-slate-300 pb-3">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
-                <ShieldCheck className="h-4 w-4 text-cyan-800" /> V5Vault · UK Vehicle Records
+                <V5VaultLogo className="h-4 w-4" /> V5Vault · UK Vehicle Records
               </div>
               <Pill tone="success">
-                <ShieldCheck className="h-3 w-3" /> Verified document
+                <BadgeCheck className="h-3 w-3" /> Verified document
               </Pill>
             </div>
             <div className="flex items-center justify-between gap-2">

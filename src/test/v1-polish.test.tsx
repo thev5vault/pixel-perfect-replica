@@ -27,12 +27,12 @@ describe("V1 polish", () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
-  it("renders the cyan double-V shield mark", () => {
+  it("renders the uploaded official V5Vault logo image", () => {
     const { container } = render(<V5VaultLogo />);
-    const logo = container.querySelector("svg");
-    expect(logo).toHaveAttribute("viewBox", "0 0 100 100");
-    expect(logo?.querySelectorAll("path")).toHaveLength(2);
-    expect(logo?.querySelector("path")).toHaveAttribute("stroke", "#00D8F6");
+    const logo = screen.getByRole("img", { name: "V5Vault Logo" });
+    expect(logo).toHaveAttribute("src", "/logo.png");
+    expect(logo).toHaveClass("object-contain", "w-8", "h-8");
+    expect(container.querySelector("svg")).toBeNull();
   });
 
   it.each([

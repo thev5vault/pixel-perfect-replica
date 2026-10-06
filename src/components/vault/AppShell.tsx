@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, ShieldAlert, Terminal, Wrench } from "lucide-react";
+import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, Terminal, TriangleAlert, Wrench } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="app-viewport flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
       <header className="shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex justify-between items-center transform-gpu print:hidden">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
-          <div aria-hidden="true" className="h-10 w-10 shrink-0" />
+          <div aria-hidden="true" className="h-[52px] w-[52px] shrink-0" />
           <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
 
           <DropdownMenu>
@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-destructive" /> DVLA update detected
+              <TriangleAlert className="h-5 w-5 text-destructive" /> DVLA update detected
             </AlertDialogTitle>
             <AlertDialogDescription>
               A new V5C has been issued for this VIN. Your Vault Master PIN and biometrics will be wiped and this vehicle record locked.
@@ -147,11 +147,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Link
         to="/"
         onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })}
-        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/95 p-1.5 transition-all hover:border-cyan-500/50 hover:bg-slate-800 active:scale-95"
+        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-xl p-1 transition-opacity hover:opacity-80 active:scale-95"
         aria-label="V5Vault home — go to Vehicle overview"
         title="Go to Home / Vehicle Overview"
       >
-        <V5VaultLogo className="h-6 w-6 text-cyan-400" />
+        <V5VaultLogo className="h-9 w-9" />
       </Link>,
       document.body,
     )}

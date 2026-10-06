@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, Car, PoundSterling, ShieldCheck, Users, X } from "lucide-react";
+import { BadgeCheck, Car, PoundSterling, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatVrm, useVault } from "@/lib/vault-store";
 import { FeatureLock } from "@/components/vault/FeatureLock";
@@ -81,7 +81,7 @@ function AdminConsole() {
           setVrm("");
         }}
       >
-        <h2 className="flex items-center gap-2 font-bold"><ShieldCheck className="h-5 w-5 text-primary" /> VRM Override Tool</h2>
+        <h2 className="flex items-center gap-2 font-bold"><BadgeCheck className="h-5 w-5 text-primary" /> VRM Override Tool</h2>
         <Field label="Registration">
           <input value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field uppercase" />
         </Field>
