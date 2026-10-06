@@ -91,11 +91,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 justify-end items-center">
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-transform active:scale-95"
+              className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-slate-800/40 active:scale-95 transition-transform shrink-0"
               aria-label="Open Account Menu"
               title="Open Account Menu"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-cyan-400 bg-slate-800 text-xs font-bold text-cyan-400 shadow-md">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-cyan-400 bg-slate-800 text-[11px] font-bold text-cyan-400 shadow-sm">
                 JD
               </span>
             </DropdownMenuTrigger>
