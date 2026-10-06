@@ -6,7 +6,7 @@ const ONE_TAP = ["Oil & filter", "Air filter", "Pollen filter", "Spark plugs", "
 import { toast } from "sonner";
 import { can, formatVrm, today, useVault } from "@/lib/vault-store";
 import { FeatureLock } from "@/components/vault/FeatureLock";
-import { Field, ImagePicker, PageHeader } from "@/components/vault/ui-bits";
+import { Field, ImagePicker, PageHeader, scrollFocusedFieldIntoView } from "@/components/vault/ui-bits";
 
 export const Route = createFileRoute("/garage")({
   head: () => ({
@@ -105,10 +105,10 @@ function GaragePortal() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Customer VRM">
-            <input required value={f.vrm} onChange={(e) => setF((s) => ({ ...s, vrm: formatVrm(e.target.value).slice(0, 8) }))} placeholder="AB14 CDE" className="field font-plate uppercase tracking-wider" />
+            <input onFocus={scrollFocusedFieldIntoView} required value={f.vrm} onChange={(e) => setF((s) => ({ ...s, vrm: formatVrm(e.target.value).slice(0, 8) }))} placeholder="AB14 CDE" className="field font-plate uppercase tracking-wider" />
           </Field>
           <Field label="Odometer (mi)">
-            <input required inputMode="numeric" value={f.mileage} onChange={(e) => setF((s) => ({ ...s, mileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className="field" />
+            <input onFocus={scrollFocusedFieldIntoView} required inputMode="numeric" value={f.mileage} onChange={(e) => setF((s) => ({ ...s, mileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className="field" />
           </Field>
         </div>
         <div>
@@ -131,10 +131,10 @@ function GaragePortal() {
           </div>
         </div>
         <Field label="Additional Notes">
-          <textarea rows={3} maxLength={1000} value={f.work} onChange={(e) => setF((s) => ({ ...s, work: e.target.value }))} placeholder={"Interim service\nOil & filter\nWiper blades"} className="field" />
+          <textarea onFocus={scrollFocusedFieldIntoView} rows={3} maxLength={1000} value={f.work} onChange={(e) => setF((s) => ({ ...s, work: e.target.value }))} placeholder={"Interim service\nOil & filter\nWiper blades"} className="field" />
         </Field>
         <Field label="Workshop Name">
-          <input required maxLength={80} value={f.workshop} onChange={(e) => setF((s) => ({ ...s, workshop: e.target.value }))} placeholder="Apex Performance Ltd" className="field" />
+          <input onFocus={scrollFocusedFieldIntoView} required maxLength={80} value={f.workshop} onChange={(e) => setF((s) => ({ ...s, workshop: e.target.value }))} placeholder="Apex Performance Ltd" className="field" />
         </Field>
         <Field label="Invoice / Receipt">
           <ImagePicker value={image} onChange={setImage} label="Upload invoice" />

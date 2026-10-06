@@ -5,6 +5,7 @@ import { Route as PassportRoute } from "@/routes/passport";
 import { Route as HomeRoute } from "@/routes/index";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
+import { scrollFocusedFieldIntoView } from "@/components/vault/ui-bits";
 
 vi.mock("@/services/dvlaApi", () => ({ lookupVehicle: vi.fn(async () => ({
   vehicle: { vrm: "BUL200", make: "VW", model: "Golf", odometer: 100, v5cDate: "", motExpiry: "", motHistory: [], source: "demo" },
@@ -51,7 +52,7 @@ describe("V1 polish", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog.querySelector("header")).toHaveClass("sticky", "top-0");
-    expect(dialog.querySelector(".pb-28")).toHaveClass("overflow-y-auto");
+    expect(dialog.querySelector(".pb-48")).toHaveClass("overflow-y-auto");
     expect(screen.getByRole("button", { name: "Save to Timeline" }).closest("footer")).toHaveClass("sticky", "bottom-0");
     fireEvent.click(screen.getByRole("button", { name: "Date" }));
     const calendar = screen.getByRole("dialog", { name: "" });
@@ -79,5 +80,15 @@ describe("V1 polish", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("This view couldn’t be displayed");
     expect(screen.getByRole("button", { name: "Reload app" })).toBeInTheDocument();
     logged.mockRestore();
+  });
+
+  it("scrolls a focused modal field to the visible center above the mobile keyboard", () => {
+    const scrollIntoView = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1; });
+    render(<input aria-label="Active field" onFocus={scrollFocusedFieldIntoView} />);
+    const field = screen.getByRole("textbox", { name: "Active field" });
+    Object.defineProperty(field, "scrollIntoView", { value: scrollIntoView });
+    fireEvent.focus(field);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
   });
 });

@@ -4,7 +4,7 @@ import { History, Lock, Plus, RotateCcw, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MOD_CATEGORIES, can, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
-import { Field, ImagePicker, Pill, Thumb } from "@/components/vault/ui-bits";
+import { Field, ImagePicker, Pill, Thumb, scrollFocusedFieldIntoView } from "@/components/vault/ui-bits";
 import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
 
@@ -182,13 +182,13 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto pb-48">
         <DialogHeader>
           <DialogTitle>Add Modification</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <Field label="Part Name">
-            <input required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className="field" />
+            <input onFocus={scrollFocusedFieldIntoView} required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className="field" />
           </Field>
           <Field label="Category">
             <select value={f.category} onChange={set("category")} className="field">
@@ -208,7 +208,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           )}
           {(f.category === "Suspension" || f.category === "Exhaust") && (
             <Field label={f.category === "Suspension" ? "Suspension Specs" : "Exhaust Specs"}>
-              <input maxLength={200} value={f.specs} onChange={set("specs")} placeholder={f.category === "Suspension" ? "KW V3 coilovers · -35mm F/R · 16 clicks rebound" : "Milltek 3\" downpipe-back · non-resonated"} className="field" />
+              <input onFocus={scrollFocusedFieldIntoView} maxLength={200} value={f.specs} onChange={set("specs")} placeholder={f.category === "Suspension" ? "KW V3 coilovers · -35mm F/R · 16 clicks rebound" : "Milltek 3\" downpipe-back · non-resonated"} className="field" />
             </Field>
           )}
           <div className="grid grid-cols-2 gap-3">
@@ -216,20 +216,20 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
               <input type="date" required max={today()} value={f.installDate} onChange={set("installDate")} className="field" />
             </Field>
             <Field label="Install Mileage">
-              <input inputMode="numeric" required value={f.installMileage} onChange={(e) => setF((s) => ({ ...s, installMileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className="field" />
+              <input onFocus={scrollFocusedFieldIntoView} inputMode="numeric" required value={f.installMileage} onChange={(e) => setF((s) => ({ ...s, installMileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className="field" />
             </Field>
           </div>
           <Field label="Horsepower / Torque Gains">
-            <input maxLength={60} value={f.gains} onChange={set("gains")} placeholder="+50 bhp / +80 Nm" className="field" />
+            <input onFocus={scrollFocusedFieldIntoView} maxLength={60} value={f.gains} onChange={set("gains")} placeholder="+50 bhp / +80 Nm" className="field" />
           </Field>
           <Field label="Specialist Tags (comma separated)">
-            <input maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className="field" />
+            <input onFocus={scrollFocusedFieldIntoView} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className="field" />
           </Field>
           <Field label="Dyno Curve Printout">
             <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
           </Field>
           <Field label="Detailed Notes">
-            <textarea rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className="field" />
+            <textarea onFocus={scrollFocusedFieldIntoView} rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className="field" />
           </Field>
           <button type="submit" className="btn-primary mb-8 w-full">Add to Active Build</button>
         </form>

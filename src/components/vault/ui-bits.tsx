@@ -1,8 +1,15 @@
-import { useState, type ReactNode } from "react";
+import { useState, type FocusEvent, type ReactNode } from "react";
 import { BadgeCheck, ImagePlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
+
+export function scrollFocusedFieldIntoView(event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  const field = event.currentTarget;
+  requestAnimationFrame(() => {
+    if (field.isConnected) field.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  });
+}
 
 export function ShieldLogo({ className }: { className?: string }) {
   return (
