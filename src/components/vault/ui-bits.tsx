@@ -4,15 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
-export function ShieldLogo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 36" className={cn("text-primary", className)} aria-hidden>
-      <path d="M16 1 3 6v10c0 9 5.6 15.6 13 19 7.4-3.4 13-10 13-19V6L16 1Z" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9.5 12.5 16 25l6.5-12.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
   const s = { sm: "text-xs", md: "text-base", lg: "text-2xl" }[size];
   return (

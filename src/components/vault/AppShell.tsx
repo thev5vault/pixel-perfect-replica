@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, ShieldAlert, Terminal, Wrench } from "lucide-react";
 import {
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ROLES, ROLE_LABELS, can, formatVrm, useVault, type Role } from "@/lib/vault-store";
-import { ShieldLogo } from "./ui-bits";
+import { V5VaultLogo } from "./V5VaultLogo";
 import { UnlockGate } from "./UnlockGate";
 import { VehicleLookupDialog } from "./VehicleLookupDialog";
 
@@ -44,13 +45,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tabs = can.admin(role) ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
+    <>
     <div className="app-viewport flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
       <header className="shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex justify-between items-center transform-gpu print:hidden">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
-          <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
-            <ShieldLogo className="h-7 w-7" />
-            <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
-          </Link>
+          <div aria-hidden="true" className="h-10 w-10 shrink-0" />
+          <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold">
@@ -143,5 +143,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    {typeof document !== "undefined" && createPortal(
+      <Link
+        to="/"
+        onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })}
+        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[60] flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/95 p-1.5 transition-all hover:border-cyan-500/50 hover:bg-slate-800 active:scale-95"
+        aria-label="V5Vault home — go to Vehicle overview"
+        title="Go to Home / Vehicle Overview"
+      >
+        <V5VaultLogo className="h-6 w-6 text-cyan-400" />
+      </Link>,
+      document.body,
+    )}
+    </>
   );
 }

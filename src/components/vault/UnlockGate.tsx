@@ -3,7 +3,7 @@ import { Fingerprint, KeyRound, LockKeyhole, Loader2, ScanFace, ShieldAlert } fr
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { formatVrm, useVault } from "@/lib/vault-store";
-import { ShieldLogo } from "./ui-bits";
+import { V5VaultLogo } from "./V5VaultLogo";
 
 const formatRef = (v: string) => {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -45,7 +45,7 @@ function VerifyForm() {
   return (
     <form onSubmit={submit} className="w-full max-w-sm animate-vault-open space-y-6">
       <div className="text-center">
-        <ShieldLogo className="mx-auto h-16 w-16 animate-shield" />
+        <V5VaultLogo className="mx-auto mb-3 h-20 w-20 drop-shadow-[0_0_15px_rgba(0,216,246,0.3)] animate-shield" />
         <h1 className="mt-4 text-3xl font-bold">V5Vault</h1>
         <p className="text-sm text-muted-foreground">UK Digital Vehicle Passport</p>
       </div>

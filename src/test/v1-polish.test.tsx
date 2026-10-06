@@ -7,6 +7,7 @@ import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
 import { Route as VaultRoute } from "@/routes/vault";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
+import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 
 vi.mock("@/services/dvlaApi", () => ({ lookupVehicle: vi.fn(async () => ({
   vehicle: { vrm: "BUL200", make: "VW", model: "Golf", odometer: 100, v5cDate: "", motExpiry: "", motHistory: [], source: "demo" },
@@ -25,6 +26,14 @@ const Vault = VaultRoute.options.component!;
 describe("V1 polish", () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it("renders the cyan double-V shield mark", () => {
+    const { container } = render(<V5VaultLogo />);
+    const logo = container.querySelector("svg");
+    expect(logo).toHaveAttribute("viewBox", "0 0 100 100");
+    expect(logo?.querySelectorAll("path")).toHaveLength(2);
+    expect(logo?.querySelector("path")).toHaveAttribute("stroke", "#00D8F6");
+  });
 
   it.each([
     ["Owner", "Standard Passport", false, false],

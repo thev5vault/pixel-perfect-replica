@@ -1,0 +1,38 @@
+Replace all instances of the old V5Vault shield logo with the new cyan double-V shield icon across the splash screen and header:
+
+1. CREATE / UPDATE LOGO COMPONENT (`V5VaultLogo.jsx`):
+   - Create or update the primary logo component to render the new cyan shield design (electric cyan geometric shield outline with the double-stroke 'V' inside on dark slate background):
+     ```jsx
+     export function V5VaultLogo({ className = "w-8 h-8" }) {
+       return (
+         <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+           <!-- Outer Cyan Shield -->
+           <path d="M50 10 L85 25 V60 C85 75 50 90 50 90 C50 90 15 75 15 60 V25 L50 10 Z" 
+                 stroke="#00D8F6" strokeWidth="6" strokeLinejoin="round" fill="none" />
+           <!-- Inner Double Chevron V -->
+           <path d="M32 38 L50 68 L68 38 M38 38 L50 58 L62 38" 
+                 stroke="#00D8F6" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+         </svg>
+       );
+     }
+     ```
+   - (Alternatively, if using the uploaded image file, save it as `public/v5vault-logo.png` and render `<img src="/v5vault-logo.png" className="..." alt="V5Vault Logo" />`).
+
+2. UPDATE LOGIN / V5C VERIFICATION SPLASH SCREEN:
+   - In `AuthScreen.jsx` / `V5CVerificationScreen.jsx`, replace the existing top shield icon with the new `V5VaultLogo` component.
+   - Style it centered above the "V5Vault" title with clean glow/contrast: `w-20 h-20 mx-auto mb-3 drop-shadow-[0_0_15px_rgba(0,216,246,0.3)]`.
+
+3. UPDATE TOP-LEFT MAIN APP HEADER LOGO & HOME NAVIGATION:
+   - In `Header.jsx` / main top navigation bar:
+     * Replace the old top-left shield icon button with the new `V5VaultLogo` (`w-8 h-8`).
+     * Wrap it in a clickable button or link:
+       ```jsx
+       <button 
+         onClick={() => setCurrentTab('vehicle')} 
+         className="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800 transition-all flex items-center justify-center active:scale-95"
+         title="Go to Home / Vehicle Overview"
+       >
+         <V5VaultLogo className="w-6 h-6 text-cyan-400"/>
+       </button>
+       ```
+     * Confirm that tapping this top-left logo smoothly resets the view back to the main "Vehicle" overview page from any tab or modal.
