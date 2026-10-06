@@ -36,8 +36,9 @@ function monthsBetween(a: Date, b: Date) {
 }
 
 function Dashboard() {
-  const { vehicle, services } = useVault();
+  const { vehicle, services, role } = useVault();
   const [open, setOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const history = useMemo(
     () => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)),
@@ -102,7 +103,7 @@ function Dashboard() {
         />
       </section>
 
-      <button onClick={() => setOpen(true)} className="btn-primary w-full py-4 text-base">
+      <button onClick={() => (can.diy(role) ? setOpen(true) : setUpgradeOpen(true))} className="btn-primary w-full py-4 text-base">
         <Plus className="h-5 w-5" /> Snap Receipt
       </button>
 
@@ -131,7 +132,13 @@ function Dashboard() {
         </ul>
       </section>
 
-      <SnapReceiptDialog open={open} onOpenChange={setOpen} />
+      <SnapReceiptDialog open={open && can.diy(role)} onOpenChange={setOpen} />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        description="Upgrade to Pro DIY (£0.99/mo) to upload receipts."
+        perks={["Upload and keep high-resolution receipt photos"]}
+      />
     </div>
   );
 }

@@ -8,12 +8,14 @@ export function UpgradeDialog({
   tier = "Pro DIY",
   price = "£0.99/mo",
   perks = ["OEM part numbers (Bosch, Febi Bilstein…)", "Fluid specs", "Parts vs labour cost breakdown", "High-res receipt attachments"],
+  description,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   tier?: string;
   price?: string;
   perks?: string[];
+  description?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -22,7 +24,7 @@ export function UpgradeDialog({
           <DialogTitle className="flex items-center gap-2">
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}
           </DialogTitle>
-          <DialogDescription>Ad-free, {price}. Cancel anytime.</DialogDescription>
+          <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
         </DialogHeader>
         <ul className="space-y-2 text-sm">
           {perks.map((p) => (

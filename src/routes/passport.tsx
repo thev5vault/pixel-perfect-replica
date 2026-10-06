@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { QRCodeSVG } from "qrcode.react";
 import { MOT_READINGS, can, fmtDate, fmtMiles, today, useVault, type Role } from "@/lib/vault-store";
 import { PageHeader, Pill, Plate, Thumb } from "@/components/vault/ui-bits";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
@@ -108,73 +109,86 @@ function Certificate({ cert }: { cert: Cert }) {
   );
 
   return (
-    <div className="animate-vault-open space-y-5">
-      <section className="vault-card space-y-4 p-5 glow">
-        <div className="flex items-center justify-between gap-2">
-          <Plate vrm={vehicle.vrm} />
-          <Pill tone="success">
-            <ShieldCheck className="h-3 w-3" /> Tamper-proof
-          </Pill>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
-          <h2 className="text-xl font-bold">
-            {vehicle.make} {vehicle.model}
-          </h2>
-          <p className="text-xs text-muted-foreground">Certificate {reportId} · issued {fmtDate(today())}</p>
-        </div>
-        <div className="flex gap-2 print:hidden">
-          <code className="field truncate text-xs">{link}</code>
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(link);
-              toast.success("Share link copied");
-            }}
-            className="btn-ghost shrink-0"
-            aria-label="Copy share link"
-          >
-            <Copy className="h-4 w-4" />
-          </button>
-        </div>
-        <button onClick={() => window.print()} className="btn-primary w-full print:hidden">
-          <Download className="h-4 w-4" /> Download PDF
-        </button>
-      </section>
+    <div className="animate-vault-open">
+      <div className="passport-document">
+        <div className="relative z-10 space-y-5">
+          <header className="passport-section space-y-4 p-5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-300 pb-3">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
+                <ShieldCheck className="h-4 w-4 text-cyan-800" /> V5Vault · UK Vehicle Records
+              </div>
+              <Pill tone="success">
+                <ShieldCheck className="h-3 w-3" /> Verified document
+              </Pill>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <Plate vrm={vehicle.vrm} />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
+                <h2 className="text-xl font-bold">
+                  {vehicle.make} {vehicle.model}
+                </h2>
+                <p className="text-xs text-muted-foreground">Certificate {reportId} · issued {fmtDate(today())}</p>
+              </div>
+              <aside className="shrink-0 rounded-md border-2 border-slate-950 bg-white p-2 text-center text-slate-950">
+                <QRCodeSVG value={link} size={90} level="H" includeMargin />
+                <p className="max-w-[96px] text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p>
+              </aside>
+            </div>
+            <div className="flex gap-2 print:hidden">
+              <code className="field truncate text-xs">{link}</code>
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(link);
+                  toast.success("Share link copied");
+                }}
+                className="btn-ghost shrink-0"
+                aria-label="Copy share link"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+            <button onClick={() => window.print()} className="btn-primary w-full print:hidden">
+              <Download className="h-4 w-4" /> Download PDF
+            </button>
+          </header>
 
       {cert === "standard" && (
         <>
-          <section className="vault-card p-4">
+          <section className="passport-section p-4">
             <h3 className="mb-1 font-bold">DVLA Mileage Progression</h3>
             <p className="mb-3 text-xs text-muted-foreground">MOT readings and logged records — no rollbacks detected.</p>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chart} margin={{ left: -10, right: 8, top: 5 }}>
-                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={(t) => new Date(t).getFullYear().toString()} stroke="var(--color-muted-foreground)" fontSize={11} />
-                  <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} stroke="var(--color-muted-foreground)" fontSize={11} domain={["dataMin - 3000", "dataMax + 2000"]} />
+                  <CartesianGrid stroke="#cbd5e1" vertical={false} />
+                  <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={(t) => new Date(t).getFullYear().toString()} stroke="#475569" fontSize={11} />
+                  <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} stroke="#475569" fontSize={11} domain={["dataMin - 3000", "dataMax + 2000"]} />
                   <Tooltip
-                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }}
+                    contentStyle={{ background: "#fff", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 12 }}
                     labelFormatter={(t) => new Date(t as number).toLocaleDateString("en-GB")}
                     formatter={(v: number, _n, p) => [fmtMiles(v), (p.payload as { src: string }).src]}
                   />
-                  <Line type="monotone" dataKey="mileage" stroke="var(--color-primary)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--color-primary)" }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="mileage" stroke="#0e7490" strokeWidth={2.5} dot={{ r: 3, fill: "#0e7490" }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </section>
           <Table
-            title="Service Dates"
-            rows={history.map((s) => [fmtDate(s.date), s.garage, fmtMiles(s.mileage)])}
+            title="Service History"
+            rows={history.map((s) => [fmtDate(s.date), s.description, `${s.garage} · ${fmtMiles(s.mileage)}`])}
             empty="No service records."
           />
-          <Table title="Official MOT Log" rows={[...MOT_READINGS].reverse().map((m) => [fmtDate(m.date), m.result, fmtMiles(m.mileage)])} empty="" />
+          <Table title="Official MOT & Mileage Log" rows={[...MOT_READINGS].reverse().map((m) => [fmtDate(m.date), m.result, fmtMiles(m.mileage)])} empty="" />
           <RedactionPreview vrm={vehicle.vrm} />
         </>
       )}
 
       {cert === "oem" && (
         <>
-          <section className="vault-card grid grid-cols-3 gap-2 p-4 text-center">
+          <section className="passport-section grid grid-cols-3 gap-2 p-4 text-center">
             {[
               ["Total Spend", total],
               ["Parts", partsTotal],
@@ -187,7 +201,7 @@ function Certificate({ cert }: { cert: Cert }) {
             ))}
           </section>
           {history.map((s) => (
-            <section key={s.id} className="vault-card p-4">
+            <section key={s.id} className="passport-section p-4">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">
@@ -198,15 +212,26 @@ function Certificate({ cert }: { cert: Cert }) {
                 </div>
                 {s.image && <Thumb src={s.image} alt={`${s.description} receipt`} />}
               </div>
-              <ul className="mt-2 space-y-1 border-t pt-2 text-sm">
-                {(s.parts ?? []).map((p, i) => (
-                  <li key={i} className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">{p.name}</span>
-                    <span className="font-mono text-xs text-primary">{p.partNo || "—"}</span>
-                  </li>
-                ))}
-                {!s.parts?.length && <li className="text-xs text-muted-foreground">No part numbers logged.</li>}
-              </ul>
+              <div className="mt-3">
+                <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts fitted</h4>
+                <table className="passport-table">
+                  <thead><tr><th>Part</th><th>Manufacturer reference</th></tr></thead>
+                  <tbody>
+                    {(s.parts ?? []).map((p, i) => (
+                      <tr key={i}><td>{p.name}</td><td className="font-mono">{p.partNo || "—"}</td></tr>
+                    ))}
+                    {!s.parts?.length && <tr><td colSpan={2} className="text-slate-500">No part numbers logged.</td></tr>}
+                  </tbody>
+                </table>
+                <table className="passport-table mt-3">
+                  <thead><tr><th>Cost item</th><th className="text-right">Amount</th></tr></thead>
+                  <tbody>
+                    <tr><td>Parts</td><td className="text-right">£{(s.partsCost ?? 0).toFixed(2)}</td></tr>
+                    <tr><td>Labour</td><td className="text-right">£{(s.labourCost ?? 0).toFixed(2)}</td></tr>
+                    <tr className="font-bold"><td>Total</td><td className="text-right">£{(s.cost ?? 0).toFixed(2)}</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
           ))}
         </>
@@ -218,7 +243,7 @@ function Certificate({ cert }: { cert: Cert }) {
             <h3 className="mb-3 font-bold">Active Build Spec</h3>
             <div className="space-y-3">
               {active.map((m) => (
-                <div key={m.id} className="vault-card p-4">
+                <div key={m.id} className="passport-section p-4">
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap gap-1.5">
@@ -265,26 +290,31 @@ function Certificate({ cert }: { cert: Cert }) {
           />
         </>
       )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function Table({ title, rows, empty }: { title: string; rows: string[][]; empty: string }) {
   return (
-    <section className="vault-card p-4">
+    <section className="passport-section p-4">
       <h3 className="mb-2 font-bold">{title}</h3>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <ul className="divide-y text-sm">
-          {rows.map((r, i) => (
-            <li key={i} className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 py-2">
-              <span>{r[0]}</span>
-              <span className="truncate text-muted-foreground">{r[1]}</span>
-              <span className="text-right text-xs text-muted-foreground">{r[2]}</span>
-            </li>
-          ))}
-        </ul>
+        <table className="passport-table">
+          <thead><tr><th>Date / item</th><th>Record</th><th>Details</th></tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i}>
+                <td>{r[0]}</td>
+                <td>{r[1]}</td>
+                <td className="text-right">{r[2]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </section>
   );
@@ -301,7 +331,7 @@ function Redact({ children, delay }: { children: string; delay: number }) {
 
 function RedactionPreview({ vrm }: { vrm: string }) {
   return (
-    <section className="vault-card p-4">
+    <section className="passport-section p-4">
       <h3 className="flex items-center gap-2 font-bold">
         <EyeOff className="h-4 w-4 text-primary" /> Automatic PII Redaction
       </h3>

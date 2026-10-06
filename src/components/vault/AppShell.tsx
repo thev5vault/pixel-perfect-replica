@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col justify-between overflow-x-clip bg-background animate-vault-open">
-      <header className="sticky top-0 flex-none z-40 border-b bg-background/85 backdrop-blur-lg">
+      <header className="sticky top-0 flex-none z-40 border-b bg-background/85 backdrop-blur-lg print:hidden">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
             <ShieldLogo className="h-7 w-7" />
@@ -99,16 +99,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-32">{children}</main>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">{children}</main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 px-4 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md">
-        <div className="mx-auto grid max-w-2xl" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+      <nav className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] inset-x-4 max-w-lg mx-auto z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl px-2 py-2 flex justify-around items-center print:hidden">
+        <div className="flex w-full justify-around">
           {tabs.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: true }}
-              className="group flex flex-col items-center gap-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
+              className="group flex flex-col items-center gap-1 px-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:text-primary"
             >
               <Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />
               {label}
