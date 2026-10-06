@@ -31,7 +31,13 @@ const TABS = [
 ] as const;
 const ADMIN_TAB = { to: "/admin", label: "Admin", icon: Terminal } as const;
 
-const ROLE_BADGE: Record<Role, string> = { Owner: "Free", DIY: "DIY", Pro: "Pro", Garage: "Garage", superadmin: "Dev" };
+const ROLE_MENU_DESCRIPTION: Record<Role, string> = {
+  Owner: "Free Account",
+  DIY: "Pro DIY",
+  Pro: "Pro Modder",
+  Garage: "Verified Garage Account",
+  superadmin: "Dev SuperAdmin",
+};
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock, pin, simulateTransfer } = useVault();
@@ -61,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 justify-center items-center">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex max-w-[min(calc(100vw-8rem),24rem)] min-w-0 items-center justify-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold">
+            <DropdownMenuTrigger className="flex max-w-[min(calc(100vw-8rem),24rem)] min-w-0 items-center justify-center gap-1.5 rounded-full border border-slate-700/60 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-800">
               <span className="min-w-0 truncate">
                 {vehicle.make} {vehicle.model.split(" ")[0]} – {formatVrm(vehicle.vrm)}
               </span>
@@ -85,20 +91,22 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 justify-end items-center">
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-end gap-1.5 rounded-xl hover:bg-slate-800/50 active:scale-95 transition-all"
-              aria-label="User Profile & Role Menu"
-              title="User Profile & Role Menu"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-0 transition-transform active:scale-95"
+              aria-label="Open Account Menu"
+              title="Open Account Menu"
             >
-              <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-500/40 bg-slate-800 text-xs font-semibold text-cyan-400 shadow-sm">
-                  JD
-                </span>
-                <span className="absolute bottom-0 left-1/2 translate-x-[-50%] translate-y-1/2 whitespace-nowrap rounded-md border border-cyan-500/30 bg-cyan-950/80 px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-cyan-400 uppercase">
-                  {ROLE_BADGE[role]}
-                </span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-cyan-400 bg-slate-800 text-xs font-bold text-cyan-400 shadow-md">
+                JD
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="flex flex-col items-start gap-1 pb-2">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Account role</span>
+                <span className="w-fit rounded-md border border-cyan-500/30 bg-cyan-950/80 px-2 py-1 font-mono text-xs tracking-wide text-cyan-400">
+                  {ROLE_MENU_DESCRIPTION[role]}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
               {ROLES.map((r) => (
                 <DropdownMenuItem key={r} onClick={() => setRole(r)}>
