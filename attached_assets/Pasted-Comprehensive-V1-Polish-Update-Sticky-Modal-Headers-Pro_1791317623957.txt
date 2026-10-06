@@ -1,0 +1,37 @@
+Comprehensive V1 Polish Update: Sticky Modal Headers, Progressive Certificate Tier Stacking, UI Overlays, Scroll Clearance & DVLA API Scaffolding
+
+1. STICKY MODAL HEADERS & PINNED CLOSE BUTTON ('X'):
+   - In all modal popups (`SnapReceiptModal`, `UpgradeModal`, `VehicleLookupModal`), make the modal header bar sticky:
+     `header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md px-4 py-3 border-b border-slate-800 flex justify-between items-center"`
+   - Ensure the 'X' close button remains pinned at the top-right of the screen while scrolling through long forms so users don't have to scroll back up to close.
+
+2. CALENDAR DATE PICKER TEXT COLLISION FIX:
+   - Fix z-index and background opacity on the Date Picker popover inside `SnapReceiptModal`:
+     `div class="absolute top-full left-0 mt-1 z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 w-full"`
+   - Ensure the date calendar grid hides underlying form text boxes cleanly without visual overlap.
+
+3. PROGRESSIVE CUMULATIVE CERTIFICATES (TIER STACKING):
+   - Refactor `ExportPassport.jsx` so certificates evolve additively:
+     * Standard Passport (Free): DVLA Mileage Progression Graph + Official MOT History Table + High-level Service Dates.
+     * OEM Provenance Certificate (Pro DIY): Renders EVERYTHING in Standard Passport + Itemized OEM Part Numbers Table + Receipt Thumbnails + Parts vs. Labor Spend Analytics (£).
+     * Master Build Sheet (Pro Modder): Renders EVERYTHING in Standard Passport AND Pro DIY + Active Build ECU/Stage Specs + Dyno Printout Graph + Specialist Stamps + Reverted Mods Log.
+
+4. MODAL & PAGE SCROLL CLEARANCE:
+   - On the main scrollable `<main>` container across all views, ensure `pb-44` bottom padding is applied.
+   - Render a bottom spacer at the end of every main tab view: `<div className="h-24 w-full shrink-0" />`.
+   - Inside `SnapReceiptModal`, add `pb-28` scroll padding so the "Take photo or upload" box sits comfortably above the "Save to Timeline" sticky footer.
+
+5. VEHICLE ONBOARDING & LOOKUP STATE:
+   - Add an "Add Vehicle" modal/screen accessible from the vehicle header dropdown.
+   - Include a prominent UK License Plate input box (Yellow background `#FACC15`, bold registration font).
+   - When a user enters a plate (e.g. `BUL 200` or `AB14 CDE`) and taps "Lookup Vehicle", fetch data or attach sample vehicle data to their profile.
+
+6. PRINT-TO-PDF CLEANUP FOR EXPORT PASSPORTS:
+   - Add `@media print` styles to the Export Passport component to hide top headers, floating bottom navbar, role switcher dropdown, and action buttons during browser printing, leaving only the official certificate layout on the printed page/PDF.
+
+7. DVLA & GOV.UK API ENDPOINT UTILITY:
+   - Create `src/services/dvlaApi.js` to handle queries to the GOV.UK MOT History API and DVLA VES API.
+   - Automatically parse make, model, year, fuel type, MOT pass/fail status, mileage history, and advisories into the app timeline state.
+
+8. REPLIT ERROR BOUNDARY & SERVER STABILITY:
+   - Wrap state role switching and modal transitions in a React Error Boundary container to prevent unhandled state re-renders from crashing the Replit development proxy with 500 errors.
