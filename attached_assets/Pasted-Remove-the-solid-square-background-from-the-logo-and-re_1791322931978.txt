@@ -1,0 +1,52 @@
+Remove the solid square background from the logo and render the pure cyan shield icon with a 100% transparent background:
+
+1. REFACTOR LOGO COMPONENT TO TRANSPARENT VECTOR SVG (`V5VaultLogo.jsx`):
+   - Replace the image import in `V5VaultLogo.jsx` with an exact vector inline SVG so only the cyan shield outline and inner double-V render without any background box:
+     ```jsx
+     export function V5VaultLogo({ className = "w-8 h-8" }) {
+       return (
+         <svg 
+           className={`object-contain ${className}`} 
+           viewBox="0 0 100 100" 
+           fill="none" 
+           xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+         >
+           {/* Outer Cyan Shield Outline */}
+           <path 
+             d="M 50 10 L 86 24 V 58 C 86 74 50 90 50 90 C 50 90 14 74 14 58 V 24 L 50 10 Z" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             fill="none" 
+           />
+           {/* Outer V Chevron */}
+           <path 
+             d="M 33 36 L 50 68 L 67 36" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             fill="none" 
+           />
+           {/* Inner V Chevron */}
+           <path 
+             d="M 40 36 L 50 54 L 60 36" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             fill="none" 
+           />
+         </svg>
+       );
+     }
+     ```
+
+2. CSS FAILSAFE FOR IMAGE LOGOS (IF PNG STILL USED):
+   - If any `<img>` tag referencing `/logo.png` is rendered anywhere in the app, add the utility class `mix-blend-screen` (or `style={{ mixBlendMode: 'screen' }}`).
+   - This automatically screens out black/dark square backgrounds against the app's dark navy background layer.
+
+3. UPDATE HEADER & SPLASH CONTAINERS:
+   - In `Header.jsx`, remove any square container background or heavy border wrappers surrounding the top-left logo button so the cyan shield floats cleanly on the dark navigation bar.
+   - On the V5C Verification splash screen (`AuthScreen.jsx`), display `<V5VaultLogo className="w-20 h-20 mx-auto mb-2 drop-shadow-[0_0_18px_rgba(0,216,246,0.4)]" />`.
