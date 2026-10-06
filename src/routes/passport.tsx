@@ -64,7 +64,7 @@ function PassportPage() {
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2 font-bold">
                   {c.title}
-                  <Pill tone={ok ? "primary" : "default"}>{c.tier}</Pill>
+                  <Pill tone={ok ? "primary" : "muted"}>{c.tier}</Pill>
                 </span>
                 <span className="mt-1 block text-xs text-muted-foreground">{c.includes}</span>
               </span>
