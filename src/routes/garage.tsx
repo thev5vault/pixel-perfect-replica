@@ -25,9 +25,21 @@ export const Route = createFileRoute("/garage")({
 function GaragePage() {
   const { role } = useVault();
 
-  if (!can.garage(role)) return <FeatureLock feature="garage" />;
+  if (!can.garage(role)) {
+    return (
+      <div>
+        <FeatureLock feature="garage" />
+        <div className="h-24 w-full shrink-0" aria-hidden="true" />
+      </div>
+    );
+  }
 
-  return <GaragePortal />;
+  return (
+    <div>
+      <GaragePortal />
+      <div className="h-24 w-full shrink-0" aria-hidden="true" />
+    </div>
+  );
 }
 
 function GaragePortal() {
@@ -127,7 +139,7 @@ function GaragePortal() {
         <Field label="Invoice / Receipt">
           <ImagePicker value={image} onChange={setImage} label="Upload invoice" />
         </Field>
-        <button type="submit" className="btn-primary w-full py-4">
+        <button type="submit" className="btn-primary mb-8 w-full py-4">
           <Upload className="h-5 w-5" /> Upload Service Record
         </button>
       </form>

@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">{children}</main>
+      <main className="mx-auto w-full max-w-2xl min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-44">{children}</main>
 
       <nav className="fixed bottom-4 inset-x-3 max-w-md mx-auto z-50 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2 py-2 flex justify-between items-center transform-gpu print:hidden">
         <div className="flex w-full justify-between">

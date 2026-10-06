@@ -25,9 +25,12 @@ export const Route = createFileRoute("/vault")({
 function VaultPage() {
   const { role } = useVault();
 
-  if (!can.vault(role)) return <FeatureLock feature="vault" />;
-
-  return <ProVault />;
+  return (
+    <div>
+      {!can.vault(role) ? <FeatureLock feature="vault" /> : <ProVault />}
+      <div className="h-24 w-full shrink-0" aria-hidden="true" />
+    </div>
+  );
 }
 
 function ProVault() {
@@ -228,7 +231,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <Field label="Detailed Notes">
             <textarea rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className="field" />
           </Field>
-          <button type="submit" className="btn-primary w-full">Add to Active Build</button>
+          <button type="submit" className="btn-primary mb-8 w-full">Add to Active Build</button>
         </form>
       </DialogContent>
     </Dialog>
@@ -269,7 +272,7 @@ function RevertDialog({ mod, onClose }: { mod: Modification | null; onClose: () 
               <input inputMode="numeric" required value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g, ""))} placeholder="87,420" className="field" />
             </Field>
           </div>
-          <button type="submit" className="btn-primary w-full">
+          <button type="submit" className="btn-primary mb-8 w-full">
             <RotateCcw className="h-4 w-4" /> Confirm Revert
           </button>
         </form>

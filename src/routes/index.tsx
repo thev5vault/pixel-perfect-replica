@@ -139,6 +139,7 @@ function Dashboard() {
         description="Upgrade to Pro DIY (£0.99/mo) to upload receipts."
         perks={["Upload and keep high-resolution receipt photos"]}
       />
+      <div className="h-24 w-full shrink-0" aria-hidden="true" />
     </div>
   );
 }
@@ -289,7 +290,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <LockedField label="Receipt photo upload" onClick={() => setUpsell(true)} />
             </div>
           )}
-          <button type="submit" className="btn-primary w-full">Save to Timeline</button>
+          <button type="submit" className="btn-primary mb-8 w-full">Save to Timeline</button>
         </form>
         <UpgradeDialog open={upsell} onOpenChange={setUpsell} />
       </DialogContent>
