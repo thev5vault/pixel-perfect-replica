@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Car, ChevronDown, FileBadge, Lock, LogOut, RefreshCcw, Terminal, TriangleAlert, Wrench } from "lucide-react";
 import {
@@ -47,14 +46,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
     <div className="app-viewport flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
-      <header className="h-14 shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 flex items-center justify-between gap-3 transform-gpu print:hidden">
-        <div className="mx-auto flex h-full w-full max-w-2xl items-center gap-3">
-          <div aria-hidden="true" className="h-12 w-12 shrink-0" />
-          <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
+      <header className="w-full h-14 px-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 print:hidden">
+        <div className="flex min-w-0 justify-start items-center">
+          <Link
+            to="/"
+            onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })}
+            className="shrink-0 p-1 hover:opacity-80 transition-opacity active:scale-95 flex items-center justify-center bg-transparent border-0"
+            aria-label="V5Vault home — go to Vehicle overview"
+            title="Return to Home Overview"
+          >
+            <V5VaultLogo className="h-10 w-10 text-cyan-400 drop-shadow-[0_0_10px_rgba(0,216,246,0.3)]" />
+          </Link>
+        </div>
 
+        <div className="flex min-w-0 justify-center items-center">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold">
-              <span className="truncate">
+            <DropdownMenuTrigger className="flex max-w-[min(calc(100vw-8rem),24rem)] min-w-0 items-center justify-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold">
+              <span className="min-w-0 truncate">
                 {vehicle.make} {vehicle.model.split(" ")[0]} – {formatVrm(vehicle.vrm)}
               </span>
               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -72,9 +80,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
 
+        <div className="flex min-w-0 justify-end items-center">
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative" aria-label="Profile">
+            <DropdownMenuTrigger className="relative shrink-0" aria-label="Profile">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 font-display text-sm font-bold text-primary ring-2 ring-primary/40">
                 JD
               </span>
@@ -143,18 +153,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-    {typeof document !== "undefined" && createPortal(
-      <Link
-        to="/"
-        onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })}
-        className="fixed left-4 top-[calc(env(safe-area-inset-top)+0.25rem)] z-[60] flex shrink-0 items-center justify-center border-0 bg-transparent p-1 transition-opacity hover:opacity-80 active:scale-95"
-        aria-label="V5Vault home — go to Vehicle overview"
-        title="Return to Home Overview"
-      >
-        <V5VaultLogo className="h-10 w-10 text-cyan-400 drop-shadow-[0_0_10px_rgba(0,216,246,0.3)]" />
-      </Link>,
-      document.body,
-    )}
     </>
   );
 }
