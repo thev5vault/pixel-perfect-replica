@@ -73,10 +73,23 @@ export interface Vehicle {
   odometer: number;
   v5cDate: string;
   motExpiry: string;
+  year?: number;
+  fuelType?: string;
+  colour?: string;
+  motStatus?: string;
+  motHistory?: MotReading[];
+  source?: "demo" | "official";
+}
+
+export interface MotReading {
+  date: string;
+  mileage?: number;
+  result: string;
+  advisories?: string[];
 }
 
 // Mock DVLA MOT history (auto-synced in production)
-export const MOT_READINGS = [
+export const MOT_READINGS: MotReading[] = [
   { date: "2018-11-14", mileage: 48210, result: "Pass" },
   { date: "2019-11-12", mileage: 56980, result: "Pass" },
   { date: "2020-11-20", mileage: 62340, result: "Pass" },
@@ -90,7 +103,7 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = ["Servicing", "Brakes", "Re
 export const MOD_CATEGORIES: ModCategory[] = ["Engine/ECU", "Exhaust", "Intake", "Suspension", "Brakes", "Visual"];
 
 const VEHICLES: Vehicle[] = [
-  { vrm: "AB14CDE", make: "Audi", model: "A4 2.0 TDI", odometer: 87420, v5cDate: "2019-03-15", motExpiry: "2026-11-18" },
+  { vrm: "AB14CDE", make: "Audi", model: "A4 2.0 TDI", odometer: 87420, v5cDate: "2019-03-15", motExpiry: "2026-11-18", year: 2014, fuelType: "Diesel", motHistory: MOT_READINGS, source: "demo" },
 ];
 
 const SEED_SERVICES: ServiceRecord[] = [
@@ -170,6 +183,7 @@ const SEED_MODS: Modification[] = [
 ];
 
 interface Persisted {
+  vehicles: Vehicle[];
   unlocked: boolean;
   services: ServiceRecord[];
   mods: Modification[];
@@ -194,6 +208,7 @@ interface VaultCtx extends Persisted {
   lock: () => void;
   setRole: (r: Role) => void;
   setActiveVrm: (v: string) => void;
+  addVehicle: (v: Vehicle) => void;
   addService: (s: Omit<ServiceRecord, "id">) => boolean;
   addMod: (m: Omit<Modification, "id" | "status">) => void;
   revertMod: (id: string, date: string, mileage: number) => void;
@@ -213,6 +228,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export function VaultProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [state, setState] = useState<Persisted>({
+    vehicles: VEHICLES,
     unlocked: false,
     services: SEED_SERVICES,
     mods: SEED_MODS,
@@ -241,23 +257,22 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hydrated]);
 
-  const vehicle = VEHICLES.find((v) => v.vrm === state.activeVrm) ?? VEHICLES[0]!;
+  const vehicle = state.vehicles.find((v) => v.vrm === state.activeVrm) ?? state.vehicles[0]!;
 
   const unlock = useCallback(
     (vrm: string, ref: string) => {
       const n = normalizeVrm(vrm);
-      const ok = VEHICLES.some((v) => v.vrm === n) && state.v5cRefs[n] === ref.replace(/\D/g, "");
+      const ok = state.vehicles.some((v) => v.vrm === n) && state.v5cRefs[n] === ref.replace(/\D/g, "");
       if (ok) setState((s) => ({ ...s, unlocked: true, activeVrm: n, notice: undefined }));
       return ok;
     },
-    [state.v5cRefs],
+    [state.v5cRefs, state.vehicles],
   );
 
   const value = useMemo<VaultCtx>(
     () => ({
       ...state,
       hydrated,
-      vehicles: VEHICLES,
       vehicle,
       unlock,
       setupSecurity: (pin, biometrics) => setState((s) => ({ ...s, pin, biometrics })),
@@ -274,9 +289,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       lock: () => setState((s) => ({ ...s, unlocked: false })),
       setRole: (role) => setState((s) => ({ ...s, role })),
       setActiveVrm: (activeVrm) => setState((s) => ({ ...s, activeVrm })),
+      addVehicle: (v) => {
+        const vrm = normalizeVrm(v.vrm);
+        setState((s) => ({
+          ...s,
+          vehicles: [...s.vehicles.filter((existing) => existing.vrm !== vrm), { ...v, vrm }],
+          activeVrm: vrm,
+        }));
+      },
       addService: (rec) => {
         const vrm = normalizeVrm(rec.vrm);
-        if (!VEHICLES.some((v) => v.vrm === vrm)) return false;
+        if (!state.vehicles.some((v) => v.vrm === vrm)) return false;
         setState((s) => ({ ...s, services: [...s.services, { ...rec, vrm, id: uid() }] }));
         return true;
       },

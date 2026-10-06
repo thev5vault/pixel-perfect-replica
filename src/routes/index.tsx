@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ModalHeader } from "@/components/vault/ModalHeader";
 import {
   MOT_READINGS,
   SERVICE_CATEGORIES,
@@ -39,6 +42,7 @@ function Dashboard() {
   const { vehicle, services, role } = useVault();
   const [open, setOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const motReadings = vehicle.motHistory ?? MOT_READINGS;
 
   const history = useMemo(
     () => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)),
@@ -48,7 +52,7 @@ function Dashboard() {
   const lastService = lastOf("Servicing");
   const lastBrakes = lastOf("Brakes");
   const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage));
-  const motMonths = monthsBetween(new Date(), new Date(vehicle.motExpiry));
+  const motMonths = vehicle.motExpiry ? monthsBetween(new Date(), new Date(vehicle.motExpiry)) : -1;
   const serviceOk = lastService && monthsBetween(new Date(lastService.date), new Date()) < 24;
 
   return (
@@ -62,7 +66,7 @@ function Dashboard() {
               {vehicle.make} {vehicle.model}
             </h1>
           </div>
-          <Pill tone="primary">V5C · {fmtDate(vehicle.v5cDate)}</Pill>
+          <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
         </div>
         <div className="relative mt-4 flex items-center gap-2 text-muted-foreground">
           <Gauge className="h-4 w-4 text-primary" />
@@ -74,7 +78,7 @@ function Dashboard() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
-          DVLA Sync: Active (Last checked: Today)
+          {vehicle.source === "official" ? "Official API data · last lookup saved" : "Sample vehicle · demo MOT history"}
         </div>
       </section>
 
@@ -97,8 +101,8 @@ function Dashboard() {
           icon={<AlertTriangle className="h-5 w-5" />}
           title="MOT Status"
           ok={motMonths > 2}
-          status={motMonths > 2 ? "MOT Valid" : "MOT Due Soon"}
-          meta={`Expires ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}${motMonths >= 0 ? ` · ${motMonths} mo left` : ""}`}
+          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motMonths < 0 ? "MOT Expired" : motMonths > 2 ? "MOT Valid" : "MOT Due Soon"}
+          meta={vehicle.motExpiry ? `Expires ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}${motMonths >= 0 ? ` · ${motMonths} mo left` : ""}` : "Expiry date unavailable"}
           forceWarn
         />
       </section>
@@ -119,17 +123,19 @@ function Dashboard() {
 
       <section className="vault-card p-4">
         <h2 className="flex items-center justify-between font-bold">
-          MOT History <span className="text-xs font-semibold text-success">Auto-synced from DVLA</span>
+          MOT History <span className="text-xs font-semibold text-success">{vehicle.source === "official" ? "Official API lookup" : "Sample history"}</span>
         </h2>
         <ul className="mt-3 divide-y text-sm">
-          {[...MOT_READINGS].reverse().map((m) => (
-            <li key={m.date} className="flex justify-between gap-3 py-2">
+          {[...motReadings].reverse().map((m, i) => (
+            <li key={`${m.date}-${i}`} className="flex flex-wrap justify-between gap-3 py-2">
               <span>{fmtDate(m.date)}</span>
-              <span className="text-muted-foreground">{fmtMiles(m.mileage)}</span>
+              <span className="text-muted-foreground">{m.mileage !== undefined ? fmtMiles(m.mileage) : "Mileage unavailable"}</span>
               <span className={m.result === "Pass" ? "text-success" : "text-warning"}>{m.result}</span>
+              {m.advisories?.length ? <ul className="w-full list-disc pl-4 text-xs text-muted-foreground">{m.advisories.map((a, j) => <li key={j}>{a}</li>)}</ul> : null}
             </li>
           ))}
         </ul>
+        {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
       </section>
 
       <SnapReceiptDialog open={open && can.diy(role)} onOpenChange={setOpen} />
@@ -183,6 +189,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState<string>();
   const [upsell, setUpsell] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
   const money = (v: string) => {
@@ -232,16 +239,30 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
+        <ModalHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" /> Snap Receipt
           </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
+          <DialogDescription>Add a dated service record and receipt to your vehicle.</DialogDescription>
+        </ModalHeader>
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-28">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Date">
-              <input type="date" required max={today()} value={form.date} onChange={set("date")} className="field" />
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild><button type="button" className="field text-left">{fmtDate(form.date)}</button></PopoverTrigger>
+                <PopoverContent align="start" className="z-[100] w-auto rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
+                  <Calendar mode="single" selected={new Date(`${form.date}T00:00:00`)} disabled={{ after: new Date() }}
+                    className="bg-slate-900"
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                      setForm((f) => ({ ...f, date: iso }));
+                      setCalendarOpen(false);
+                    }} />
+                </PopoverContent>
+              </Popover>
             </Field>
             <Field label="Mileage">
               <input inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className="field" />
@@ -290,7 +311,10 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <LockedField label="Receipt photo upload" onClick={() => setUpsell(true)} />
             </div>
           )}
-          <button type="submit" className="btn-primary mb-8 w-full">Save to Timeline</button>
+          </div>
+          <footer className="sticky bottom-0 shrink-0 border-t border-slate-800 bg-slate-900 p-4">
+            <button type="submit" className="btn-primary mb-8 w-full">Save to Timeline</button>
+          </footer>
         </form>
         <UpgradeDialog open={upsell} onOpenChange={setUpsell} />
       </DialogContent>

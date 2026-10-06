@@ -21,6 +21,7 @@ import {
 import { ROLES, ROLE_LABELS, can, formatVrm, useVault, type Role } from "@/lib/vault-store";
 import { ShieldLogo } from "./ui-bits";
 import { UnlockGate } from "./UnlockGate";
+import { VehicleLookupDialog } from "./VehicleLookupDialog";
 
 const TABS = [
   { to: "/", label: "Vehicle", icon: Car },
@@ -35,6 +36,7 @@ const ROLE_BADGE: Record<Role, string> = { Owner: "Free", DIY: "DIY", Pro: "Pro"
 export function AppShell({ children }: { children: ReactNode }) {
   const { hydrated, unlocked, vehicle, vehicles, setActiveVrm, role, setRole, lock, pin, simulateTransfer } = useVault();
   const [transfer, setTransfer] = useState(false);
+  const [addVehicleOpen, setAddVehicleOpen] = useState(false);
   const navigate = useNavigate();
 
   if (!hydrated) return <div className="min-h-screen" />;
@@ -42,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tabs = can.admin(role) ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
+    <div className="app-viewport flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
       <header className="shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex justify-between items-center transform-gpu print:hidden">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
@@ -65,8 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={lock}>
-                <Lock className="h-4 w-4" /> Add another vehicle
+              <DropdownMenuItem onClick={() => setAddVehicleOpen(true)}>
+                <Car className="h-4 w-4" /> Add Vehicle
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -116,6 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </div>
       </nav>
+      <VehicleLookupDialog open={addVehicleOpen} onOpenChange={setAddVehicleOpen} />
 
       <AlertDialog open={transfer} onOpenChange={setTransfer}>
         <AlertDialogContent>

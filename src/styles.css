@@ -328,6 +328,23 @@
   main {
     max-width: none !important;
     padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    display: block !important;
+    flex: none !important;
+  }
+
+  .app-viewport {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    background: white !important;
+  }
+
+  [data-sonner-toaster],
+  [role="dialog"],
+  [role="alertdialog"] {
+    display: none !important;
   }
 
   .passport-document {

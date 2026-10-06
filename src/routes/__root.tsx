@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { VaultProvider } from "@/lib/vault-store";
 import { AppShell } from "@/components/vault/AppShell";
+import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -125,12 +126,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <AppErrorBoundary>
       <VaultProvider>
         <AppShell>
           <Outlet />
         </AppShell>
         <Toaster position="top-center" />
       </VaultProvider>
+      </AppErrorBoundary>
     </QueryClientProvider>
   );
 }

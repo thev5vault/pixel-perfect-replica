@@ -1,0 +1,1 @@
+- [Vehicle lookup scope](vehicle-lookup-scope.md) — sample onboarding is allowed, but must be labelled and never replace a failed official lookup.

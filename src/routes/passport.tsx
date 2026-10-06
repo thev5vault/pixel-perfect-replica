@@ -27,8 +27,8 @@ type Cert = "standard" | "oem" | "master";
 
 const CERTS: { id: Cert; title: string; tier: string; price: string; icon: typeof Gauge; includes: string; allowed: (r: Role) => boolean }[] = [
   { id: "standard", title: "Standard Passport", tier: "Basic", price: "Free", icon: Gauge, includes: "Mileage graph, service dates, garage names, official MOT log", allowed: () => true },
-  { id: "oem", title: "OEM Provenance Certificate", tier: "Pro DIY", price: "£0.99/mo", icon: Wrench, includes: "Manufacturer part numbers, receipt thumbnails, total spend summary", allowed: can.diy },
-  { id: "master", title: "Master Build Sheet", tier: "Pro Modder", price: "£1.99/mo", icon: Zap, includes: "Active build spec, dyno printouts, specialist stamps, reverted mods", allowed: can.vault },
+  { id: "oem", title: "OEM Provenance Certificate", tier: "Pro DIY", price: "£0.99/mo", icon: Wrench, includes: "Everything in Standard, manufacturer part numbers, receipt thumbnails, parts and labour spend summary", allowed: can.diy },
+  { id: "master", title: "Master Build Sheet", tier: "Pro Modder", price: "£1.99/mo", icon: Zap, includes: "Everything in Standard and OEM, active build spec, dyno printouts, specialist stamps, reverted mods", allowed: can.vault },
 ];
 
 function PassportPage() {
@@ -48,7 +48,7 @@ function PassportPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Export Passport" subtitle="Tamper-proof resale certificates that add value when you sell." />
+      <div className="print:hidden"><PageHeader title="Export Passport" subtitle="Resale certificates that document your vehicle history." /></div>
       <div className="space-y-3 print:hidden">
         {CERTS.map((c) => {
           const ok = c.allowed(role);
@@ -75,7 +75,7 @@ function PassportPage() {
         })}
       </div>
 
-      {cert && <Certificate key={cert} cert={cert} />}
+      {cert && CERTS.find((c) => c.id === cert)!.allowed(role) && <Certificate key={cert} cert={cert} />}
 
       <UpgradeDialog
         open={!!upsell}
@@ -84,13 +84,14 @@ function PassportPage() {
         price={upsell?.price ?? ""}
         perks={upsell ? upsell.includes.split(", ") : []}
       />
-      <div className="h-24 w-full shrink-0" aria-hidden="true" />
+      <div className="h-24 w-full shrink-0 print:hidden" aria-hidden="true" />
     </div>
   );
 }
 
 function Certificate({ cert }: { cert: Cert }) {
   const { vehicle, services, mods } = useVault();
+  const motReadings = vehicle.motHistory ?? MOT_READINGS;
   const meta = CERTS.find((c) => c.id === cert)!;
   const history = useMemo(() => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)), [services, vehicle.vrm]);
   const vMods = mods.filter((m) => m.vrm === vehicle.vrm);
@@ -103,10 +104,10 @@ function Certificate({ cert }: { cert: Cert }) {
   const labourTotal = history.reduce((a, s) => a + (s.labourCost ?? 0), 0);
   const chart = useMemo(
     () =>
-      [...MOT_READINGS.map((r) => ({ date: r.date, mileage: r.mileage, src: "DVLA MOT" })), ...history.map((h) => ({ date: h.date, mileage: h.mileage, src: h.garage }))]
+      [...motReadings.filter((r) => r.mileage !== undefined).map((r) => ({ date: r.date, mileage: r.mileage!, src: vehicle.source === "official" ? "Official MOT" : "Sample MOT" })), ...history.map((h) => ({ date: h.date, mileage: h.mileage, src: h.garage }))]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((p) => ({ ...p, t: new Date(p.date).getTime() })),
-    [history],
+    [history, motReadings, vehicle.source],
   );
 
   return (
@@ -156,11 +157,11 @@ function Certificate({ cert }: { cert: Cert }) {
             </button>
           </header>
 
-      {cert === "standard" && (
+      {(
         <>
           <section className="passport-section p-4">
             <h3 className="mb-1 font-bold">DVLA Mileage Progression</h3>
-            <p className="mb-3 text-xs text-muted-foreground">MOT readings and logged records — no rollbacks detected.</p>
+            <p className="mb-3 text-xs text-muted-foreground">MOT readings and logged records · {vehicle.source === "official" ? "official API lookup" : "sample MOT data"}.</p>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chart} margin={{ left: -10, right: 8, top: 5 }}>
@@ -182,12 +183,12 @@ function Certificate({ cert }: { cert: Cert }) {
             rows={history.map((s) => [fmtDate(s.date), s.description, `${s.garage} · ${fmtMiles(s.mileage)}`])}
             empty="No service records."
           />
-          <Table title="Official MOT & Mileage Log" rows={[...MOT_READINGS].reverse().map((m) => [fmtDate(m.date), m.result, fmtMiles(m.mileage)])} empty="" />
-          <RedactionPreview vrm={vehicle.vrm} />
+          <Table title={vehicle.source === "official" ? "Official MOT & Mileage Log" : "Sample MOT & Mileage Log"} rows={[...motReadings].reverse().map((m) => [fmtDate(m.date), m.result, m.mileage !== undefined ? fmtMiles(m.mileage) : "Unavailable"])} empty="No MOT history available." />
+          <div className="print:hidden"><RedactionPreview vrm={vehicle.vrm} /></div>
         </>
       )}
 
-      {cert === "oem" && (
+      {(cert === "oem" || cert === "master") && (
         <>
           <section className="passport-section grid grid-cols-3 gap-2 p-4 text-center">
             {[

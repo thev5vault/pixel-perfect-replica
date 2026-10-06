@@ -1,6 +1,7 @@
 import { LockKeyhole, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ModalHeader } from "./ModalHeader";
 
 export function UpgradeDialog({
   open,
@@ -19,13 +20,14 @@ export function UpgradeDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
+        <ModalHeader>
           <DialogTitle className="flex items-center gap-2">
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}
           </DialogTitle>
           <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
-        </DialogHeader>
+        </ModalHeader>
+        <div className="space-y-4 overflow-y-auto p-4 pb-8">
         <ul className="space-y-2 text-sm">
           {perks.map((p) => (
             <li key={p} className="flex gap-2">
@@ -42,6 +44,7 @@ export function UpgradeDialog({
         >
           Upgrade to {tier} ({price})
         </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
