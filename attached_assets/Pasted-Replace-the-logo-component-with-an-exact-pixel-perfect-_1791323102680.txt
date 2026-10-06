@@ -1,0 +1,62 @@
+Replace the logo component with an exact pixel-perfect geometric SVG matching the design and remove all container boxes and glow effects:
+
+1. PIXEL-PERFECT LOGO COMPONENT (`V5VaultLogo.jsx`):
+   - Overwrite `V5VaultLogo.jsx` with this exact inline SVG vector component:
+     ```jsx
+     export function V5VaultLogo({ className = "w-8 h-8" }) {
+       return (
+         <svg 
+           className={`object-contain ${className}`} 
+           viewBox="0 0 100 100" 
+           fill="none" 
+           xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+         >
+           {/* Sharp 5-Sided Geometric Shield Outline */}
+           <path 
+             d="M 50 14 L 84 27 V 57 L 50 88 L 16 57 V 27 Z" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="miter" 
+             fill="none" 
+           />
+           {/* Outer Large V Chevron */}
+           <path 
+             d="M 33 37 L 50 72 L 67 37" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             fill="none" 
+           />
+           {/* Inner Parallel V Chevron */}
+           <path 
+             d="M 42 37 L 50 54 L 58 37" 
+             stroke="#00D8F6" 
+             strokeWidth="5.5" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             fill="none" 
+           />
+         </svg>
+       );
+     }
+     ```
+
+2. CLEAN UP SPLASH / VERIFICATION SCREEN (`AuthScreen.jsx` / `V5CVerificationScreen.jsx`):
+   - Replace the top icon area with:
+     `<V5VaultLogo className="w-20 h-20 mx-auto mb-3" />`
+   - REMOVE any circular/square background glow divs or dark backdrop boxes sitting behind or around the logo.
+
+3. CLEAN UP APP HEADER (`Header.jsx`):
+   - In the top navigation bar, render the top-left home button as a clean icon button without heavy container borders:
+     ```jsx
+     <button 
+       onClick={() => setCurrentTab('vehicle')} 
+       className="p-1 hover:opacity-80 transition-opacity active:scale-95 flex items-center justify-center bg-transparent border-0"
+       title="Return to Home Overview"
+     >
+       <V5VaultLogo className="w-8 h-8"/>
+     </button>
+     ```
+   - Ensure tapping this icon smoothly redirects the user back to the primary "Vehicle" tab from any screen.

@@ -45,7 +45,7 @@ function VerifyForm() {
   return (
     <form onSubmit={submit} className="w-full max-w-sm animate-vault-open space-y-6">
       <div className="text-center">
-        <V5VaultLogo className="mx-auto mb-2 h-20 w-20 drop-shadow-[0_0_18px_rgba(0,216,246,0.4)]" />
+        <V5VaultLogo className="mx-auto mb-3 h-20 w-20" />
         <h1 className="mt-4 text-3xl font-bold">V5Vault</h1>
         <p className="text-sm text-muted-foreground">UK Digital Vehicle Passport</p>
       </div>
