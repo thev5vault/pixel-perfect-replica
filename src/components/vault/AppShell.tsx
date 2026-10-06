@@ -84,12 +84,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 justify-end items-center">
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative shrink-0" aria-label="Profile">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 font-display text-sm font-bold text-primary ring-2 ring-primary/40">
-                JD
-              </span>
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-1.5 text-[9px] font-bold uppercase text-primary-foreground">
-                {ROLE_BADGE[role]}
+            <DropdownMenuTrigger
+              className="p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-end gap-1.5 rounded-xl hover:bg-slate-800/50 active:scale-95 transition-all"
+              aria-label="User Profile & Role Menu"
+              title="User Profile & Role Menu"
+            >
+              <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-500/40 bg-slate-800 text-xs font-semibold text-cyan-400 shadow-sm">
+                  JD
+                </span>
+                <span className="absolute bottom-0 left-1/2 translate-x-[-50%] translate-y-1/2 whitespace-nowrap rounded-md border border-cyan-500/30 bg-cyan-950/80 px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-cyan-400 uppercase">
+                  {ROLE_BADGE[role]}
+                </span>
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
