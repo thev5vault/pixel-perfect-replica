@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tabs = can.admin(role) ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between overflow-x-hidden bg-background animate-vault-open">
+    <div className="flex min-h-[100dvh] w-full flex-col justify-between overflow-x-clip bg-background animate-vault-open">
       <header className="sticky top-0 flex-none z-40 border-b bg-background/85 backdrop-blur-lg">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">

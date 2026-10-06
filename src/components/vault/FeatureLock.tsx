@@ -12,8 +12,8 @@ const copy = {
   },
   garage: {
     title: "Specialist Access Only",
-    description: "Verify your garage account (£9.99/mo) to stamp customer records.",
-    action: "Verify garage account (£9.99/mo)",
+    description: "Verify your garage account (£7.99/mo) to stamp customer records.",
+    action: "Verify garage account (£7.99/mo)",
   },
 } satisfies Record<LockedFeature, { title: string; description: string; action: string }>;
 
