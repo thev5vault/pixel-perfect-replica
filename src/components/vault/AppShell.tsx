@@ -42,9 +42,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const tabs = can.admin(role) ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col justify-between overflow-x-clip bg-background animate-vault-open">
-      <header className="sticky top-0 flex-none z-40 border-b bg-background/85 backdrop-blur-lg print:hidden">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
+    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
+      <header className="shrink-0 z-40 bg-slate-900 border-b border-slate-800/80 px-4 py-3 flex justify-between items-center transform-gpu print:hidden">
+        <div className="mx-auto flex w-full max-w-2xl items-center gap-3">
           <Link to="/" className="flex items-center gap-1.5" aria-label="V5Vault home">
             <ShieldLogo className="h-7 w-7" />
             <span className="hidden font-display text-lg font-bold sm:inline">V5Vault</span>
@@ -99,16 +99,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-5 pb-36">{children}</main>
+      <main className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">{children}</main>
 
-      <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 max-w-md mx-auto z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2 py-2 flex justify-between items-center print:hidden">
+      <nav className="fixed bottom-4 inset-x-3 max-w-md mx-auto z-50 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] px-2 py-2 flex justify-between items-center transform-gpu print:hidden">
         <div className="flex w-full justify-between">
           {tabs.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: true }}
-              className="group flex flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-[11px] font-semibold leading-tight text-muted-foreground transition-colors data-[status=active]:border-cyan-500/30 data-[status=active]:bg-cyan-500/10 data-[status=active]:text-cyan-400"
+              className="group flex flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-[10px] font-semibold leading-tight tracking-tight text-muted-foreground transition-colors whitespace-nowrap data-[status=active]:border-cyan-500/30 data-[status=active]:bg-cyan-500/10 data-[status=active]:text-cyan-400"
             >
               <Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />
               {label}
