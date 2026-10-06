@@ -21,6 +21,7 @@ const service: ServiceRecord = {
   verified: true,
   image: "/receipt.jpg",
   parts: [{ name: "Front discs", partNo: "Brembo 09.C401.13" }],
+  fluids: "Castrol Edge 5W-30 LL 4.6L",
 };
 
 describe("Pro DIY entitlements", () => {
@@ -34,6 +35,8 @@ describe("Pro DIY entitlements", () => {
     );
 
     expect(screen.getByText("Brembo 09.C401.13")).toHaveClass("blur-sm", "select-none", "opacity-40", "text-slate-400");
+    expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).toHaveClass("blur-sm", "font-mono");
+    expect(screen.getByText("Fluid specs")).not.toHaveClass("blur-sm");
     expect(screen.getByRole("button", { name: /upgrade to pro diy to view receipt photo/i })).toBeInTheDocument();
     expect(container.querySelector("img")?.className).toContain("blur-[4px]");
     expect(screen.queryByText("Parts £468.00 · Labour £174.00")).not.toBeInTheDocument();
@@ -57,7 +60,8 @@ describe("Pro DIY entitlements", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("button", { name: "View Brake replacement receipt" })).toBeInTheDocument());
-    expect(screen.getByText("Brembo 09.C401.13")).not.toHaveClass("blur-[4px]");
+    expect(screen.getByText("Brembo 09.C401.13")).not.toHaveClass("blur-sm");
+    expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).not.toHaveClass("blur-sm");
     expect(container.querySelector("img")?.className).not.toContain("blur-[4px]");
     expect(screen.getByText("Parts cost").parentElement).toHaveTextContent("£468.00");
     expect(screen.getByText("Labour cost").parentElement).toHaveTextContent("£174.00");

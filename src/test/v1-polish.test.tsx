@@ -22,7 +22,7 @@ const Dashboard = HomeRoute.options.component!;
 
 describe("V1 polish", () => {
   beforeEach(() => localStorage.clear());
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it.each([
     ["Owner", "Standard Passport", false, false],

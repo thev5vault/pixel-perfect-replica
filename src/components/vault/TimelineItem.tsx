@@ -81,20 +81,23 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
               aria-label={pro ? undefined : "Unlock itemized OEM parts and fluid specifications"}
               className="mt-1 block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-default"
             >
-              <ul className="space-y-1 text-sm" aria-label="Itemized parts">
+              <ul className="space-y-1 text-xs" aria-label="Itemized parts">
                 {(s.parts ?? []).map((p, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3 py-1">
+                  <li key={i} className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
                     <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
-                    <span className={`shrink-0 text-right font-mono text-xs ${pro ? "text-primary" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                    <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-primary" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
                       {p.partNo || "Part number unavailable"}
                     </span>
                   </li>
                 ))}
               </ul>
               {s.fluids && (
-                <p className={`py-1 text-xs ${pro ? "text-muted-foreground" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
-                  Fluids: {s.fluids}
-                </p>
+                <div className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
+                  <span className="min-w-0 flex-1 text-muted-foreground">Fluid specs</span>
+                  <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-muted-foreground" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                    {s.fluids}
+                  </span>
+                </div>
               )}
             </button>
             {!pro && (

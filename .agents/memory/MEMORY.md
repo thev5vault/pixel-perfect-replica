@@ -1,1 +1,2 @@
 - [Vehicle lookup scope](vehicle-lookup-scope.md) — sample onboarding is allowed, but must be labelled and never replace a failed official lookup.
+- [Dev workflow port conflicts](dev-workflow-port-conflicts.md) — a failed workflow can coexist with an older Vite server; stop it explicitly before restarting.
