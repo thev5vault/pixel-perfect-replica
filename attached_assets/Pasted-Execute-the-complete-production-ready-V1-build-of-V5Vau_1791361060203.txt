@@ -1,0 +1,42 @@
+Execute the complete, production-ready V1 build of V5Vault with Triple-Key Security, Multi-Tier Monetization, B2B Garage Retention, Viral Social Sharing, and OAP-Proof Simplicity while preserving all responsive UI styling:
+
+1. EXECUTIVE UI SAFEGUARDS & HEADER PROPORTIONS:
+   - Header Structure (`Header.jsx`): Maintain a strict 3-column layout (`grid grid-cols-[1fr_auto_1fr]`):
+     * Left: Sharp cyan V5Vault shield logo button (`w-10 h-10`).
+     * Center: Vehicle dropdown selector pill (`bg-slate-800/60 border border-slate-700/60 rounded-full px-3.5 py-1.5 text-xs text-slate-200`).
+     * Right: Compact profile avatar button (`w-7 h-7 rounded-full bg-slate-800 border-2 border-cyan-400 text-cyan-400 text-[11px] font-bold`) wrapped in a minimum 44x44px invisible hit area. All role text badges ("Verified Garage", "SuperAdmin") MUST remain inside the profile dropdown menu, keeping the header bar clean.
+   - iOS Touch & Zoom Safeguards: Set `font-size: 16px` (`text-base`) on all text inputs across the app to stop iOS Safari from auto-zooming and distorting page alignment on focus.
+
+2. AUTHENTICATION, GOD MODE & TAB-SWITCH RECOVERY (`AuthContext.jsx` / `AuthScreen.jsx`):
+   - Auto-Promote Admin: Any user signing in with `email === 'kieranroe23@hotmail.co.uk'` MUST automatically be granted `role: 'dev_admin'` and `tier: 'god_mode'` with full SuperAdmin permissions.
+   - Dev Bypass Button: Include a prominent `[ ⚡ Direct GodMode Bypass (Kieran Admin) ]` button on the login screen to allow instant testing as `kieranroe23@hotmail.co.uk` without email verification friction.
+   - Fix Tab-Switch Reset: Store active sign-up/verification flow state in `sessionStorage`. When returning from a mobile mail app, re-hydrate the pending code screen.
+   - One-Tap Mobile OTP: Enforce `autoComplete="one-time-code"` and `inputMode="numeric"` on the 6-digit verification input for seamless iOS keyboard auto-fill.
+
+3. TRIPLE-KEY VEHICLE SECURITY & IMMUTABLE TRANSFERS (`vehicleModel.js` / `V5CVerification.jsx`):
+   - Store three primary identifiers for every vehicle: `vrm` (Reg), `vin` (Chassis No.), and `v5c_reference` (11-Digit Logbook Reference).
+   - Keeper Claim: Validate that `v5c_reference` contains exactly 11 numeric digits to set `vehicle.current_keeper_id = current_user.id`.
+   - Immutable Transfer Protocol: When an existing `vrm` is claimed with a NEW valid 11-digit V5C reference number:
+     * Transfer `current_keeper_id` to the new user.
+     * Freeze all previous service records, MOT entries, and modifications prior to the transfer date as IMMUTABLE READ-ONLY records.
+     * Trigger an in-app alert to the previous keeper: "V5C reference update detected for [VRM]. Vehicle history transferred to new registered keeper."
+
+4. ANTI-FORGERY CRYPTOGRAPHIC STAMPS & B2B REMINDERS (`stampService.js` / `GaragePortal.jsx`):
+   - Server Signature: Only users with `role === 'verified_garage'` and `vat_verified === true` can issue verified stamps. Generate a server HMAC-SHA256 hash using `garage_id + vrm + odometer + timestamp`.
+   - Timeline Badges: Display a crisp Green Badge for verified workshop entries (`✓ Verified Workshop Stamp - [Garage Name]`) and a Slate Badge for DIY entries (`👤 Owner Logged / DIY Record`).
+   - B2B Retention Suite: In `GaragePortal.jsx`, provide an automated "Customer MOT & Service Reminders" dashboard showing customer VRMs due within 30 days, complete with a 1-tap "Send Reminder (SMS/Email)" trigger.
+
+5. TIERS & MONETIZATION ENGINE (`TierGuard.jsx` / `PassportExport.jsx`):
+   - Free Keeper Tier (£0.00): 1 active vehicle, live DVLA MOT & tax auto-sync, basic DIY service logging, and public read-only passport link.
+   - Certified Sales Pack (£2.99 One-Off): Add a primary `[ 📄 Generate Official Provenance Sales Pack - £2.99 ]` option on the Export view. Generates a branded PDF report and dynamic QR Listing Badge for AutoTrader/eBay/Facebook Marketplace.
+   - Pro Modder / Collector Tier (£1.49/mo or £14.99/yr): Unlocks receipt photo/PDF storage, cost analytics, up to 3 vehicles, and the "Modder's Vault" (ECU remaps, dyno graphs, suspension setups, stock revert history).
+   - Verified Workshop Tier (£12.99/mo): Unlocks Garage Terminal, unlimited cryptographic stamps, VAT badge, and automated customer reminders.
+
+6. VIRAL SHARE ENGINE & PUBLIC BUYER VIEW (`PublicPassportView.jsx` / `SharePassportModal.jsx`):
+   - Share Generator: Add a "Share Passport" modal that outputs high-resolution graphic cards tailored for Instagram Stories and Marketplace listings, complete with VRM badge, verified stamp count, current odometer reading, and QR code (`v5vault.dev/v/[vrm]`).
+   - Public Passport Route: Allow anyone scanning a vehicle's QR code or clicking a shared link to view the read-only verified history timeline, MOT trend graphs, and workshop provenance without requiring account sign-in.
+
+7. OAP-PROOF SIMPLICITY & INVESTOR/GRANT DATA ROOM (`AdminConsole.jsx`):
+   - DVLA Auto-Fill: Entering a registration mark auto-populates Make, Model, Year, Fuel Type, Colour, Engine Size, and official MOT history via public DVLA lookup.
+   - Microcopy Polish: Use welcoming, plain English labels throughout ("Garage Stamps", "Keep History Free", "Get Official Sale Report").
+   - Investor Metrics Panel: Inside the SuperAdmin dashboard, provide a dedicated card showing Total Registered Users, Active Passports, MRR projections, Garage Adoption count, and a 1-tap "Export Grant Executive Summary (PDF)" option for Innovate UK grant applications.
