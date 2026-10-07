@@ -14,3 +14,15 @@ Check installed Clerk appearance typings rather than assuming older example prop
 **Why:** The installed React/themes packages disagree about an optional CSS-layer property's explicit undefined under strict exact optional types; outdated appearance names also fail type checks.
 
 **How to apply:** Omit unused optional theme properties rather than weakening TypeScript strictness or casting away appearance errors.
+
+Treat pending signup metadata as a UI hint only; restore the existing Clerk attempt instead of recreating signup or persisting credentials.
+
+**Why:** Safari returning from an email app can leave the UI out of sync with the provider's pending verification. A new attempt would lose continuity, while storing passwords or codes would introduce a security risk.
+
+**How to apply:** Trust provider state for the verification step, distinguish expired attempts from temporary network failure, and never save passwords, codes or tokens in recovery storage.
+
+Use appearance style objects when Clerk must override its own component styling.
+
+**Why:** Clerk's unlayered styles overrode Tailwind's layered `hidden` utility, leaving its footer visible and duplicating the external sign-in link despite the appearance class.
+
+**How to apply:** Critical visibility and card styling should use the supported appearance style-object API; use scoped input CSS for Safari's minimum 16px sizing.

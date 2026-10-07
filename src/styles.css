@@ -315,6 +315,11 @@
   border-bottom: 0;
 }
 
+.vault-auth input {
+  font-size: 16px !important;
+}
+
+
 @media print {
   @page {
     size: A4;
