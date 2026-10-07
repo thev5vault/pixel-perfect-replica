@@ -1,0 +1,53 @@
+Implement User Authentication, V5C Vehicle Binding, Role-Based Access Portals, and Anti-Forgery Workshop Stamping while preserving all existing layout and responsive UI styling:
+
+1. USER AUTHENTICATION & SUBSCRIPTION DATA MODEL:
+   - Create a User Account model: `id`, `email`, `password_hash`, `full_name`, `role` ('civilian', 'modder', 'verified_garage'), `subscription_tier` ('free', 'pro_diy', 'pro_modder', 'verified_garage'), `stripe_customer_id`, `created_at`.
+   - Build an Auth Screen with toggles for:
+     * Email / Password Sign In & Sign Up.
+     * Quick Biometric Mock / WebAuthn button ("Sign in with Face ID / Touch ID").
+   - Store active subscriptions (£0.99 Pro DIY, £1.99 Pro Modder, £7.99 Garage) on the USER profile, NOT on individual vehicle records.
+
+2. V5C VEHICLE BINDING & OWNERSHIP TRANSFER PROTOCOL:
+   - Multi-Vehicle Garage Drawer: Allow signed-in users to switch between their owned vehicles using the center header dropdown pill, with a "+ Connect New Vehicle" action button.
+   - V5C Logbook Linking: To claim a vehicle, prompt for:
+     1. Vehicle Registration Mark (VRM)
+     2. 11-Digit V5C Logbook Reference Number
+     When verified, assign `vehicle.owner_user_id = current_user.id`.
+   - Ownership Transfer Protocol: If a new user enters an existing VRM with a NEW valid 11-digit V5C reference number:
+     * Unlink `vehicle_id` from the previous owner's account.
+     * Link `vehicle_id` to the new user's account.
+     * Keep the full public maintenance, MOT, and service timeline intact on the vehicle record.
+     * Notify the previous owner via in-app alert: "Vehicle [VRM] has been transferred to a new keeper."
+
+3. ROLE-BASED PORTAL ROUTING (3 PORTALS IN 1 UNIFIED APP):
+   - Dynamically adjust main navigation bar options based on `current_user.role`:
+     * 'civilian'        -> Navigation: [ Vehicle, Passport, Settings ]
+     * 'modder'          -> Navigation: [ Vehicle, Vault (Modder), Passport, Settings ]
+     * 'verified_garage' -> Navigation: [ Workshop Terminal, Customer Queue, Bookings, Account ]
+
+4. ANTI-FORGERY DATA MODEL & TIMELINE BADGING:
+   - Update `service_records` schema with:
+     * `is_verified_stamp`: boolean (DEFAULT false)
+     * `stamped_by_garage_id`: string (NULL for owner logs)
+     * `stamp_signature`: cryptographic verification string
+   - Server-side rule: ONLY requests from authenticated users with `role === 'verified_garage'` and `garage_verified === true` can write `is_verified_stamp = true`.
+   - In `VehicleTimeline.jsx` and `ServiceCard.jsx`:
+     * Green Badge (`is_verified_stamp === true`): `✓ Verified Workshop Stamp - [Garage Name] (VAT Reg Verified)`.
+     * Slate Badge (`is_verified_stamp === false`): `👤 Owner Logged / DIY Record`.
+   - Enforce this badge styling on Export Passports (PDF/Web).
+
+5. SPECIALIST WORKSHOP TERMINAL (GARAGE B2B VIEW):
+   - For `verified_garage` accounts, set the default home view to `GaragePortal.jsx`:
+     * Header: Workshop Name, VAT/Registration Number, Verified Status Badge.
+     * Fast-Log Input: Customer VRM + Odometer reading.
+     * One-Tap Job Checkboxes: Oil & Filter, Air Filter, Pollen Filter, Spark Plugs, Brake Fluid, Tyres, Health Check.
+     * File Drop: "Attach Official Workshop PDF/Invoice".
+     * Primary Action: "Stamp Verified Job to Vehicle Timeline" (Locks record instantly with cryptographic signature).
+
+6. STRICT UI PRESERVATION & SAFEGUARDS:
+   - Keep the clean 3-column top header intact (`grid grid-cols-[1fr_auto_1fr]`):
+     * Left: `V5VaultLogo` button (`w-10 h-10`).
+     * Center: Vehicle dropdown pill.
+     * Right: Compact profile circle (`w-7 h-7`) with role status housed inside the profile dropdown menu.
+   - Maintain the flexbox modal scrolling container architecture so keyboard opening/closing never breaks viewport height or causes dead space gaps.
+   - Keep the top-right Dev SuperAdmin "Switch Role" menu in development mode for easy testing.
