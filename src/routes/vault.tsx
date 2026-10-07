@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ModalHeader } from "@/components/vault/ModalHeader";
 import { MOD_CATEGORIES, can, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
-import { Field, ImagePicker, Pill, Thumb } from "@/components/vault/ui-bits";
+import { Field, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Thumb } from "@/components/vault/ui-bits";
 import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
@@ -195,59 +195,59 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false}>
-        <ModalHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950 p-5 shadow-2xl">
+        <ModalHeader className="border-0 bg-transparent px-0 py-0">
           <DialogTitle>Add Modification</DialogTitle>
           <DialogDescription>Record the part, installation details and supporting evidence.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
-          <Field label="Part Name">
-            <input required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className="field" />
-          </Field>
-          <Field label="Category">
-            <select value={f.category} onChange={set("category")} className="field">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain">
+          <ModalField label="Part Name">{(id) => (
+            <input id={id} required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className={MODAL_INPUT_CLASS} />
+          )}</ModalField>
+          <ModalField label="Category" select>{(id) => (
+            <select id={id} value={f.category} onChange={set("category")} className={MODAL_SELECT_CLASS}>
               {MOD_CATEGORIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
-          </Field>
+          )}</ModalField>
           {f.category === "Engine/ECU" && (
-            <Field label="ECU Stage">
-              <select value={f.stage} onChange={set("stage")} className="field">
+            <ModalField label="ECU Stage" select>{(id) => (
+              <select id={id} value={f.stage} onChange={set("stage")} className={MODAL_SELECT_CLASS}>
                 {["Stage 1", "Stage 2", "Stage 2+", "Stage 3", "Custom"].map((x) => (
                   <option key={x}>{x}</option>
                 ))}
               </select>
-            </Field>
+            )}</ModalField>
           )}
           {(f.category === "Suspension" || f.category === "Exhaust") && (
-            <Field label={f.category === "Suspension" ? "Suspension Specs" : "Exhaust Specs"}>
-              <input maxLength={200} value={f.specs} onChange={set("specs")} placeholder={f.category === "Suspension" ? "KW V3 coilovers · -35mm F/R · 16 clicks rebound" : "Milltek 3\" downpipe-back · non-resonated"} className="field" />
-            </Field>
+            <ModalField label={f.category === "Suspension" ? "Suspension Specs" : "Exhaust Specs"}>{(id) => (
+              <input id={id} maxLength={200} value={f.specs} onChange={set("specs")} placeholder={f.category === "Suspension" ? "KW V3 coilovers · -35mm F/R · 16 clicks rebound" : "Milltek 3\" downpipe-back · non-resonated"} className={MODAL_INPUT_CLASS} />
+            )}</ModalField>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Install Date">
-              <input type="date" required max={today()} value={f.installDate} onChange={set("installDate")} className="field" />
-            </Field>
-            <Field label="Install Mileage">
-              <input inputMode="numeric" required value={f.installMileage} onChange={(e) => setF((s) => ({ ...s, installMileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className="field" />
-            </Field>
+          <div className="grid grid-cols-2 gap-3 w-full min-w-0 my-3">
+            <ModalField label="Install Date">{(id) => (
+              <input id={id} type="date" required max={today()} value={f.installDate} onChange={set("installDate")} className={MODAL_INPUT_CLASS} />
+            )}</ModalField>
+            <ModalField label="Install Mileage">{(id) => (
+              <input id={id} inputMode="numeric" required value={f.installMileage} onChange={(e) => setF((s) => ({ ...s, installMileage: e.target.value.replace(/\D/g, "") }))} placeholder="87,420" className={MODAL_INPUT_CLASS} />
+            )}</ModalField>
           </div>
-          <Field label="Horsepower / Torque Gains">
-            <input maxLength={60} value={f.gains} onChange={set("gains")} placeholder="+50 bhp / +80 Nm" className="field" />
-          </Field>
-          <Field label="Specialist Tags (comma separated)">
-            <input maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className="field" />
-          </Field>
-          <Field label="Dyno Curve Printout">
+          <ModalField label="Horsepower / Torque Gains">{(id) => (
+            <input id={id} maxLength={60} value={f.gains} onChange={set("gains")} placeholder="+50 bhp / +80 Nm" className={MODAL_INPUT_CLASS} />
+          )}</ModalField>
+          <ModalField label="Specialist Tags (comma separated)">{(id) => (
+            <input id={id} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className={MODAL_INPUT_CLASS} />
+          )}</ModalField>
+          <ModalFieldGroup label="Dyno Curve Printout">
             <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
-          </Field>
-          <Field label="Detailed Notes">
-            <textarea rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className="field" />
-          </Field>
+          </ModalFieldGroup>
+          <ModalField label="Detailed Notes">{(id) => (
+            <textarea id={id} rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className={MODAL_TEXTAREA_CLASS} />
+          )}</ModalField>
           </div>
-          <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
+          <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? "Saving…" : "Add to Active Build"}</button>
           </footer>
         </form>

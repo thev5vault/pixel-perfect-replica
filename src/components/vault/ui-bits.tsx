@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { BadgeCheck, ImagePlus, X } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
+import { BadgeCheck, ChevronDown, ImagePlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
@@ -47,6 +47,54 @@ export function Field({ label, children }: { label: string; children: ReactNode 
       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
+  );
+}
+
+export const MODAL_INPUT_CLASS =
+  "w-full h-11 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
+
+export const MODAL_SELECT_CLASS = `${MODAL_INPUT_CLASS} pr-10`;
+
+export const MODAL_TEXTAREA_CLASS =
+  "w-full min-w-0 min-h-20 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
+
+const modalFieldLabelClass = "text-[11px] font-semibold tracking-wider text-slate-400 uppercase";
+
+export function ModalField({
+  label,
+  children,
+  select = false,
+}: {
+  label: string;
+  children: (controlId: string, labelId: string) => ReactNode;
+  select?: boolean;
+}) {
+  const controlId = useId();
+  const labelId = `${controlId}-label`;
+
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-1.5 overflow-hidden focus-within:rounded-xl focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-950">
+      <label id={labelId} htmlFor={controlId} className={modalFieldLabelClass}>
+        {label}
+      </label>
+      {select ? (
+        <div className="relative w-full min-w-0">
+          {children(controlId, labelId)}
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        </div>
+      ) : (
+        children(controlId, labelId)
+      )}
+    </div>
+  );
+}
+
+export function ModalFieldGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-1.5">
+      <span className={modalFieldLabelClass}>{label}</span>
+      {children}
+    </div>
   );
 }
 
