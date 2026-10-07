@@ -9,6 +9,18 @@ The user chose “Development-only sample verification” and asked that all sam
 
 **How to apply:** Keep instant approval development-only and explicitly sample-labelled. A syntactically valid reference, paid tier or simulated role is never live ownership/VAT evidence. Production must not grant sample approvals merely because a persisted flag is approved.
 
+For the separately supplied test vehicle, the user chose first signed-in account
+binding in development, without extending that behavior to other vehicles.
+Production uses document review, and any existing keeper binding must be checked
+before applying the current claim policy and must never be overwritten.
+
+**Why:** The user explicitly selected first-account-wins for development and
+required existing ownership to stay locked when production review is enabled.
+
+**How to apply:** Derive identity only from server-side authentication, check the
+database owner before validation or review policy, and keep the production path
+on document review.
+
 Signed document payloads must use canonical object-key ordering.
 
 **Why:** PostgreSQL JSONB changes object-key order on round trips; insertion-order JSON signatures fail verification after persistence.

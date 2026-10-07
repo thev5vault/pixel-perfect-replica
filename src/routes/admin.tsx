@@ -331,7 +331,7 @@ function AdminPage() {
                           <div className="min-w-0">
                             <p className="font-semibold">{vehicle.make} {vehicle.model}</p>
                             <p className="text-xs text-muted-foreground">
-                              {vehicle.odometer.toLocaleString("en-GB")} miles · {owner ? `Owner: ${owner.full_name || owner.email}` : "Unlinked vehicle"}
+                              {vehicle.odometerAvailable === false ? "Mileage not supplied" : `${vehicle.odometer.toLocaleString("en-GB")} miles`} · {owner ? `Owner: ${owner.full_name || owner.email}` : "Unlinked vehicle"}
                             </p>
                           </div>
                         </div>

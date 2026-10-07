@@ -90,11 +90,15 @@ export function Dashboard() {
           <div className="flex flex-col items-end gap-2">
             {vehicle.status && <Pill tone={vehicle.status === "approved" ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>{vehicle.is_sample ? "Development sample · " : ""}Keeper link {vehicle.status}</Pill>}
             <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
+            {vehicle.registrationDate && <Pill tone="muted">First registered · {fmtDate(vehicle.registrationDate)}</Pill>}
           </div>
         </div>
+        {vehicle.registrationDate && <p className="relative mt-2 text-xs text-muted-foreground">
+          {vehicle.year ?? ""}{vehicle.year ? " · " : ""}{vehicle.colour ?? ""}{vehicle.colour ? " · " : ""}{vehicle.fuelType ?? ""}
+        </p>}
         <div className="relative mt-4 flex items-center gap-2 text-muted-foreground">
           <Gauge className="h-4 w-4 text-primary" />
-          <span className="font-display text-xl font-bold text-foreground">{fmtMiles(odometer)}</span>
+          <span className="font-display text-xl font-bold text-foreground">{vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)}</span>
           <span className="text-xs">odometer</span>
         </div>
         <div className="relative mt-3 inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-semibold text-success">
@@ -102,7 +106,11 @@ export function Dashboard() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
-          {vehicle.source === "official" ? "Official API data · last lookup saved" : "Sample vehicle · demo MOT history"}
+          {vehicle.source === "official"
+            ? "Official API data · last lookup saved"
+            : vehicle.source === "user-provided"
+              ? "Supplied specifications · not live verified"
+              : "Sample vehicle · demo MOT history"}
         </div>
       </section>
 

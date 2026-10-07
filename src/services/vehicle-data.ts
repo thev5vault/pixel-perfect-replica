@@ -52,6 +52,7 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
   return {
     vrm, make: ves.make ?? mot.make ?? "Unknown make", model: mot.model ?? "Model unavailable",
     odometer: latestReading?.mileage ?? 0,
+    odometerAvailable: latestReading !== undefined,
     v5cDate: ves.dateOfLastV5CIssued ?? "",
     motExpiry: latest?.expiryDate ?? "",
     motStatus: latest?.testResult ?? ves.motStatus ?? "Unknown",

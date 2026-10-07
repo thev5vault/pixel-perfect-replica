@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { VaultProvider, useVault } from "@/lib/vault-store";
 import { parseVehicleData } from "@/services/vehicle-data";
-import { lookupRegistration } from "@/services/server/dvla";
+import { lookupMockRegistration, lookupRegistration } from "@/services/server/dvla";
 
 describe("vehicle lookup data", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
@@ -28,6 +28,17 @@ describe("vehicle lookup data", () => {
   it("provides explicit demo results only for sample plates", async () => {
     expect(await lookupRegistration("BUL200")).toMatchObject({ vehicle: { vrm: "BUL200", source: "demo" }, notice: expect.stringContaining("demo") });
     await expect(lookupRegistration("ZZ99ZZZ")).rejects.toThrow("Live lookup is not configured");
+  });
+
+  it("returns the exact supplied LG57 VYF specs without claiming they were live verified", () => {
+    expect(lookupMockRegistration("lg57 vyf")).toMatchObject({
+      vehicle: {
+        vrm: "LG57VYF", make: "Audi", model: "A4", colour: "Silver", fuelType: "Petrol",
+        registrationDate: "2007-09-17", motExpiry: "2027-02-16", vin: "WUAZZZ8EX8A800721",
+        source: "user-provided", odometerAvailable: false,
+      },
+      notice: expect.stringContaining("unverified"),
+    });
   });
 
   it("fails explicitly for incomplete API credentials", async () => {

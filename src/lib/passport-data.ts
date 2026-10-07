@@ -2,9 +2,9 @@ import type { Vehicle, ServiceRecord, Modification } from "./vault-store";
 import type { PublicPassport } from "./v1-types";
 /** Public reports deliberately never include keeper identity, V5C secrets or raw receipts. */
 export function passportData(vehicle: Vehicle, services: ServiceRecord[], mods: Modification[], baseUrl: string, sample: boolean, parts = true): PublicPassport {
-  const { vrm, make, model, odometer, v5cDate, motExpiry, year, fuelType, colour, engineCapacity, taxStatus, taxDueDate, motStatus, motHistory, source, vin } = vehicle;
+  const { vrm, make, model, odometer, v5cDate, registrationDate, motExpiry, year, fuelType, colour, engineCapacity, taxStatus, taxDueDate, motStatus, motHistory, source, vin, odometerAvailable } = vehicle;
   return {
-    vehicle: { vrm, make, model, odometer, v5cDate, motExpiry, year, fuelType, colour, engineCapacity, taxStatus, taxDueDate, motStatus,
+    vehicle: { vrm, make, model, odometer, odometerAvailable, v5cDate, registrationDate, motExpiry, year, fuelType, colour, engineCapacity, taxStatus, taxDueDate, motStatus,
       vin: vin ? `•••••••••••${vin.slice(-6)}` : undefined, source, is_sample: sample },
     services: services.map(s => ({
       id: s.id, vrm: s.vrm, date: s.date, mileage: s.mileage, category: s.category, description: s.description,

@@ -44,7 +44,9 @@ function base64(bytes: Uint8Array) {
 export async function salesReportPdf(data: PublicPassport, logo?: Uint8Array): Promise<PdfDownload> {
   const doc = await document("Certified Sales Pack", data.is_sample, logo);
   doc.line(`${data.vehicle.make} ${data.vehicle.model} | ${data.vehicle.vrm}`, true);
-  doc.line(`Generated: ${new Date(data.generated_at).toLocaleString("en-GB")} | Mileage: ${data.vehicle.odometer.toLocaleString("en-GB")} miles`);
+  doc.line(`Generated: ${new Date(data.generated_at).toLocaleString("en-GB")} | Mileage: ${data.vehicle.odometerAvailable === false ? "Not supplied" : `${data.vehicle.odometer.toLocaleString("en-GB")} miles`}`);
+  if (data.vehicle.registrationDate) doc.line(`First registered: ${data.vehicle.registrationDate}`);
+  if (data.vehicle.source === "user-provided") doc.line("Vehicle specifications supplied; not verified by a live DVLA/DVSA lookup.");
   doc.line(`VIN: ${data.vehicle.vin ?? "Not supplied"} | Fuel: ${data.vehicle.fuelType ?? "Not returned"} | Colour: ${data.vehicle.colour ?? "Not returned"}`);
   doc.line(`MOT expiry: ${data.vehicle.motExpiry || "Not available"} | Tax: ${data.vehicle.taxStatus ?? "Not available"}`);
   const qr = await QRCode.toDataURL(data.public_url, { width: 220, margin: 3, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } });

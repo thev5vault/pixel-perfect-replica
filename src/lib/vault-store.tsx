@@ -92,11 +92,13 @@ export interface Vehicle {
   v5cDate: string;
   motExpiry: string;
   year?: number | undefined;
+  registrationDate?: string | undefined;
   fuelType?: string | undefined;
   colour?: string | undefined;
   motStatus?: string | undefined;
+  odometerAvailable?: boolean | undefined;
   motHistory?: MotReading[];
-  source?: "demo" | "official" | undefined;
+  source?: "demo" | "official" | "user-provided" | undefined;
   owner_user_id?: string | null;
   status?: "approved" | "pending" | "rejected";
   is_sample?: boolean;

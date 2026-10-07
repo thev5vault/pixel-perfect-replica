@@ -146,6 +146,19 @@ BEGIN
 END $$;
 DROP TRIGGER IF EXISTS immutable_service_history ON service_records;
 CREATE TRIGGER immutable_service_history BEFORE UPDATE OR DELETE ON service_records FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
+
+-- Vehicle identity can never be rebound to another keeper after its first claim.
+CREATE OR REPLACE FUNCTION prevent_active_keeper_overwrite() RETURNS trigger AS $$
+BEGIN
+  IF OLD.owner_user_id IS NOT NULL AND NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Vehicle already registered to an active keeper.';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS immutable_vehicle_keeper ON vehicles;
+CREATE TRIGGER immutable_vehicle_keeper BEFORE UPDATE OF owner_user_id ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION prevent_active_keeper_overwrite();
 DROP TRIGGER IF EXISTS immutable_modification_history ON modifications;
 CREATE TRIGGER immutable_modification_history BEFORE UPDATE OR DELETE ON modifications FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
 DROP TRIGGER IF EXISTS immutable_keeper_history ON vehicle_transfers;

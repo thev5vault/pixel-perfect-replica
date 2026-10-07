@@ -13,3 +13,13 @@ the official APIs require credentials not supplied with the imported project.
 **How to apply:** Samples are an intentional preview capability, not evidence of
 an official lookup or ownership. Preserve that distinction when configuring live
 APIs or changing onboarding.
+
+A separately supplied vehicle record may be returned when no lookup credentials
+exist, but it must be narrowly scoped and labelled as user-provided and unverified.
+Do not use it to mask a failed configured official API request.
+
+**Why:** The user supplied exact test-vehicle details and approved using them while
+live DVLA/DVSA credentials are unavailable.
+
+**How to apply:** Keep its provenance visible in the app and exported passports;
+never label manually supplied values as official.

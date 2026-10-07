@@ -47,12 +47,16 @@ function PublicBuyerPassport() {
       <section className="vault-card relative overflow-hidden p-5 sm:p-8">
         <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-primary/10"/>
         <div className="relative flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Vehicle record / {passport.published ? "shared by keeper" : "owner preview"}</p><h1 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">{passport.vehicle.make} {passport.vehicle.model}</h1><p className="mt-2 text-sm text-muted-foreground">{passport.vehicle.year ?? "Year not supplied"}{passport.vehicle.colour ? ` · ${passport.vehicle.colour}` : ""}{passport.vehicle.fuelType ? ` · ${passport.vehicle.fuelType}` : ""}</p></div><Plate vrm={passport.vehicle.vrm} size="lg"/></div>
-        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat icon={<Gauge/>} label="Current mileage" value={fmtMiles(passport.vehicle.odometer)}/>
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <Stat icon={<Gauge/>} label="Current mileage" value={passport.vehicle.odometerAvailable === false ? "Not supplied" : fmtMiles(passport.vehicle.odometer)}/>
+          <Stat icon={<CalendarDays/>} label="First registered" value={passport.vehicle.registrationDate ? fmtDate(passport.vehicle.registrationDate) : "Not supplied"}/>
           <Stat icon={<CalendarDays/>} label="MOT expiry" value={passport.vehicle.motExpiry ? fmtDate(passport.vehicle.motExpiry) : "Not supplied"}/>
           <Stat icon={<Wrench/>} label="Service records" value={String(passport.services.length)}/>
           <Stat icon={<BadgeCheck/>} label="Workshop stamps" value={String(passport.verified_stamp_count)}/>
         </div>
+        {passport.vehicle.source === "user-provided" && <p className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-xs text-warning">
+          Vehicle specifications were supplied for this record and have not been verified by a live DVLA/DVSA lookup.
+        </p>}
         <div className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground"><Shield className="h-4 w-4 shrink-0 text-primary"/>Keeper contact details and V5C reference are never displayed. VIN {passport.vehicle.vin ? `ending ${passport.vehicle.vin.slice(-4).padStart(Math.min(4, passport.vehicle.vin.length), "•")}` : "not available"}.</div>
       </section>
       <section className="vault-card p-4 sm:p-6">

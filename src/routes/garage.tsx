@@ -48,7 +48,7 @@ function GaragePage() {
       if (!response.ok) throw new Error(payload.error ?? "Sample lookup failed.");
       setTesterVrm(payload.vehicle.vrm);
       setTesterVin(payload.vehicle.vin ?? "");
-      setTesterMileage(String(payload.vehicle.odometer ?? ""));
+      setTesterMileage(payload.vehicle.odometerAvailable === false ? "" : String(payload.vehicle.odometer ?? ""));
       setMockSpecs(`${payload.vehicle.year} ${payload.vehicle.make} ${payload.vehicle.model} · MOT ${payload.vehicle.motExpiry}`);
     } catch (error) {
       setTesterError(error instanceof Error ? error.message : "Sample lookup failed.");
