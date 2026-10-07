@@ -31,3 +31,16 @@ updating its command, reintroducing the app/test-server race.
 
 **How to apply:** After changing browser validation registration, inspect the Run
 group and explicitly detach browser checks using validated workflow configuration.
+
+The workspace `.cache` tree can grow beyond 80,000 files and exhaust Vite's
+65,536 inotify-watch limit. Exclude generated cache paths from Vite's server
+watcher rather than repeatedly restarting a process at the limit.
+
+**Why:** Vite held nearly the full per-user watcher quota and failed while adding
+another project-file watch; ignoring `.cache` reduced the active watcher count
+substantially and restored a clean dev startup.
+
+**How to apply:** On `ENOSPC` watcher errors, inspect the Vite process's
+`/proc/<pid>/fdinfo/<fd>` watcher entries and generated directory sizes. Add
+`"**/.cache/**"` to `server.watch.ignored`, then stop stale Vite processes and
+restart the configured workflow once.

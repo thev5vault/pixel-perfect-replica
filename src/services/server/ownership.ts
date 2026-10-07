@@ -5,7 +5,7 @@ import type { PendingOwnershipClaim } from "@/lib/v1-types";
 import type { Vehicle } from "@/lib/vault-store";
 import { vehicleLimit } from "@/lib/plans";
 import { normalizeVIN, validateVIN } from "@/lib/vin";
-import { LG57_VYF, LG57_VYF_VIN, normalizeRegistration, vehicleClaimPolicy } from "@/lib/vehicle-claim-policy";
+import { LG57_VYF, LG57_VYF_VIN, normalizeRegistration, resolveClaimReference, vehicleClaimPolicy } from "@/lib/vehicle-claim-policy";
 import { currentUser, requireAdmin, signingSecret } from "./accounts";
 import { pool, inTransaction } from "./db";
 import { lookupRegistration } from "./dvla";
@@ -37,7 +37,7 @@ export async function claim(input: { vrm: string; reference?: string | undefined
   const user = await currentUser(), vrm = normalize(input.vrm);
   const policy = vehicleClaimPolicy(vrm, process.env["NODE_ENV"]);
   const firstAccount = policy === "first_account";
-  const reference = input.reference?.trim() ?? "";
+  const reference = resolveClaimReference(vrm, input.reference, process.env["NODE_ENV"]);
   let row = (await pool.query("SELECT * FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
   const inputVin = normalizeVIN(input.vin ?? "");
   if (!row && validateVIN(inputVin)) {

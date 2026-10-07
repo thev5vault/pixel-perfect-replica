@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Car, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -7,18 +8,20 @@ import { useVault } from "@/lib/vault-store";
 import { lookupVehicle } from "@/services/dvlaApi";
 import { ModalHeader } from "./ModalHeader";
 import { ModalField, MODAL_INPUT_CLASS } from "./ui-bits";
-import { LG57_VYF, normalizeRegistration } from "@/lib/vehicle-claim-policy";
+import { isDevelopmentFixtureVrm, LG57_VYF, normalizeRegistration } from "@/lib/vehicle-claim-policy";
 
 export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const account = useAccount();
-  const { addVehicle } = useVault();
+  const { addVehicle, setActiveVrm } = useVault();
+  const navigate = useNavigate();
   const [plate, setPlate] = useState("");
   const [reference, setReference] = useState("");
   const [vin,setVin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isLG57 = normalizeRegistration(plate) === LG57_VYF;
-  const developmentFirstClaim = isLG57 && Boolean(account?.state?.development);
+  const developmentFixture = Boolean(account?.state?.development) && isDevelopmentFixtureVrm(plate);
+  const developmentFirstClaim = isLG57 && developmentFixture;
   function changeOpen(next: boolean) {
     if (!next) { setBusy(false); setError(""); setPlate(""); setReference(""); setVin(""); }
     onOpenChange(next);
@@ -31,9 +34,13 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
         throw new Error("Sign in to claim LG57 VYF. Guest previews cannot bind this vehicle to an account.");
       }
       if (account?.signedIn) {
-        const result = await account.claimVehicle(plate, developmentFirstClaim ? "" : reference.replace(/\D/g, ""),vin||undefined);
+        const result = await account.claimVehicle(plate, developmentFixture ? "" : reference.replace(/\D/g, ""),vin||undefined);
         toast.success(result.message || (result.status === "approved" ? "Vehicle passport connected" : "Claim submitted for review"));
         changeOpen(false);
+        if (result.status === "approved") {
+          setActiveVrm(normalizeRegistration(plate));
+          await navigate({ to: "/vehicle" });
+        }
         return;
       }
       const result = await lookupVehicle({ data: { registrationNumber: plate } });
@@ -56,7 +63,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
             <ModalField label="Vehicle registration mark">{(id) => (
               <input id={id} autoFocus required minLength={2} maxLength={12} disabled={busy} value={plate} onChange={(e) => {setPlate(e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, ""));setError("");}} placeholder="AB14 CDE" autoComplete="off" className={MODAL_INPUT_CLASS} />
             )}</ModalField>
-            {account?.signedIn && !developmentFirstClaim && <div className="space-y-1.5">
+            {account?.signedIn && !developmentFixture && <div className="space-y-1.5">
               <ModalField label="11-digit V5C logbook reference">{(id) => (
                 <input id={id} required inputMode="numeric" autoComplete="off" minLength={11} maxLength={11} disabled={busy} value={reference} onChange={(e) => {setReference(e.target.value.replace(/\D/g, "").slice(0, 11));setError("");}} placeholder="11 digits on your V5C" className={MODAL_INPUT_CLASS} />
               )}</ModalField>
@@ -66,7 +73,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
               <ModalField label="VIN / chassis number on your V5C">{(id) => (
                 <input id={id} value={vin} maxLength={17} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,17))} className={MODAL_INPUT_CLASS} placeholder={developmentFirstClaim ? "Optional for this development record" : "17-character VIN (samples fill automatically)"} />
               )}</ModalField>
-              <span className="block text-xs text-muted-foreground">{developmentFirstClaim ? "The saved development record supplies this VIN; the first signed-in account is bound immediately." : "Live claims require supporting-document review. The document reference is never published."}</span>
+              <span className="block text-xs text-muted-foreground">{developmentFirstClaim ? "The saved development record supplies this VIN; the first signed-in account is bound immediately." : developmentFixture ? "The development fixture supplies the VIN and V5C reference automatically." : "Live claims require supporting-document review. The document reference is never published."}</span>
             </div>}
             {developmentFirstClaim && <p className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs leading-relaxed text-amber-100">
               Development first-claim rule: one verified signed-in account can bind LG57 VYF immediately. Guest claims are blocked, and the supplied specs are not live DVLA/DVSA verified.
@@ -78,7 +85,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
             {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
-            <button disabled={busy || (Boolean(account?.signedIn) && !developmentFirstClaim && reference.length !== 11)} className="btn-primary w-full" type="submit">
+            <button disabled={busy || (Boolean(account?.signedIn) && !developmentFixture && reference.length !== 11)} className="btn-primary w-full" type="submit">
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {busy ? "Connecting…" : "Connect vehicle passport"}
             </button>
