@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useUser, useClerk } from "@clerk/react";
-import type { AccountState } from "./account-types";
+import type { AccountState, AdminState, AdminVehicleEdit, WorkshopReview } from "./account-types";
+import { previewEnabled, setPreviewEnabled } from "./sample-account";
+import { useSampleAccount } from "./use-sample-account";
+import { clearPendingSignup } from "./signup-recovery";
 import type { Role, ServiceInput, Modification } from "./vault-store";
 import * as api from "@/services/accountApi";
 
@@ -9,10 +12,16 @@ export interface AccountContext {
   loading: boolean;
   error: string | null;
   signedIn: boolean;
+  authLoaded?: boolean;
+  preview?: boolean;
+  startPreview?: () => void;
   refresh: () => Promise<void>;
   claimVehicle: (vrm: string, reference: string) => Promise<{ status: "approved" | "pending"; is_sample: boolean; message: string }>;
   switchRole: (role: Role) => Promise<void>;
-  saveProfile: (profile: { full_name: string; garage_name: string; garage_registration: string }) => Promise<void>;
+  saveProfile: (profile: { full_name: string; garage_name: string; garage_registration: string; workshop_type?: "garage" | "specialist" }) => Promise<void>;
+  getAdminState: () => Promise<AdminState>;
+  reviewWorkshop: (input: WorkshopReview) => Promise<void>;
+  editVehicle: (input: AdminVehicleEdit) => Promise<void>;
   addService: (record: ServiceInput) => Promise<void>;
   addMod: (record: Omit<Modification,"id"|"status">) => Promise<void>;
   revertMod: (id: string, date: string, mileage: number) => Promise<void>;
@@ -25,11 +34,20 @@ const Context = createContext<AccountContext | null>(null);
 export function AccountProvider({children}:{children:ReactNode}) {
   const {isLoaded,isSignedIn,user} = useUser();
   const clerk = useClerk();
+  const [preview,setPreview] = useState(previewEnabled);
+  const exitPreview = useCallback(()=>{setPreviewEnabled(false);setPreview(false);window.location.assign("/");},[]);
+  const sample = useSampleAccount(exitPreview);
+  const startPreview = useCallback(()=>{
+    if(!import.meta.env.DEV) return;
+    clearPendingSignup();
+    setPreviewEnabled(true);
+    setPreview(true);
+  },[]);
   const [state,setState] = useState<AccountState|null>(null);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState<string|null>(null);
   const activeIdentity = useRef(user?.id);
-  activeIdentity.current = user?.id;
+  if (isLoaded) activeIdentity.current = user?.id;
   const refresh = useCallback(async () => {
     const identity=user?.id;
     if(!isSignedIn || !identity) return;
@@ -43,16 +61,22 @@ export function AccountProvider({children}:{children:ReactNode}) {
   },[isSignedIn,user?.id]);
   useEffect(()=>{
     let active=true;
-    setState(null);
-    if(!isLoaded) return;
-    if(!isSignedIn) {setLoading(false);setError(null);return;}
+    if(preview) return;
+    if(!isLoaded) {setLoading(true);return;}
+    if(!isSignedIn) {setState(null);setLoading(false);setError(null);return;}
+    setState(previous=>previous?.user.id===user?.id?previous:null);
     setLoading(true);
     void refresh().catch(()=>{if(active) setLoading(false);});
     const interval=setInterval(()=>{void refresh().catch(()=>{});},30000);
     return ()=>{active=false;clearInterval(interval);};
-  },[user?.id,isLoaded,isSignedIn,refresh]);
+  },[user?.id,isLoaded,isSignedIn,refresh,preview]);
   const value = useMemo<AccountContext>(()=>({
-    state,loading:!isLoaded||loading,error,signedIn:Boolean(isSignedIn),refresh,
+    state:state?.user.id===activeIdentity.current?state:null,
+    loading:!isLoaded||loading,error,signedIn:Boolean(isSignedIn||(!isLoaded&&state)),
+    authLoaded:isLoaded,preview:false,startPreview,refresh,
+    getAdminState:async()=>api.getAdminState(),
+    reviewWorkshop:async(input)=>{await api.reviewWorkshop({data:input});await refresh();},
+    editVehicle:async(input)=>{await api.editAdminVehicle({data:input});await refresh();},
     claimVehicle:async(vrm,reference)=>{const result=await api.claimVehicle({data:{vrm,reference}});await refresh();return result;},
     switchRole:async(role)=>{await api.switchDevelopmentRole({data:{role}});await refresh();},
     saveProfile:async(profile)=>{await api.saveAccount({data:profile});await refresh();},
@@ -63,7 +87,7 @@ export function AccountProvider({children}:{children:ReactNode}) {
     book:async(vrm,date,notes)=>{await api.createBooking({data:{vrm,date,notes}});await refresh();},
     updateBooking:async(id,status)=>{await api.updateBooking({data:{id,status}});await refresh();},
     signOut:async()=>{setLoading(true);await clerk.signOut({redirectUrl:"/"});setState(null);},
-  }),[state,loading,isLoaded,isSignedIn,error,refresh,clerk]);
-  return <Context.Provider value={value}>{children}</Context.Provider>;
+  }),[state,loading,isLoaded,isSignedIn,error,refresh,clerk,startPreview]);
+  return <Context.Provider value={preview&&import.meta.env.DEV?sample:value}>{children}</Context.Provider>;
 }
 export function useAccount() {return useContext(Context);}

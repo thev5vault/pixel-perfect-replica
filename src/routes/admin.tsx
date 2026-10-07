@@ -1,18 +1,30 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, Car, PoundSterling, Users, X } from "lucide-react";
-import { toast } from "sonner";
-import { formatVrm, useVault } from "@/lib/vault-store";
-import { FeatureLock } from "@/components/vault/FeatureLock";
-import { Field, PageHeader } from "@/components/vault/ui-bits";
+import {
+  AlertCircle,
+  BadgeCheck,
+  Building2,
+  CarFront,
+  Check,
+  ChevronDown,
+  Clock3,
+  LoaderCircle,
+  RefreshCw,
+  Users,
+  Wrench,
+  X,
+} from "lucide-react";
+import { PageHeader, Pill, Plate } from "@/components/vault/ui-bits";
+import type { AdminState, AdminUser } from "@/lib/account-types";
+import { useAccount } from "@/lib/account-store";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Admin Console — V5Vault" },
-      { name: "description", content: "Founder console for V5Vault platform metrics, garage verification and VRM overrides." },
+      { name: "description", content: "Manage V5Vault accounts, workshops and vehicle records." },
       { property: "og:title", content: "Admin Console — V5Vault" },
-      { property: "og:description", content: "Platform metrics, garage approvals and VRM overrides." },
+      { property: "og:description", content: "Manage V5Vault accounts, workshops and vehicle records." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -21,92 +33,419 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const { role } = useVault();
-  return (
-    <div>
-      {role !== "superadmin" ? <FeatureLock feature="garage" /> : <AdminConsole />}
-    </div>
-  );
-}
+  const account = useAccount();
+  const [adminData, setAdminData] = useState<AdminState | null>(null);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [savingVrm, setSavingVrm] = useState<string | null>(null);
+  const [editingVrm, setEditingVrm] = useState<string | null>(null);
+  const [draftMake, setDraftMake] = useState("");
+  const [draftModel, setDraftModel] = useState("");
+  const [draftOdometer, setDraftOdometer] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const getAdminStateRef = useRef(account?.getAdminState);
+  const reviewWorkshopRef = useRef(account?.reviewWorkshop);
+  const editVehicleRef = useRef(account?.editVehicle);
+  getAdminStateRef.current = account?.getAdminState;
+  reviewWorkshopRef.current = account?.reviewWorkshop;
+  editVehicleRef.current = account?.editVehicle;
 
-const QUEUE = [
-  { id: "g1", name: "Torque Tuning Ltd", town: "Birmingham", fca: "VAT GB 284 1192 07" },
-  { id: "g2", name: "Northside Motors", town: "Leeds", fca: "VAT GB 551 0938 12" },
-  { id: "g3", name: "Stage One Garage", town: "Bristol", fca: "VAT GB 730 4471 66" },
-];
+  const isAdmin = account?.state?.user.role === "dev_admin";
+  const userId = account?.state?.user.id;
 
-function AdminConsole() {
-  const [queue, setQueue] = useState(QUEUE);
-  const [vrm, setVrm] = useState("");
-  const [action, setAction] = useState("Force unlink owner");
+  useEffect(() => {
+    if (!isAdmin || account?.loading || account?.error) return;
+    let active = true;
+    setDataLoading(true);
+    setDataError(null);
+    const load = getAdminStateRef.current;
+    if (!load) {
+      setDataError("Admin data is not available.");
+      setDataLoading(false);
+      return;
+    }
+    void load()
+      .then((result) => {
+        if (active) setAdminData(result);
+      })
+      .catch((error: unknown) => {
+        if (active) setDataError(error instanceof Error ? error.message : "Admin data could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setDataLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAdmin, userId, account?.loading, account?.error, reloadKey]);
 
-  const decide = (id: string, ok: boolean) => {
-    const g = queue.find((q) => q.id === id);
-    setQueue((q) => q.filter((x) => x.id !== id));
-    toast[ok ? "success" : "info"](`${g?.name} ${ok ? "approved as Verified Workshop" : "rejected"}`);
+  const refreshAdminData = () => setReloadKey((key) => key + 1);
+
+  const reviewApplication = async (user: AdminUser, status: "approved" | "rejected") => {
+    const review = reviewWorkshopRef.current;
+    if (!review || reviewingId) return;
+    setActionError(null);
+    setReviewingId(user.id);
+    try {
+      await review({ id: user.id, status });
+      const load = getAdminStateRef.current;
+      if (!load) throw new Error("Admin data is not available.");
+      setAdminData(await load());
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Workshop application could not be updated.");
+    } finally {
+      setReviewingId(null);
+    }
   };
+
+  const startEditing = (vehicle: AdminState["vehicles"][number]) => {
+    setActionError(null);
+    setEditingVrm(vehicle.vrm);
+    setDraftMake(vehicle.make);
+    setDraftModel(vehicle.model);
+    setDraftOdometer(String(vehicle.odometer));
+  };
+
+  const saveVehicle = async (event: FormEvent<HTMLFormElement>, vrm: string) => {
+    event.preventDefault();
+    const edit = editVehicleRef.current;
+    const odometer = Number(draftOdometer);
+    if (!draftMake.trim() || !draftModel.trim() || !Number.isFinite(odometer) || odometer < 0) {
+      setActionError("Enter a make, model and valid non-negative odometer reading.");
+      return;
+    }
+    if (!edit || savingVrm) return;
+    setActionError(null);
+    setSavingVrm(vrm);
+    try {
+      await edit({ vrm, make: draftMake.trim(), model: draftModel.trim(), odometer });
+      const load = getAdminStateRef.current;
+      if (!load) throw new Error("Admin data is not available.");
+      setAdminData(await load());
+      setEditingVrm(null);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Vehicle details could not be saved.");
+    } finally {
+      setSavingVrm(null);
+    }
+  };
+
+  if (account?.loading) return <LoadingState label="Checking account access…" />;
+  if (account?.error && !account.state) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Admin Console" subtitle="Account access could not be confirmed." />
+        <Notice title="Account unavailable" message={account.error} />
+        <button type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => void account.refresh().catch(() => undefined)}>
+          <RefreshCw className="h-4 w-4" /> Retry
+        </button>
+      </div>
+    );
+  }
+  if (!account?.state) return <Notice title="SuperAdmin access required" message="Sign in with an authorized administrator account to view these records." />;
+
+  // This guard intentionally uses the authenticated account role, never the development vault role.
+  if (account.state.user.role !== "dev_admin") return <Notice title="SuperAdmin access required" message="Account administration is not unlocked by purchasing a plan or switching a development view." />;
+
+  if (account.error) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Admin Console" subtitle="Account data needs attention before administration can continue." />
+        <Notice title="Account could not be refreshed" message={account.error} />
+        <button type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => void account.refresh().catch(() => undefined)}>
+          <RefreshCw className="h-4 w-4" /> Retry
+        </button>
+      </div>
+    );
+  }
+
+  const preview = account.preview === true;
+  const users = adminData?.users ?? [];
+  const vehicles = adminData?.vehicles ?? [];
+  const applications = adminData?.applications ?? [];
+  const unlinkedVehicles = vehicles.filter((vehicle) => !users.some((user) => user.id === vehicle.owner_user_id));
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Admin Console" subtitle="Dev Owner / Founder access" />
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Metric icon={<Car className="h-5 w-5" />} label="Registered Vehicles" value="1,248" />
-        <Metric icon={<Users className="h-5 w-5" />} label="Pro Modders" value="342" />
-        <Metric icon={<PoundSterling className="h-5 w-5" />} label="Monthly Revenue" value="£3,842" />
+      <PageHeader
+        title="Admin Console"
+        subtitle="Account directory, workshop applications and vehicle record corrections."
+      />
+      {preview && (
+        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <div>
+            <p className="font-semibold">Sample preview — not live administration</p>
+            <p className="mt-1 text-muted-foreground">
+              The records and any approvals or vehicle edits here affect sample fixtures only. No real account or workshop record is changed.
+            </p>
+          </div>
+        </div>
+      )}
+      {actionError && <Notice title="Action could not be completed" message={actionError} />}
+
+      <section className="grid gap-3 sm:grid-cols-3" aria-label="Directory totals">
+        <Summary icon={<Users className="h-5 w-5" />} label="Registered users" value={adminData ? users.length : null} />
+        <Summary icon={<CarFront className="h-5 w-5" />} label="Vehicle records" value={adminData ? vehicles.length : null} />
+        <Summary icon={<Clock3 className="h-5 w-5" />} label="Pending applications" value={adminData ? applications.length : null} />
       </section>
 
-      <section className="vault-card p-4">
-        <h2 className="mb-3 flex items-center gap-2 font-bold"><BadgeCheck className="h-5 w-5 text-primary" /> Garage Verification Queue</h2>
-        <ul className="space-y-3">
-          {queue.map((g) => (
-            <li key={g.id} className="flex items-center gap-3 rounded-lg border bg-background/50 p-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{g.name}</p>
-                <p className="text-xs text-muted-foreground">{g.town} · {g.fca}</p>
+      {dataLoading && !adminData ? (
+        <LoadingState label="Loading account and vehicle records…" />
+      ) : dataError ? (
+        <section className="vault-card p-5">
+          <Notice title="Admin records unavailable" message={dataError} />
+          <button type="button" onClick={refreshAdminData} className="btn-primary mt-4 inline-flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" /> Retry loading records
+          </button>
+        </section>
+      ) : adminData ? (
+        <>
+          <section className="vault-card overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+              <div>
+                <h2 className="flex items-center gap-2 font-bold"><Building2 className="h-5 w-5 text-primary" /> Workshop applications</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Review pending garage and specialist registrations.</p>
               </div>
-              <button onClick={() => decide(g.id, false)} className="btn-ghost px-2" aria-label={`Reject ${g.name}`}><X className="h-4 w-4" /></button>
-              <button onClick={() => decide(g.id, true)} className="btn-primary px-3 py-2 text-sm">Approve</button>
-            </li>
-          ))}
-          {queue.length === 0 && <p className="text-sm text-muted-foreground">Queue clear.</p>}
-        </ul>
-      </section>
+              <Pill tone={applications.length ? "warning" : "muted"}>{applications.length} pending</Pill>
+            </div>
+            {applications.length ? (
+              <ul className="divide-y">
+                {applications.map((application) => (
+                  <li key={application.id} className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{application.garage_name || application.full_name || "Workshop applicant"}</p>
+                        <Pill>{application.workshop_type === "specialist" ? "Specialist" : "Garage"}</Pill>
+                        {application.is_sample && <Pill>Sample record</Pill>}
+                      </div>
+                      <p className="mt-1 break-all text-sm text-muted-foreground">{application.email}</p>
+                      {application.garage_registration && (
+                        <p className="mt-1 text-xs text-muted-foreground">Registration: {application.garage_registration}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="btn-ghost inline-flex items-center gap-1.5 border px-3 py-2 text-sm"
+                        onClick={() => void reviewApplication(application, "rejected")}
+                        disabled={reviewingId !== null}
+                        aria-label={`Reject application from ${application.garage_name || application.email}`}
+                      >
+                        {reviewingId === application.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary inline-flex items-center gap-1.5 px-3 py-2 text-sm"
+                        onClick={() => void reviewApplication(application, "approved")}
+                        disabled={reviewingId !== null}
+                      >
+                        {reviewingId === application.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Approve
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState icon={<BadgeCheck className="h-5 w-5" />} title="No pending applications" detail="New garage and specialist applications will appear here." />
+            )}
+          </section>
 
-      <form
-        className="vault-card space-y-4 p-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (vrm.replace(/\s/g, "").length < 2) { toast.error("Enter a valid VRM."); return; }
-          toast.success(`${action} applied to ${vrm}`);
-          setVrm("");
-        }}
-      >
-        <h2 className="flex items-center gap-2 font-bold"><BadgeCheck className="h-5 w-5 text-primary" /> VRM Override Tool</h2>
-        <Field label="Registration">
-          <input value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field uppercase" />
-        </Field>
-        <Field label="Action">
-          <select value={action} onChange={(e) => setAction(e.target.value)} className="field">
-            <option>Force unlink owner</option>
-            <option>Reset V5C reference</option>
-            <option>Freeze vehicle record</option>
-            <option>Restore verified status</option>
-          </select>
-        </Field>
-        <button type="submit" className="btn-primary w-full">Apply Override</button>
-      </form>
+          <section className="vault-card overflow-hidden">
+            <div className="border-b p-4">
+              <h2 className="flex items-center gap-2 font-bold"><Users className="h-5 w-5 text-primary" /> Registered users</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Linked vehicles are matched using the account owner ID.</p>
+            </div>
+            {users.length ? (
+              <ul className="divide-y">
+                {users.map((user) => {
+                  const linkedVehicles = vehicles.filter((vehicle) => vehicle.owner_user_id === user.id);
+                  return (
+                    <li key={user.id} className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold">{user.full_name || "Name not provided"}</p>
+                            <Pill>{user.role.replaceAll("_", " ")}</Pill>
+                            <Pill tone={user.status === "approved" ? "success" : user.status === "pending" ? "warning" : "muted"}>{user.status}</Pill>
+                            {user.is_sample && <Pill>Sample record</Pill>}
+                          </div>
+                          <p className="mt-1 break-all text-sm text-muted-foreground">{user.email}</p>
+                          {user.garage_name && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {user.garage_name}{user.garage_registration ? ` · ${user.garage_registration}` : ""}
+                              {user.garage_verified ? " · Verified" : ""}
+                            </p>
+                          )}
+                          <p className="mt-1 text-xs text-muted-foreground">Joined {formatDate(user.created_at)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CarFront className="h-4 w-4" />
+                          {linkedVehicles.length} {linkedVehicles.length === 1 ? "vehicle" : "vehicles"}
+                        </div>
+                      </div>
+                      {linkedVehicles.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                          {linkedVehicles.map((vehicle) => (
+                            <span key={vehicle.vrm} className="inline-flex items-center gap-2 rounded-lg bg-muted/70 px-2.5 py-1.5 text-xs">
+                              <Plate vrm={vehicle.vrm} size="sm" />
+                              <span>{vehicle.make} {vehicle.model}</span>
+                              {vehicle.is_sample && <span className="text-muted-foreground">Sample</span>}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState icon={<Users className="h-5 w-5" />} title="No registered users found" detail="Accounts will appear here when available." />
+            )}
+          </section>
+
+          <section className="vault-card overflow-hidden">
+            <div className="border-b p-4">
+              <h2 className="flex items-center gap-2 font-bold"><Wrench className="h-5 w-5 text-primary" /> Vehicle records</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Correct make, model and odometer details. Unlinked records remain listed.</p>
+            </div>
+            {vehicles.length ? (
+              <ul className="divide-y">
+                {vehicles.map((vehicle) => {
+                  const owner = users.find((user) => user.id === vehicle.owner_user_id);
+                  const isEditing = editingVrm === vehicle.vrm;
+                  return (
+                    <li key={vehicle.vrm} className="p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          <Plate vrm={vehicle.vrm} />
+                          <div className="min-w-0">
+                            <p className="font-semibold">{vehicle.make} {vehicle.model}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {vehicle.odometer.toLocaleString("en-GB")} miles · {owner ? `Owner: ${owner.full_name || owner.email}` : "Unlinked vehicle"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {vehicle.is_sample && <Pill>Sample record</Pill>}
+                          <Pill>{vehicle.status}</Pill>
+                          <button
+                            type="button"
+                            className="btn-ghost inline-flex items-center gap-1.5 border px-3 py-2 text-sm"
+                            onClick={() => isEditing ? setEditingVrm(null) : startEditing(vehicle)}
+                            aria-expanded={isEditing}
+                            aria-controls={`edit-${encodeURIComponent(vehicle.vrm)}`}
+                          >
+                            {isEditing ? "Cancel" : "Edit"}
+                            <ChevronDown className={`h-4 w-4 transition-transform ${isEditing ? "rotate-180" : ""}`} />
+                          </button>
+                        </div>
+                      </div>
+                      {isEditing && (
+                        <form
+                          id={`edit-${encodeURIComponent(vehicle.vrm)}`}
+                          className="mt-4 grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-4"
+                          onSubmit={(event) => void saveVehicle(event, vehicle.vrm)}
+                        >
+                          <label className="space-y-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Make</span>
+                            <input className="field" value={draftMake} onChange={(event) => setDraftMake(event.target.value)} required />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Model</span>
+                            <input className="field" value={draftModel} onChange={(event) => setDraftModel(event.target.value)} required />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-xs font-semibold text-muted-foreground">Odometer (miles)</span>
+                            <input className="field" type="number" min="0" step="1" value={draftOdometer} onChange={(event) => setDraftOdometer(event.target.value)} required />
+                          </label>
+                          <div className="flex items-end">
+                            <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-3 py-2" disabled={savingVrm !== null}>
+                              {savingVrm === vehicle.vrm ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                              {savingVrm === vehicle.vrm ? "Saving…" : "Save vehicle"}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState icon={<CarFront className="h-5 w-5" />} title="No vehicle records found" detail="Registered vehicles will appear here." />
+            )}
+            {unlinkedVehicles.length > 0 && (
+              <p className="border-t px-4 py-3 text-xs text-muted-foreground">
+                {unlinkedVehicles.length} unlinked {unlinkedVehicles.length === 1 ? "vehicle is" : "vehicles are"} included above.
+              </p>
+            )}
+          </section>
+
+          {dataLoading && <p className="text-center text-xs text-muted-foreground">Refreshing records…</p>}
+        </>
+      ) : (
+        <section className="vault-card p-5">
+          <p className="text-sm text-muted-foreground">Admin records have not loaded yet.</p>
+          <button type="button" onClick={refreshAdminData} className="btn-primary mt-4 inline-flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" /> Load records
+          </button>
+        </section>
+      )}
     </div>
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Summary({ icon, label, value }: { icon: ReactNode; label: string; value: number | null }) {
   return (
     <div className="vault-card flex items-center gap-3 p-4">
       <div className="rounded-lg bg-primary/15 p-2 text-primary">{icon}</div>
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="font-display text-2xl font-bold">{value}</p>
+        <p className="font-display text-2xl font-bold">{value === null ? "—" : value}</p>
       </div>
     </div>
   );
+}
+
+function LoadingState({ label }: { label: string }) {
+  return (
+    <div className="vault-card flex items-center gap-3 p-5" role="status">
+      <div className="h-9 w-9 animate-pulse rounded-lg bg-primary/15" />
+      <div className="space-y-2">
+        <div className="h-3 w-36 animate-pulse rounded bg-muted" />
+        <p className="text-sm text-muted-foreground">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function Notice({ title, message }: { title: string; message: string }) {
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="mt-1 break-words text-sm text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, detail }: { icon: ReactNode; title: string; detail: string }) {
+  return (
+    <div className="flex flex-col items-center px-5 py-10 text-center">
+      <div className="mb-3 rounded-full bg-muted p-3 text-muted-foreground">{icon}</div>
+      <p className="font-semibold">{title}</p>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }

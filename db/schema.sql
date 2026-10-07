@@ -10,10 +10,12 @@ CREATE TABLE IF NOT EXISTS user_accounts (
   garage_verified BOOLEAN NOT NULL DEFAULT false,
   garage_name TEXT NOT NULL DEFAULT '',
   garage_registration TEXT NOT NULL DEFAULT '',
+  workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
   is_sample BOOLEAN NOT NULL DEFAULT false
   ,dev_role TEXT
 );
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist'));
 CREATE TABLE IF NOT EXISTS vehicles (
   id TEXT PRIMARY KEY,
   owner_user_id TEXT REFERENCES user_accounts(id),

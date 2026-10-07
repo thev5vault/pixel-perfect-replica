@@ -59,7 +59,9 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {s.is_verified_stamp === true
-            ? <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
+            ? s.stamp_authority==="administrator"
+              ? <Pill tone="primary">{s.is_sample?"Sample administrator stamp":"Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
+              : <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
             : <Pill><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Owner Logged / DIY Record</Pill>}
           <Pill>{s.category}</Pill>
           {s.cost != null && pro && <Pill>£{s.cost.toFixed(2)}</Pill>}

@@ -50,6 +50,7 @@ export interface ServiceRecord {
   is_verified_stamp?: boolean;
   stamped_by_garage_id?: string | null;
   stamp_signature?: string | null;
+  stamp_authority?: "workshop" | "administrator";
   is_sample?: boolean;
   status?: "approved" | "pending";
   invoice_name?: string | undefined;
@@ -273,7 +274,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   const live = account?.state;
-  const effectiveRole: Role = live?.development_role ?? (live?.user.role === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
+  const effectiveRole: Role = live?.development_role ?? (live?.user.role === "dev_admin" ? "superadmin" : live?.user.role === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
   const current = live ? { ...state, vehicles: live.vehicles, services: live.services, mods: live.mods, role: effectiveRole, unlocked: true, pin: "managed-auth", v5cRefs: {} } : state;
   const vehicle = current.vehicles.find((v) => v.vrm === state.activeVrm) ?? current.vehicles[0] ?? VEHICLES[0]!;
 

@@ -22,6 +22,7 @@ import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
+import { DevPreviewButton } from "@/components/vault/DevPreviewButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -356,6 +357,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 function PublicLanding() {
   return (
     <main className="min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
+      {import.meta.env.DEV && <div className="mx-auto max-w-md px-5"><DevPreviewButton /></div>}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <div className="flex items-center gap-3"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold">V5Vault</span></div>
         <div className="flex items-center gap-2"><a href="/sign-in" className="rounded-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Sign in</a><a href="/sign-up" className="btn-primary px-4 py-2 text-sm">Create account</a></div>

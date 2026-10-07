@@ -13,6 +13,7 @@ function BrowserProviders({children}:{children:ReactNode}) {
   const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"]);
   const clerkProxyUrl = import.meta.env["VITE_CLERK_PROXY_URL"];
   return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl}
+    signInForceRedirectUrl="/" signUpForceRedirectUrl="/"
     localization={{
       signIn: { start: { title: "Sign in to V5Vault", titleCombined: "Sign in to V5Vault" } },
       signUp: { start: { title: "Create your V5Vault account", titleCombined: "Create your V5Vault account" } },

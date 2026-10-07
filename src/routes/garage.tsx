@@ -12,7 +12,7 @@ export const Route = createFileRoute("/garage")({ component: GaragePage });
 function GaragePage() {
   const account = useAccount();
   const user = account?.state?.user;
-  const canStamp = user?.role === "verified_garage" && user.garage_verified;
+  const canStamp = user?.role === "dev_admin" || (user?.role === "verified_garage" && user.garage_verified);
   const [vrm, setVrm] = useState("");
   const [mileage, setMileage] = useState("");
   const [notes, setNotes] = useState("");

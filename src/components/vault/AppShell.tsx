@@ -10,6 +10,7 @@ import { V5VaultLogo } from "./V5VaultLogo";
 import { VehicleLookupDialog } from "./VehicleLookupDialog";
 import { UnlockGate } from "./UnlockGate";
 import { toast } from "sonner";
+import { accountHome, isAuthEntry } from "@/lib/auth-routing";
 
 const CIVILIAN = [
   { to: "/vehicle", label: "Vehicle", icon: Car }, { to: "/passport", label: "Passport", icon: FileBadge }, { to: "/settings", label: "Settings", icon: Settings },
@@ -19,6 +20,11 @@ const MODDER = [
 ] as const;
 const GARAGE = [
   { to: "/garage", label: "Workshop Terminal", icon: Wrench }, { to: "/queue", label: "Customer Queue", icon: ClipboardList }, { to: "/bookings", label: "Bookings", icon: Gauge }, { to: "/account", label: "Account", icon: Settings },
+] as const;
+const GODMODE = [
+  {to:"/vehicle",label:"Vehicle",icon:Car}, {to:"/vault",label:"Vault",icon:Lock},
+  {to:"/garage",label:"Garage",icon:Wrench}, {to:"/passport",label:"Passport",icon:FileBadge},
+  {to:"/admin",label:"Admin",icon:Terminal},
 ] as const;
 const ROLE_NAME: Record<Role, string> = {
   Owner: "Civilian · Free account", DIY: "Civilian · Pro DIY", Pro: "Modder · Pro Modder", Garage: "Verified garage", superadmin: "Development superadmin",
@@ -33,22 +39,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const signed = Boolean(account?.signedIn && account.state);
-  const isPublic = path === "/" || path.startsWith("/sign-in") || path.startsWith("/sign-up") || path.startsWith("/verify");
+   const isPublic = isAuthEntry(path) || path.startsWith("/verify");
   const user = account?.state?.user;
-  const role = account?.state?.development_role ?? (user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
+   const role = account?.state?.development_role ?? (user?.role === "dev_admin" ? "superadmin" : user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
   const garage = user?.role === "verified_garage" || role === "Garage";
   const baseNavItems = !signed ? [] : garage ? GARAGE : user?.role === "modder" || role === "Pro" || role === "superadmin" ? MODDER : CIVILIAN;
-  const navItems = account?.state?.development && role === "superadmin" ? [...baseNavItems, { to: "/admin", label: "Admin", icon: Terminal } as const] : baseNavItems;
+   const navItems = signed && user?.role==="dev_admin" ? GODMODE : baseNavItems;
   const vehicles = account?.state?.vehicles ?? [];
   const active = vehicles.find((v) => v.vrm === vault.vehicle.vrm) ?? vehicles[0];
   const initial = (user?.full_name || user?.email || "V").trim().slice(0, 1).toUpperCase();
 
   useEffect(() => {
-    if (!signed || !account?.state || (path !== "/" && !path.startsWith("/sign-in") && !path.startsWith("/sign-up"))) return;
-    void navigate({ to: account.state.user.role === "verified_garage" || account.state.development_role === "Garage" ? "/garage" : "/vehicle" });
-  }, [signed, account?.state?.user.role, path, navigate]);
+     if (!signed || !account?.state || account.authLoaded===false || !isAuthEntry(path)) return;
+     void navigate({ to: accountHome(account.state), replace:true });
+   }, [signed, account?.authLoaded, account?.state?.user.role, account?.state?.development_role, path, navigate]);
 
   if (path.startsWith("/verify/")) return <>{children}</>;
+   if(account?.authLoaded===false && account.state) return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-400" role="status">Restoring your session…</div>;
   if (account?.loading && account.signedIn && !account.state) {
     return <div className="min-h-[100dvh] animate-pulse bg-slate-950" aria-label="Loading account"><div className="mx-auto mt-24 h-28 max-w-xl rounded-2xl bg-slate-800/60" /></div>;
   }
@@ -65,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const doRole = async (r: Role) => {
     if (!account) { vault.setRole(r); return; }
     setWorking(true);
-    try { await account.switchRole(r); await navigate({to:r==="Garage"?"/garage":"/vehicle"}); toast.success("Development role updated"); }
+    try { await account.switchRole(r); await navigate({to:r==="superadmin"&&user?.role==="dev_admin"?"/admin":r==="Garage"?"/garage":"/vehicle"}); toast.success("View updated"); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Role could not be changed"); }
     finally { setWorking(false); }
   };
@@ -99,22 +106,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel className="flex flex-col items-start gap-1">
                 <span className="max-w-full truncate text-sm">{user?.full_name || user?.email || "Account"}</span>
-                <span className="rounded-md border border-cyan-500/30 bg-cyan-950/80 px-2 py-1 font-mono text-[11px] text-cyan-300">{ROLE_NAME[role]}</span>
+                 <span className="rounded-md border border-cyan-500/30 bg-cyan-950/80 px-2 py-1 font-mono text-[11px] text-cyan-300">{user?.role==="dev_admin"?"SuperAdmin / God Mode":ROLE_NAME[role]}</span>
+                 {user?.role==="dev_admin"&&role!=="superadmin"&&<span className="text-[10px] text-muted-foreground">Viewing: {ROLE_LABELS[role]}</span>}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {!!account?.state?.notifications.some((n) => !n.read) && <DropdownMenuItem onClick={async () => { if (!account) return; try { await account.markRead(); toast.success("Notifications marked as read"); } catch (e) { toast.error(e instanceof Error ? e.message : "Could not update notifications"); } }}><Bell className="h-4 w-4" /> Mark notifications read</DropdownMenuItem>}
               {(account?.state?.notifications ?? []).slice(0, 4).map((n) => <div key={n.id} className={`px-2 py-2 text-xs leading-relaxed ${n.read ? "text-muted-foreground" : "text-foreground"}`}>{n.message}{!n.read && <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-primary" />}</div>)}
-              {account?.state?.development && <>
+               {(account?.state?.development||user?.role==="dev_admin") && <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Development role switch</DropdownMenuLabel>
+                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">{user?.role==="dev_admin"?"Tier view switcher":"Development role switch"}</DropdownMenuLabel>
                 {ROLES.map((r) => <DropdownMenuItem key={r} disabled={working} onClick={() => void doRole(r)}>{ROLE_LABELS[r]}{r === role ? " · Active" : ""}</DropdownMenuItem>)}
               </>}
+               {user?.role==="dev_admin"&&<>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem onClick={()=>void navigate({to:"/bookings"})}>Workshop bookings</DropdownMenuItem>
+                 <DropdownMenuItem onClick={()=>void navigate({to:"/queue"})}>Customer queue</DropdownMenuItem>
+                 <DropdownMenuItem onClick={()=>void navigate({to:"/settings"})}>Account & settings</DropdownMenuItem>
+               </>}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={async () => { try { if (account) await account.signOut(); else vault.lock(); } catch (e) { toast.error(e instanceof Error ? e.message : "Could not sign out"); } }}><LogOut className="h-4 w-4" /> Sign out</DropdownMenuItem>
+               <DropdownMenuItem onClick={async () => { try { if (account) await account.signOut(); else vault.lock(); } catch (e) { toast.error(e instanceof Error ? e.message : "Could not sign out"); } }}><LogOut className="h-4 w-4" /> {account?.preview?"Exit sample preview":"Sign out"}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
+      {account?.preview&&<div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/25 bg-amber-950/40 px-4 py-2 text-[11px] text-amber-100">
+        <span>Sample God Mode · No real account or database access. Changes reset on reload.</span>
+        <button type="button" onClick={()=>void account.signOut()} className="min-h-9 shrink-0 rounded-lg border border-amber-500/30 px-2">Exit preview</button>
+      </div>}
       {account?.error && <div role="alert" className="mx-auto mt-3 flex max-w-2xl items-center justify-between rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-2 text-xs text-red-200"><span>{account.error}</span><button className="underline" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div>}
       <main className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pb-24 pt-4">
         {signed && !garage && vehicles.length === 0 && ["/vehicle","/passport","/vault"].includes(path) ? <section className="vault-card mt-5 space-y-4 p-6 text-center"><Car className="mx-auto h-8 w-8 text-primary" /><h1 className="text-xl font-bold">Connect your first vehicle</h1><p className="text-sm text-muted-foreground">Link a vehicle using its registration and 11-digit V5C reference. Development sample approvals are not live DVLA verification.</p><button className="btn-primary w-full" onClick={()=>setConnectOpen(true)}>Connect New Vehicle</button></section> : children}

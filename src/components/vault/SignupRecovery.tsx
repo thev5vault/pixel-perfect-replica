@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useClerk, useUser } from "@clerk/react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { previewEnabled } from "@/lib/sample-account";
 import {
   clearPendingSignup, isRecoveryRoute, isExpiredRecoveryError, pendingEmailFromSignup,
   readPendingSignup, savePendingSignup, VERIFY_EMAIL_PATH,
@@ -18,11 +19,11 @@ export function SignupRecovery({ children }: { children: ReactNode }) {
   const clerk = useClerk();
   const { isLoaded, isSignedIn } = useUser();
   const navigate = useNavigate();
-  const [recovering, setRecovering] = useState(() => Boolean(pendingHint()));
+  const [recovering, setRecovering] = useState(() => !previewEnabled() && Boolean(pendingHint()));
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (isSignedIn) {
+    if (isSignedIn || previewEnabled()) {
       clearPendingSignup();
       setRecovering(false);
       return;
@@ -45,7 +46,7 @@ export function SignupRecovery({ children }: { children: ReactNode }) {
       }
     };
     const observe = (signup: typeof clerk.client.signUp | undefined) => {
-      if (disposed) return;
+      if (disposed || previewEnabled()) return;
       if (expiredAttempt && signup?.id === expiredAttempt) return;
       const email = pendingEmailFromSignup(signup);
       if (email && (window.location.pathname.startsWith("/sign-up") || pendingHint())) {
@@ -55,6 +56,7 @@ export function SignupRecovery({ children }: { children: ReactNode }) {
     };
     const restore = async () => {
       if (disposed || inFlight || document.visibilityState === "hidden") return;
+      if(previewEnabled()) {setRecovering(false);return;}
       if (!pendingHint() && !(window.location.pathname.startsWith("/sign-up") && clerk.client?.signUp.id !== expiredAttempt && pendingEmailFromSignup(clerk.client?.signUp))) {
         setRecovering(false);
         return;
@@ -64,7 +66,7 @@ export function SignupRecovery({ children }: { children: ReactNode }) {
         // Fetch the existing Clerk client attempt. Never recreate signup, resend
         // codes, store passwords, or trust sessionStorage to activate a session.
         const client = await clerk.client.reload();
-        if (disposed) return;
+        if (disposed || previewEnabled()) return;
         const email = pendingEmailFromSignup(client.signUp);
         if (email) {
           saveHint(email);

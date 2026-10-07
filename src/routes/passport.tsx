@@ -30,6 +30,7 @@ type Cert = "standard" | "oem" | "master";
 
 function provenance(s: ServiceRecord) {
   if (s.is_verified_stamp !== true) return "Owner Logged / DIY Record";
+  if (s.stamp_authority === "administrator") return `${s.is_sample ? "Development sample · " : ""}Administrator-signed record - ${s.garage} · /verify/${s.id}`;
   if (s.is_sample === true) return `Development sample · VAT not live verified${s.stamp_signature ? ` · Signature ${s.stamp_signature}` : ""} · /verify/${s.id}`;
   return `Verified Workshop Stamp - ${s.garage} (VAT Reg Verified)${s.stamp_signature ? ` · Signature ${s.stamp_signature}` : ""} · /verify/${s.id}`;
 }

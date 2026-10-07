@@ -19,7 +19,7 @@ export const switchDevelopmentRole = createServerFn({method:"POST"})
   .validator(z.object({role:z.enum(["Owner","DIY","Pro","Garage","superadmin"])}))
   .handler(async ({data}) => (await import("./server/accounts")).developmentRole(data.role));
 export const saveAccount = createServerFn({method:"POST"})
-  .validator(z.object({full_name:z.string().trim().min(1).max(100),garage_name:z.string().max(100),garage_registration:z.string().max(40)}))
+  .validator(z.object({full_name:z.string().trim().min(1).max(100),garage_name:z.string().max(100),garage_registration:z.string().max(40),workshop_type:z.enum(["garage","specialist"]).optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).updateAccount(data));
 export const createServiceRecord = createServerFn({method:"POST"}).validator(service)
   .handler(async ({data}) => (await import("./server/accounts")).createService(data));
@@ -38,3 +38,11 @@ export const revertModification = createServerFn({method:"POST"})
   .handler(async ({data}) => (await import("./server/accounts")).revertModification(data));
 export const verifyWorkshopStamp = createServerFn({method:"GET"}).validator(z.object({id:z.string().max(100)}))
   .handler(async ({data}) => (await import("./server/accounts")).verifyStamp(data.id));
+export const getAdminState = createServerFn({method:"GET"})
+  .handler(async () => (await import("./server/accounts")).adminState());
+export const reviewWorkshop = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string().min(1).max(100),status:z.enum(["approved","rejected"])}))
+  .handler(async ({data}) => (await import("./server/accounts")).reviewWorkshop(data));
+export const editAdminVehicle = createServerFn({method:"POST"})
+  .validator(z.object({vrm,make:z.string().trim().min(1).max(100),model:z.string().trim().min(1).max(150),odometer:z.number().int().min(0).max(2000000)}))
+  .handler(async ({data}) => (await import("./server/accounts")).editAdminVehicle(data));
