@@ -29,10 +29,8 @@ function expectInside(inner: Bounds, outer: Bounds, focusInset = 0) {
 }
 
 function fieldControl(root: Locator, label: string) {
-  const field = root.locator("label").filter({ hasText: label }).first();
   return {
-    field,
-    control: field.locator("input, select, textarea, button.field").first(),
+    control: root.getByLabel(label, { exact: true }),
   };
 }
 
@@ -43,7 +41,7 @@ async function focusAndCheck(dialog: Locator, label: string, mobile: boolean): P
   await expect(control).toBeFocused();
 
   const state = await control.evaluate((element) => {
-    const labelElement = element.closest("label");
+    const labelElement = element.closest("[data-modal-field], label");
     const rect = element.getBoundingClientRect();
     const fieldRect = labelElement?.getBoundingClientRect();
     return {
@@ -72,7 +70,7 @@ async function focusAndCheck(dialog: Locator, label: string, mobile: boolean): P
   if (mobile && ["INPUT", "SELECT", "TEXTAREA"].includes(state.tagName)) {
     expect(state.fontSize, `${label} should avoid mobile input zoom`).toBe("16px");
   }
-  expect(state.fieldBoxShadow, `${label} focus indicator should be visible`).not.toBe("none");
+  expect(state.controlBoxShadow, `${label} focus indicator should be visible`).not.toBe("none");
   expect(state.borderStyle, `${label} border should remain visible`).not.toBe("none");
   expect(state.borderWidth, `${label} border should remain visible`).toBeGreaterThanOrEqual(1);
   if (state.hasFieldClass && state.tagName !== "BUTTON") {
@@ -113,6 +111,24 @@ async function selectTier(page: Page, tier: RegExp) {
 }
 
 for (const viewport of viewports) {
+  test(`modification date and mileage fields fit at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startSamplePreview(page);
+    await selectTier(page, /Pro Modder/);
+    await page.goto("/vault");
+    await page.getByRole("button", { name: "Add Modification", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Add Modification" });
+    await expect(dialog).toBeVisible();
+    await checkPair(dialog, "Install Date", "Install Mileage", viewport.mobile);
+    const date = dialog.getByLabel("Install Date", { exact: true });
+    await expect(date).toHaveCSS("appearance", "none");
+    await expect(date).toHaveCSS("height", "44px");
+    await expect(dialog).toHaveCSS("padding", "20px");
+    await page.screenshot({ path: `test-results/modification-${viewport.width}.png` });
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
   test(`mobile forms and nested upgrade fit at ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startSamplePreview(page);

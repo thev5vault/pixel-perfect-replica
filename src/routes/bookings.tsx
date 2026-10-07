@@ -33,7 +33,7 @@ function BookingsPage() {
     <PageHeader icon={<CalendarDays className="h-5 w-5 text-primary" />} title="Bookings" subtitle="Create and manage appointments attached to real customer passports." />
     <form onSubmit={create} className="vault-card space-y-3 p-4">
       <Field label="Customer VRM"><input required minLength={2} maxLength={12} value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0,8))} className="field font-mono uppercase" placeholder="AB14 CDE" /></Field>
-      <Field label="Appointment date"><input type="date" required min={today()} value={date} onChange={(e) => setDate(e.target.value)} className="field" /></Field>
+      <Field label="Appointment date"><input type="date" required min={today()} value={date} onChange={(e) => setDate(e.target.value)} className="field appearance-none [-webkit-appearance:none]" /></Field>
       <Field label="Notes"><textarea maxLength={1000} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="field" placeholder="Work requested" /></Field>
       <button disabled={busy} className="btn-primary w-full">Create booking</button>
     </form>

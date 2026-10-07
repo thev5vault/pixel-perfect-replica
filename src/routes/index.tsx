@@ -16,7 +16,7 @@ import {
   useVault,
   type ServiceCategory,
 } from "@/lib/vault-store";
-import { Field, ImagePicker, Pill, Plate } from "@/components/vault/ui-bits";
+import { ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Plate } from "@/components/vault/ui-bits";
 import { TimelineItem } from "@/components/vault/TimelineItem";
 import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { useAccount } from "@/lib/account-store";
@@ -281,19 +281,19 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
-        <ModalHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950 p-5 shadow-2xl">
+        <ModalHeader className="border-0 bg-transparent px-0 py-0">
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" /> Snap Receipt
           </DialogTitle>
           <DialogDescription>Add a dated service record and receipt to your vehicle.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
           <div className="grid w-full min-w-0 grid-cols-2 gap-3">
-            <Field label="Date">
+            <ModalField label="Date">{(id, labelId) => (
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild><button type="button" className="field text-left">{fmtDate(form.date)}</button></PopoverTrigger>
+                <PopoverTrigger asChild><button id={id} aria-labelledby={labelId} type="button" className={`${MODAL_INPUT_CLASS} text-left`}>{fmtDate(form.date)}</button></PopoverTrigger>
                 <PopoverContent align="start" className="z-[100] w-auto rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
                   <Calendar mode="single" selected={new Date(`${form.date}T00:00:00`)} disabled={{ after: new Date() }}
                     className="bg-slate-900"
@@ -305,47 +305,49 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                     }} />
                 </PopoverContent>
               </Popover>
-            </Field>
-            <Field label="Mileage">
-              <input inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className="field" />
-            </Field>
+            )}</ModalField>
+            <ModalField label="Mileage">{(id) => (
+              <input id={id} inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className={MODAL_INPUT_CLASS} />
+            )}</ModalField>
           </div>
           <div className="grid w-full min-w-0 grid-cols-2 gap-3">
-            <Field label="Category">
-              <select value={form.category} onChange={set("category")} className="field">
+            <ModalField label="Category" select>{(id) => (
+              <select id={id} value={form.category} onChange={set("category")} className={MODAL_SELECT_CLASS}>
                 {SERVICE_CATEGORIES.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>
-            </Field>
-            <Field label="Garage Name">
-              <input required maxLength={80} value={form.garage} onChange={set("garage")} placeholder="Kwik Fit Leeds" className="field" />
-            </Field>
+            )}</ModalField>
+            <ModalField label="Garage Name">{(id) => (
+              <input id={id} required maxLength={80} value={form.garage} onChange={set("garage")} placeholder="Kwik Fit Leeds" className={MODAL_INPUT_CLASS} />
+            )}</ModalField>
           </div>
-          <Field label="Work Description">
-            <textarea rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className="field" />
-          </Field>
+          <ModalField label="Work Description">{(id) => (
+            <textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className={MODAL_TEXTAREA_CLASS} />
+          )}</ModalField>
 
           {pro ? (
             <>
-              <Field label="OEM Part Numbers (name | part no.)">
-                <textarea rows={3} maxLength={1200} value={form.parts} onChange={set("parts")} placeholder={"Oil filter | Bosch F 026 407 183\nPollen filter | Febi Bilstein 26600"} className="field font-mono text-xs" />
-              </Field>
-              <Field label="Fluid Specs">
-                <input maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className="field" />
-              </Field>
+              <ModalField label="OEM Part Numbers (name | part no.)">{(id) => (
+                <textarea id={id} rows={3} maxLength={1200} value={form.parts} onChange={set("parts")} placeholder={"Oil filter | Bosch F 026 407 183\nPollen filter | Febi Bilstein 26600"} className={MODAL_TEXTAREA_CLASS} />
+              )}</ModalField>
+              <ModalField label="Fluid Specs">{(id) => (
+                <input id={id} maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className={MODAL_INPUT_CLASS} />
+              )}</ModalField>
               <div className="grid w-full min-w-0 grid-cols-2 gap-3">
-                <Field label="Parts (£)">
-                  <input inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className="field" />
-                </Field>
-                <Field label="Labour (£)">
-                  <input inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className="field" />
-                </Field>
+                <ModalField label="Parts (£)">{(id) => (
+                  <input id={id} inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className={MODAL_INPUT_CLASS} />
+                )}</ModalField>
+                <ModalField label="Labour (£)">{(id) => (
+                  <input id={id} inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className={MODAL_INPUT_CLASS} />
+                )}</ModalField>
               </div>
-              <Field label="High-res Receipt">
+              <ModalFieldGroup label="High-res Receipt">
                 <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
-              </Field>
-              <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
+              </ModalFieldGroup>
+              <ModalFieldGroup label="Receipt PDF">
+                <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
+              </ModalFieldGroup>
             </>
           ) : (
             <div className="space-y-2">
@@ -355,7 +357,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             </div>
           )}
           </div>
-          <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
+          <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>
           </footer>
         </form>

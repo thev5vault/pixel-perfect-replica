@@ -140,7 +140,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
                 catch (err) { toast.error(err instanceof Error ? err.message : "Booking could not be sent"); }
                 finally { setBookingBusy(false); }
               }}>
-                <label className="block text-xs font-semibold">Preferred date<input required type="date" min={new Date().toISOString().slice(0,10)} value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="field mt-1" /></label>
+                <label className="block text-xs font-semibold">Preferred date<input required type="date" min={new Date().toISOString().slice(0,10)} value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="field mt-1 appearance-none [-webkit-appearance:none]" /></label>
                 <label className="block text-xs font-semibold">Notes<textarea maxLength={500} value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)} className="field mt-1" rows={2} /></label>
                 <div className="flex gap-2"><button disabled={bookingBusy} className="btn-primary flex-1 py-2 text-xs">Send request</button><button type="button" onClick={() => setBookingOpen(false)} className="btn-ghost py-2 text-xs">Cancel</button></div>
               </form>}

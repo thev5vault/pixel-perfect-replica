@@ -201,7 +201,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <DialogDescription>Record the part, installation details and supporting evidence.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
           <ModalField label="Part Name">{(id) => (
             <input id={id} required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
@@ -290,7 +290,7 @@ function RevertDialog({ mod, onClose }: { mod: Modification | null; onClose: () 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Removal Date">
-              <input type="date" required min={mod?.installDate} max={today()} value={date} onChange={(e) => setDate(e.target.value)} className="field" />
+              <input type="date" required min={mod?.installDate} max={today()} value={date} onChange={(e) => setDate(e.target.value)} className="field appearance-none [-webkit-appearance:none]" />
             </Field>
             <Field label="Removal Mileage">
               <input inputMode="numeric" required value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g, ""))} placeholder="87,420" className="field" />

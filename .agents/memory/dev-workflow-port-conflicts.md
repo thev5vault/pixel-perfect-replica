@@ -13,3 +13,12 @@ released the port and allowed a clean restart.
 
 **How to apply:** Inspect current workflow output and the port listener. Stop the
 existing workflow, confirm the port is free, then start it once and check its logs.
+
+Keep browser regression validation separate from the default Run action.
+
+**Why:** Playwright can start its own Vite server when the app is not yet ready.
+Starting both workflows concurrently races for the same port and can leave the
+managed app workflow failed while the test-owned server still responds.
+
+**How to apply:** Start the app first and wait for readiness, then run browser
+checks against that server. Do not add browser validation to the parallel Run group.

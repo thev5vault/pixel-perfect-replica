@@ -73,7 +73,7 @@ export function ModalField({
   const labelId = `${controlId}-label`;
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1.5 overflow-hidden focus-within:rounded-xl focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-950">
+    <div data-modal-field className="flex flex-col gap-1.5 w-full min-w-0">
       <label id={labelId} htmlFor={controlId} className={modalFieldLabelClass}>
         {label}
       </label>

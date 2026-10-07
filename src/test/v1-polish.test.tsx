@@ -79,10 +79,10 @@ describe("V1 polish", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog.querySelector("header")).toHaveClass("sticky", "top-0");
-    const body = dialog.querySelector(".pb-6")!;
+    const body = dialog.querySelector(".overflow-y-auto")!;
     expect(body).toHaveClass("overflow-y-auto", "flex-1", "min-h-0");
     expect(body).not.toContainElement(screen.getByRole("button", { name: "Save to Timeline" }));
-    expect(dialog).toHaveClass("max-h-[90dvh]", "flex-col", "rounded-t-3xl");
+    expect(dialog).toHaveClass("max-h-[90dvh]", "flex-col", "rounded-2xl", "p-5");
     expect(screen.getByRole("button", { name: "Save to Timeline" }).closest("footer")).toHaveClass("sticky", "bottom-0");
     fireEvent.click(screen.getByRole("button", { name: "Date" }));
     const calendar = screen.getByRole("dialog", { name: "" });
@@ -117,11 +117,15 @@ describe("V1 polish", () => {
     render(<VaultProvider><Vault /></VaultProvider>);
     fireEvent.click(screen.getByRole("button", { name: /add mod/i }));
     const dialog = screen.getByRole("dialog");
-    expect(dialog.querySelector("header")).toHaveClass("flex-none", "bg-slate-900");
+    expect(dialog.querySelector("header")).toHaveClass("flex-none", "bg-transparent");
+    expect(dialog).toHaveClass("bg-slate-950", "p-5", "rounded-2xl", "gap-4");
+    const installDate = screen.getByLabelText("Install Date");
+    expect(installDate).toHaveClass("appearance-none", "[-webkit-appearance:none]", "h-11", "border-slate-700/70");
+    expect(installDate.closest("[data-modal-field]")).toHaveClass("flex", "flex-col", "min-w-0");
     const save = screen.getByRole("button", { name: "Add to Active Build" });
     expect(save.closest("footer")).toHaveClass("flex-none", "bottom-0");
-    expect(dialog.querySelector(".pb-6")).not.toContainElement(save);
-    expect(dialog.querySelector(".pb-6")?.querySelector("textarea")).toBeInTheDocument();
+    expect(dialog.querySelector(".overflow-y-auto")).not.toContainElement(save);
+    expect(dialog.querySelector(".overflow-y-auto")?.querySelector("textarea")).toBeInTheDocument();
   });
 
   it("keeps upgrade actions pinned below scrollable perks", () => {
