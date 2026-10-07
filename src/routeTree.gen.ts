@@ -24,6 +24,10 @@ import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as VVrmRouteImport } from './routes/v.$vrm'
 import { Route as VerifyRecordIdRouteImport } from './routes/verify.$recordId'
+import { Route as ApiGarageLookupRouteImport } from './routes/api.garage.lookup'
+import { Route as ApiGarageStampRouteImport } from './routes/api.garage.stamp'
+import { Route as ApiStripeCreateWorkshopSessionRouteImport } from './routes/api.stripe.create-workshop-session'
+import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +104,27 @@ const VerifyRecordIdRoute = VerifyRecordIdRouteImport.update({
   path: '/verify/$recordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGarageLookupRoute = ApiGarageLookupRouteImport.update({
+  id: '/api/garage/lookup',
+  path: '/api/garage/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGarageStampRoute = ApiGarageStampRouteImport.update({
+  id: '/api/garage/stamp',
+  path: '/api/garage/stamp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeCreateWorkshopSessionRoute =
+  ApiStripeCreateWorkshopSessionRouteImport.update({
+    id: '/api/stripe/create-workshop-session',
+    path: '/api/stripe/create-workshop-session',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiVaultCreateRoute = ApiVaultCreateRouteImport.update({
+  id: '/api/vault/create',
+  path: '/api/vault/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +142,10 @@ export interface FileRoutesByFullPath {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/garage/lookup': typeof ApiGarageLookupRoute
+  '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/vault/create': typeof ApiVaultCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +163,10 @@ export interface FileRoutesByTo {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/garage/lookup': typeof ApiGarageLookupRoute
+  '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/vault/create': typeof ApiVaultCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +185,10 @@ export interface FileRoutesById {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/garage/lookup': typeof ApiGarageLookupRoute
+  '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/vault/create': typeof ApiVaultCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +208,10 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/garage/lookup'
+    | '/api/garage/stamp'
+    | '/api/stripe/create-workshop-session'
+    | '/api/vault/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +229,10 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/garage/lookup'
+    | '/api/garage/stamp'
+    | '/api/stripe/create-workshop-session'
+    | '/api/vault/create'
   id:
     | '__root__'
     | '/'
@@ -205,6 +250,10 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/garage/lookup'
+    | '/api/garage/stamp'
+    | '/api/stripe/create-workshop-session'
+    | '/api/vault/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +272,10 @@ export interface RootRouteChildren {
   SignUpSplatRoute: typeof SignUpSplatRoute
   VVrmRoute: typeof VVrmRoute
   VerifyRecordIdRoute: typeof VerifyRecordIdRoute
+  ApiGarageLookupRoute: typeof ApiGarageLookupRoute
+  ApiGarageStampRoute: typeof ApiGarageStampRoute
+  ApiStripeCreateWorkshopSessionRoute: typeof ApiStripeCreateWorkshopSessionRoute
+  ApiVaultCreateRoute: typeof ApiVaultCreateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +385,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRecordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/garage/lookup': {
+      id: '/api/garage/lookup'
+      path: '/api/garage/lookup'
+      fullPath: '/api/garage/lookup'
+      preLoaderRoute: typeof ApiGarageLookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/garage/stamp': {
+      id: '/api/garage/stamp'
+      path: '/api/garage/stamp'
+      fullPath: '/api/garage/stamp'
+      preLoaderRoute: typeof ApiGarageStampRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/create-workshop-session': {
+      id: '/api/stripe/create-workshop-session'
+      path: '/api/stripe/create-workshop-session'
+      fullPath: '/api/stripe/create-workshop-session'
+      preLoaderRoute: typeof ApiStripeCreateWorkshopSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vault/create': {
+      id: '/api/vault/create'
+      path: '/api/vault/create'
+      fullPath: '/api/vault/create'
+      preLoaderRoute: typeof ApiVaultCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -351,6 +432,10 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpSplatRoute: SignUpSplatRoute,
   VVrmRoute: VVrmRoute,
   VerifyRecordIdRoute: VerifyRecordIdRoute,
+  ApiGarageLookupRoute: ApiGarageLookupRoute,
+  ApiGarageStampRoute: ApiGarageStampRoute,
+  ApiStripeCreateWorkshopSessionRoute: ApiStripeCreateWorkshopSessionRoute,
+  ApiVaultCreateRoute: ApiVaultCreateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

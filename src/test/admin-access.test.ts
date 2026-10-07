@@ -27,8 +27,8 @@ beforeEach(()=>{
       const {password_hash:_password,dev_role:_role,stripe_customer_id:_stripe,permissions:_permissions,...profile}=base();
       return {rows:[profile]};
     }
-    if(sql.startsWith("SELECT id,data")||sql.startsWith("SELECT * FROM vehicles")) {
-      return {rows:[{id:"AB14CDE",data:sampleAccount().vehicles[0],owner_user_id:"another-owner",status:"approved",is_sample:true}]};
+    if(sql.startsWith("SELECT id,vin,vrm,data")||sql.startsWith("SELECT * FROM vehicles")) {
+      return {rows:[{id:"AB14CDE",vin:"WAUZZZ8K9EA000001",vrm:"AB14CDE",data:sampleAccount().vehicles[0],owner_user_id:"another-owner",status:"approved",is_sample:true}]};
     }
     return {rows:[],rowCount:1};
   });
@@ -122,7 +122,7 @@ describe("Verified server-side owner permissions",()=>{
   it("can sign a vehicle record as the administrator without impersonating its garage",async()=>{
     vi.stubEnv("SESSION_SECRET","unit-test-signing-key-only");
     mocks.txQuery.mockImplementation(async(sql:string)=>{
-      if(sql.startsWith("SELECT * FROM vehicles"))return{rows:[{id:"AB14CDE",data:sampleAccount().vehicles[0],owner_user_id:"another-owner",status:"approved",is_sample:true}],rowCount:1};
+      if(sql.startsWith("SELECT * FROM vehicles"))return{rows:[{id:"AB14CDE",vin:"WAUZZZ8K9EA000001",vrm:"AB14CDE",data:sampleAccount().vehicles[0],owner_user_id:"another-owner",status:"approved",is_sample:true}],rowCount:1};
       return{rows:[],rowCount:1};
     });
     const record=await createService({vrm:"AB14CDE",date:"2026-10-07",mileage:88000,category:"Servicing",
@@ -133,7 +133,7 @@ describe("Verified server-side owner permissions",()=>{
     expect(record.is_verified_stamp).toBe(true);
     expect(record.is_sample).toBe(true);
     const insertion=mocks.txQuery.mock.calls.find(([sql])=>sql.startsWith("INSERT INTO service_records"));
-    mocks.query.mockResolvedValueOnce({rows:[{id:record.id,vehicle_id:"AB14CDE",data:JSON.parse(insertion?.[1][3]),
+    mocks.query.mockResolvedValueOnce({rows:[{id:record.id,vehicle_id:"AB14CDE",vin:"WAUZZZ8K9EA000001",vrm:"AB14CDE",data:JSON.parse(insertion?.[1][5]),
       is_sample:true,is_verified_stamp:true,stamped_by_garage_id:"clerk-owner",stamp_signature:record.stamp_signature}]});
     const proof=await verifyStamp(record.id);
     expect(proof.valid).toBe(true);

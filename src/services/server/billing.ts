@@ -62,8 +62,10 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined 
     if (!input.vrm) throw new Error("Select the vehicle for this sales pack.");
     const vrm = input.vrm.replace(/\s/g, "").toUpperCase();
     const { ownerSnapshot } = await import("./passports"), snapshot = await ownerSnapshot(vrm, user);
+    const vehicleId = (await pool.query("SELECT id FROM vehicles WHERE vrm=$1", [vrm])).rows[0]?.id;
+    if (!vehicleId) throw new Error("Vehicle passport not found.");
     orderId = randomUUID();
-    await pool.query("INSERT INTO sales_pack_orders(id,user_id,vehicle_id,snapshot) VALUES($1,$2,$3,$4)", [orderId, user.id, vrm, JSON.stringify(snapshot)]);
+    await pool.query("INSERT INTO sales_pack_orders(id,user_id,vehicle_id,snapshot) VALUES($1,$2,$3,$4)", [orderId, user.id, vehicleId, JSON.stringify(snapshot)]);
   } else {
     const existing = await pool.query("SELECT id FROM stripe.subscriptions WHERE customer=$1 AND status IN ('active','trialing','incomplete') LIMIT 1", [customerId]);
     if (existing.rowCount) throw new Error("A subscription already exists. Use Manage Billing to change or cancel it.");
@@ -76,7 +78,10 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined 
     customer: customerId, mode: input.plan === "sales_pack" ? "payment" : "subscription",
     line_items: [{ price: price.price_id, quantity: 1 }], client_reference_id: user.id,
     metadata: { app: "v5vault", user_id: user.id, plan_key: input.plan, ...(orderId ? { order_id: orderId } : {}) },
-    ...(input.plan !== "sales_pack" ? { subscription_data: { metadata: { app: "v5vault", user_id: user.id, plan_key: input.plan } } } : {}),
+    ...(input.plan !== "sales_pack" ? { subscription_data: {
+      ...(input.plan === "workshop_monthly" ? { trial_period_days: 30 } : {}),
+      metadata: { app: "v5vault", user_id: user.id, plan_key: input.plan },
+    } } : {}),
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/passport`,
   });
   if (orderId) await pool.query("UPDATE sales_pack_orders SET stripe_checkout_session_id=$1 WHERE id=$2", [session.id, orderId]);

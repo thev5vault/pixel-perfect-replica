@@ -14,7 +14,7 @@ const service = z.object({
 });
 export const getAccountState = createServerFn({method:"GET"}).handler(async () => (await import("./server/accounts")).accountState());
 export const claimVehicle = createServerFn({method:"POST"})
-  .validator(z.object({vrm, reference:z.string().regex(/^\d{11}$/),vin:z.string().trim().min(5).max(24).optional()}))
+  .validator(z.object({vrm, reference:z.string().regex(/^\d{11}$/),vin:z.string().trim().length(17).regex(/^[A-HJ-NPR-Z0-9]{17}$/i).optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).claim(data));
 export const switchDevelopmentRole = createServerFn({method:"POST"})
   .validator(z.object({role:z.enum(["Owner","DIY","Pro","Garage","superadmin"])}))

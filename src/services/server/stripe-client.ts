@@ -4,6 +4,8 @@ import { ReplitConnectors } from "@replit/connectors-sdk";
 import { fulfillSalesPack } from "./sales-fulfillment";
 
 export async function stripeClient() {
+  const secretKey = process.env["STRIPE_SECRET_KEY"];
+  if (secretKey) return new Stripe(secretKey);
   const connectors = new ReplitConnectors();
   // The connector owns credentials and refresh. This non-secret placeholder is
   // never sent upstream: Stripe SDK requests are forwarded through the proxy.

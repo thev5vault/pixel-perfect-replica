@@ -82,7 +82,7 @@ describe("V1 polish", () => {
     const body = dialog.querySelector(".overflow-y-auto")!;
     expect(body).toHaveClass("overflow-y-auto", "flex-1", "min-h-0");
     expect(body).not.toContainElement(screen.getByRole("button", { name: "Save to Timeline" }));
-    expect(dialog).toHaveClass("max-h-[90dvh]", "flex-col", "rounded-2xl", "p-5");
+    expect(dialog).toHaveClass("max-h-[var(--dialog-max-height,90dvh)]", "flex-col", "rounded-2xl", "p-5");
     expect(screen.getByRole("button", { name: "Save to Timeline" }).closest("footer")).toHaveClass("sticky", "bottom-0");
     fireEvent.click(screen.getByRole("button", { name: "Date" }));
     const calendar = screen.getByRole("dialog", { name: "" });

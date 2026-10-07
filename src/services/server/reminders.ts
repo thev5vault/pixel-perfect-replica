@@ -31,7 +31,7 @@ async function channels() {
   return { emailFrom, smsFrom, accountSid };
 }
 async function dueRows(garageId: string, admin: boolean) {
-  const records = await pool.query(`SELECT v.id,v.data,v.owner_user_id,u.full_name,u.email,p.email AS email_allowed,p.sms AS sms_allowed,p.phone,
+  const records = await pool.query(`SELECT v.id,v.vrm,v.data,v.owner_user_id,u.full_name,u.email,p.email AS email_allowed,p.sms AS sms_allowed,p.phone,
     s.data AS latest_service FROM vehicles v JOIN user_accounts u ON u.id=v.owner_user_id
     LEFT JOIN reminder_preferences p ON p.user_id=u.id
     JOIN LATERAL (SELECT data FROM service_records sr WHERE sr.vehicle_id=v.id AND ($2 OR sr.stamped_by_garage_id=$1)
@@ -49,7 +49,7 @@ export async function reminders(): Promise<ReminderItem[]> {
     pool.query("SELECT vehicle_id,kind,due_date::text,created_at FROM reminder_deliveries WHERE garage_user_id=$1 AND status IN ('sending','queued')", [user.id]),
   ]);
   return rows.map(row => ({
-    vrm: row.id, kind: row.kind, due_date: row.due_date, customer_label: row.full_name || "Keeper",
+    vrm: row.vrm, kind: row.kind, due_date: row.due_date, customer_label: row.full_name || "Keeper",
     email_allowed: Boolean(row.email_allowed), sms_allowed: Boolean(row.sms_allowed && row.phone),
     email_available: Boolean(providers.emailFrom), sms_available: Boolean(providers.smsFrom),
     last_sent_at: deliveries.rows.find(d => d.vehicle_id === row.id && d.kind === row.kind && d.due_date === row.due_date)?.created_at ?? null,
@@ -70,7 +70,7 @@ export async function savePreferences(input: ReminderPreferences) {
 }
 export async function sendReminder(input: { vrm: string; kind: "mot" | "service"; due_date: string; channel: "email" | "sms" }): Promise<ReminderResult> {
   const user = await requireGarage(), vrm = input.vrm.replace(/\s/g, "").toUpperCase();
-  const row = (await dueRows(user.id, user.role === "dev_admin")).find(r => r.id === vrm && r.kind === input.kind && r.due_date === input.due_date);
+  const row = (await dueRows(user.id, user.role === "dev_admin")).find(r => r.vrm === vrm && r.kind === input.kind && r.due_date === input.due_date);
   if (!row) throw new Error("This customer is not eligible for this workshop reminder.");
   const providers = await channels();
   if (input.channel === "email" && (!row.email_allowed || !providers.emailFrom)) throw new Error("Customer email consent and a verified email sender are required.");
@@ -79,7 +79,7 @@ export async function sendReminder(input: { vrm: string; kind: "mot" | "service"
   const reserved = await pool.query(`INSERT INTO reminder_deliveries(id,garage_user_id,vehicle_id,recipient_user_id,kind,due_date,channel,status)
     VALUES($1,$2,$3,$4,$5,$6,$7,'sending') ON CONFLICT(garage_user_id,vehicle_id,kind,due_date,channel)
     DO UPDATE SET status='sending',created_at=now() WHERE reminder_deliveries.status='failed' AND reminder_deliveries.created_at<now()-interval '5 minutes' RETURNING id`,
-  [id, user.id, vrm, row.owner_user_id, input.kind, input.due_date, input.channel]);
+  [id, user.id, row.id, row.owner_user_id, input.kind, input.due_date, input.channel]);
   if (!reserved.rowCount) throw new Error("This reminder has already been queued. Duplicate sends are blocked.");
   const deliveryId = reserved.rows[0].id;
   const message = `${user.garage_name || "V5Vault"}: ${vrm} ${input.kind === "mot" ? "MOT" : "service"} is due on ${input.due_date}. Contact your workshop to book. Manage reminder consent: ${requestOrigin()}/settings`;

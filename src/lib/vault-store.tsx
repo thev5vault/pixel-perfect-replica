@@ -33,6 +33,8 @@ export interface PartLine {
 export interface ServiceRecord {
   id: string;
   vrm: string;
+  vin?: string | undefined;
+  physically_inspected_vin?: boolean | undefined;
   date: string; // ISO yyyy-mm-dd
   mileage: number;
   category: ServiceCategory;
@@ -99,6 +101,7 @@ export interface Vehicle {
   status?: "approved" | "pending" | "rejected";
   is_sample?: boolean;
   vin?: string | undefined;
+  physically_inspected_vin?: boolean | undefined;
   engineCapacity?: number | undefined;
   taxStatus?: string | undefined;
   taxDueDate?: string | undefined;

@@ -58,7 +58,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
             </div>}
             {account?.signedIn && <div className="space-y-1.5">
               <ModalField label="VIN / chassis number on your V5C">{(id) => (
-                <input id={id} value={vin} maxLength={24} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,""))} className={MODAL_INPUT_CLASS} placeholder="Chassis number (optional for samples)" />
+                <input id={id} value={vin} maxLength={17} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,17))} className={MODAL_INPUT_CLASS} placeholder="17-character VIN (samples fill automatically)" />
               )}</ModalField>
               <span className="block text-xs text-muted-foreground">Live claims require supporting-document review. The document reference is never published.</span>
             </div>}

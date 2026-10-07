@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { BadgeCheck, Check, FileText, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Check, FileText, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount } from "@/lib/account-store";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
@@ -25,6 +25,59 @@ function GaragePage() {
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [readingAttachment, setReadingAttachment] = useState(false);
+  const [testerVrm, setTesterVrm] = useState("");
+  const [testerVin, setTesterVin] = useState("");
+  const [testerMileage, setTesterMileage] = useState("");
+  const [testerNotes, setTesterNotes] = useState("");
+  const [physicalVinInspected, setPhysicalVinInspected] = useState(false);
+  const [mockSpecs, setMockSpecs] = useState("");
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [testerBusy, setTesterBusy] = useState(false);
+  const [testerSuccess, setTesterSuccess] = useState(false);
+  const [testerError, setTesterError] = useState("");
+  async function fetchMockSpecs() {
+    setLookupBusy(true);
+    setTesterError("");
+    setTesterSuccess(false);
+    try {
+      const response = await fetch("/api/garage/lookup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vrm: testerVrm }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Sample lookup failed.");
+      setTesterVrm(payload.vehicle.vrm);
+      setTesterVin(payload.vehicle.vin ?? "");
+      setTesterMileage(String(payload.vehicle.odometer ?? ""));
+      setMockSpecs(`${payload.vehicle.year} ${payload.vehicle.make} ${payload.vehicle.model} · MOT ${payload.vehicle.motExpiry}`);
+    } catch (error) {
+      setTesterError(error instanceof Error ? error.message : "Sample lookup failed.");
+    } finally { setLookupBusy(false); }
+  }
+  async function submitVINStamp(event: React.FormEvent) {
+    event.preventDefault();
+    if (!canStamp || testerBusy) return;
+    setTesterBusy(true);
+    setTesterError("");
+    setTesterSuccess(false);
+    try {
+      const response = await fetch("/api/garage/stamp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vrm: testerVrm, vin: testerVin, physically_inspected_vin: physicalVinInspected,
+          mileage: Number(testerMileage), notes: testerNotes,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "The workshop service could not be stamped.");
+      setTesterSuccess(true);
+      setTesterNotes("");
+      setPhysicalVinInspected(false);
+      toast.success("VIN-linked service record added to the vehicle timeline.");
+    } catch (error) {
+      setTesterError(error instanceof Error ? error.message : "The workshop service could not be stamped.");
+    } finally { setTesterBusy(false); }
+  }
   async function readAttachment(file?: File) {
     if (!file) return;
     setReadingAttachment(true);
@@ -89,6 +142,31 @@ function GaragePage() {
     {submitted && <div className="vault-card flex items-center gap-3 border-success/30 p-4"><ShieldCheck className="h-6 w-6 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-xs text-muted-foreground">Stamp status and verification signature are assigned by the server.</p></div></div>}
     <WorkshopReminders/>
     {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Stamping requires workshop approval, VAT verification and an active Workshop subscription.</div>}
+    {canStamp && <section className="vault-card space-y-4 p-5">
+      <div>
+        <h2 className="font-semibold text-foreground">VIN-linked workshop tester</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use the clearly labelled development lookup to test VIN-bound stamps. Sample specs are not an official DVLA/DVSA lookup.</p>
+      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+        <Field label="Vehicle registration"><input value={testerVrm} onChange={e=>setTesterVrm(formatVrm(e.target.value).slice(0,8))} placeholder="AB14 CDE" maxLength={8} className="field font-mono uppercase" /></Field>
+        <button type="button" onClick={()=>void fetchMockSpecs()} disabled={lookupBusy || !testerVrm.trim()} className="btn-secondary min-h-11 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Fetching…" : "Auto-Fetch mock specs"}</button>
+      </div>
+      {mockSpecs && <p role="status" className="rounded-lg border border-amber-400/25 bg-amber-950/20 p-3 text-xs text-amber-100">{mockSpecs} · Development sample</p>}
+      <form onSubmit={submitVINStamp} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="17-character VIN"><input required minLength={17} maxLength={17} value={testerVin} onChange={e=>setTesterVin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,17))} placeholder="VIN / chassis number" className="field font-mono uppercase" /><span className="text-right text-[11px] text-muted-foreground">{testerVin.length}/17</span></Field>
+          <Field label="Odometer mileage (mi)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={testerMileage} onChange={e=>setTesterMileage(e.target.value)} placeholder="87420" className="field" /></Field>
+        </div>
+        <Field label="Service notes"><textarea required rows={2} maxLength={1000} value={testerNotes} onChange={e=>setTesterNotes(e.target.value)} placeholder="Describe the work performed" className="field" /></Field>
+        <label className="flex min-h-11 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
+          <input required type="checkbox" checked={physicalVinInspected} onChange={e=>setPhysicalVinInspected(e.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
+          <span>I physically inspected the VIN stamped on the vehicle and matched it to this record.</span>
+        </label>
+        {testerError && <p role="alert" className="text-sm text-red-300">{testerError}</p>}
+        {testerSuccess && <p role="status" className="rounded-xl border border-emerald-400/30 bg-emerald-950/25 p-3 text-sm text-emerald-200">Service record saved and linked to VIN {testerVin}.</p>}
+        <button type="submit" disabled={testerBusy || !physicalVinInspected} className="btn-primary w-full py-3"><ShieldCheck className="h-4 w-4" />{testerBusy ? "Saving VIN-linked stamp…" : "Stamp Service to VIN"}</button>
+      </form>
+    </section>}
     <form onSubmit={submit} className="vault-card space-y-4 p-5">
       <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Timer className="h-4 w-4" /> Fast log</div>
       <div className="grid grid-cols-2 gap-3"><Field label="Customer VRM"><input required minLength={2} maxLength={12} value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0,8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field><Field label="Odometer (mi)"><input required inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g,"").slice(0,7))} placeholder="87,420" className="field" /></Field></div>

@@ -1,5 +1,6 @@
 import { parseVehicleData, type VesData, type MotData } from "../vehicle-data";
 import type { Vehicle } from "@/lib/vault-store";
+import { normalizeVIN, validateVIN } from "@/lib/vin";
 
 let tokenCache: { token: string; expires: number } | undefined;
 
@@ -33,6 +34,7 @@ async function motToken() {
 export const samples: Record<string, Vehicle> = {
   AB14CDE: {
     vrm: "AB14CDE", make: "Audi", model: "A4 2.0 TDI", year: 2014, fuelType: "Diesel",
+    vin: "WAUZZZ8K9EA000001",
     odometer: 87420, v5cDate: "2019-03-15", motExpiry: "2026-11-18", motStatus: "PASSED", source: "demo",
     motHistory: [
       { date: "2023-11-15", mileage: 80480, result: "Pass" },
@@ -41,6 +43,7 @@ export const samples: Record<string, Vehicle> = {
   },
   BUL200: {
     vrm: "BUL200", make: "Volkswagen", model: "Golf GTI", year: 2018, fuelType: "Petrol",
+    vin: "WVWZZZ1KZJW000001",
     odometer: 46210, v5cDate: "2022-06-10", motExpiry: "2027-02-12", motStatus: "PASSED", source: "demo",
     motHistory: [
       { date: "2024-02-10", mileage: 35100, result: "Pass" },
@@ -51,6 +54,16 @@ export const samples: Record<string, Vehicle> = {
   },
 };
 
+export function lookupMockRegistration(input: string) {
+  const vrm = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const vehicle = samples[vrm];
+  if (!vehicle) throw new Error("Live lookup is not configured. Sample lookup is available for AB14 CDE and BUL 200.");
+  return {
+    vehicle: { ...vehicle },
+    notice: "Development demo sample vehicle only. These mock specifications are not an official DVLA/DVSA lookup.",
+  };
+}
+
 export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
   const vesKey = process.env["DVLA_VES_API_KEY"];
   const motKeys = ["MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"];
@@ -59,9 +72,7 @@ export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicl
     throw new Error("MOT API configuration is incomplete. Set all four MOT credentials in Replit Secrets.");
   }
   if (!vesKey && !hasMot) {
-    const sample = samples[vrm];
-    if (!sample) throw new Error("Live lookup is not configured. Try sample plate AB14 CDE or BUL 200.");
-    return { vehicle: sample, notice: "Sample vehicle attached — demo data, not an official DVLA lookup." };
+    return lookupMockRegistration(vrm);
   }
   const [ves, mot] = await Promise.all([
     vesKey ? jsonRequest<VesData>("https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles", {
@@ -74,5 +85,7 @@ export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicl
       "MOT History",
     )) : Promise.resolve({} as MotData),
   ]);
-  return { vehicle: parseVehicleData(vrm, ves, mot), notice: hasMot && vesKey ? "Vehicle and MOT history loaded from official APIs." : "Vehicle loaded. Some fields are unavailable because only one official API is configured." };
+  const vehicle = parseVehicleData(vrm, ves, mot);
+  if (mot.vin && validateVIN(normalizeVIN(mot.vin))) vehicle.vin = normalizeVIN(mot.vin);
+  return { vehicle, notice: hasMot && vesKey ? "Vehicle and MOT history loaded from official APIs." : "Vehicle loaded. Some fields are unavailable because only one official API is configured." };
 }

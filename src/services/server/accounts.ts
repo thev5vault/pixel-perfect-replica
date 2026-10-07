@@ -49,24 +49,27 @@ export async function currentUser(): Promise<UserAccount & {dev_role:Role|null; 
 async function seedDevelopmentSamples() {
   if (!development) return;
   for (const [vrm,data] of Object.entries(samples)) {
-    await pool.query("INSERT INTO vehicles(id,data,status,is_sample) VALUES($1,$2,'approved',true) ON CONFLICT(id) DO NOTHING",[vrm,JSON.stringify(data)]);
+    await pool.query("INSERT INTO vehicles(id,vin,vrm,data,status,is_sample) VALUES($1,$2,$1,$3,'approved',true) ON CONFLICT(vin) DO NOTHING",[vrm,data.vin,JSON.stringify(data)]);
   }
   // Idempotent, explicitly owner-logged historical sample records; old visual badges are not trusted.
   const seed = [
     {id:"sample-service",vrm:"AB14CDE",date:"2024-09-12",mileage:82100,category:"Servicing",description:"Full Service",items:["Engine oil 5W-30 (5L)","Oil filter","Air filter","Pollen filter","Labour"],garage:"Riverside Garage",cost:289,partsCost:154,labourCost:135,fluids:"Castrol Edge 5W-30 LL (VW 504.00/507.00), 4.6L",parts:[{name:"Oil filter",partNo:"Bosch F 026 407 183"},{name:"Air filter",partNo:"Mann C 30 005"},{name:"Pollen filter",partNo:"Febi Bilstein 26600"}],verified:false},
     {id:"sample-brakes",vrm:"AB14CDE",date:"2025-03-08",mileage:85340,category:"Brakes",description:"Brembo Brake Replacement",items:["Brembo front discs (pair)","Brembo front pads","Brake fluid flush (DOT 4)","Labour"],garage:"Apex Performance Ltd",cost:642,partsCost:468,labourCost:174,parts:[{name:"Front discs",partNo:"Brembo 09.C401.13"},{name:"Front pads",partNo:"Brembo P 85 153"}],verified:false},
   ];
-  for(const [index,row] of seed.entries()) await pool.query("INSERT INTO service_records(id,vehicle_id,data,is_sample) VALUES($1,$2,$3,true) ON CONFLICT(id) DO NOTHING",[row.id,row.vrm,JSON.stringify({...row,image:index===0?receiptService:receiptBrakes})]);
+  for(const [index,row] of seed.entries()) await pool.query(`INSERT INTO service_records(id,vehicle_id,vin,data,is_sample)
+    SELECT $1,v.id,v.vin,$3,true FROM vehicles v WHERE v.vrm=$2 ON CONFLICT(id) DO NOTHING`,
+    [row.id,row.vrm,JSON.stringify({...row,vin:samples[row.vrm]?.vin,physically_inspected_vin:false,image:index===0?receiptService:receiptBrakes})]);
   const mods=[
     {id:"sample-remap",vrm:"AB14CDE",name:"Stage 2 ECU Remap",category:"Engine/ECU",installDate:"2024-11-02",installMileage:83650,gains:"+53 bhp / +80 Nm",notes:"Development sample modification.",image:dynoSheet,status:"active",stage:"Stage 2",specs:"99 RON map · DPF-safe",tags:["Development sample"]},
     {id:"sample-intake",vrm:"AB14CDE",name:"Ramair Cold Air Intake",category:"Intake",installDate:"2024-10-10",installMileage:83020,gains:"+6 bhp",notes:"Removed due to intermittent MAF sensor fault.",status:"reverted",removalDate:"2024-12-20",removalMileage:84100},
   ];
   for(const mod of mods) await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING",[mod.id,mod.vrm,JSON.stringify(mod)]);
 }
-export function serviceRow(row:{data:unknown;id:string;is_verified_stamp:boolean;stamped_by_garage_id:string|null;stamp_signature:string|null;is_sample:boolean;frozen_at?:string|null}):ServiceRecord {
+export function serviceRow(row:{data:unknown;id:string;vin?:string;physically_inspected_vin?:boolean;is_verified_stamp:boolean;stamped_by_garage_id:string|null;stamp_signature:string|null;is_sample:boolean;frozen_at?:string|null}):ServiceRecord {
   const verified=Boolean(row.is_verified_stamp && row.stamped_by_garage_id && row.stamp_signature &&
     checkStamp(row.id,row.stamped_by_garage_id,row.data,row.is_sample,row.stamp_signature,signingSecret()));
-  return {...row.data as ServiceRecord,id:row.id,is_verified_stamp:verified,verified,
+  return {...row.data as ServiceRecord,id:row.id,vin:row.vin??(row.data as ServiceRecord).vin,
+    physically_inspected_vin:row.physically_inspected_vin??(row.data as ServiceRecord).physically_inspected_vin,is_verified_stamp:verified,verified,
     tier3:verified,stamped_by_garage_id:row.stamped_by_garage_id,
     stamp_signature:row.stamp_signature,is_sample:row.is_sample,frozen_at:row.frozen_at};
 }
@@ -86,7 +89,7 @@ export async function accountState():Promise<AccountState> {
     pool.query("SELECT * FROM service_records WHERE vehicle_id=ANY($1::text[]) ORDER BY created_at",[ids]),
     pool.query("SELECT vehicle_id,data,frozen_at,created_at FROM modifications WHERE vehicle_id=ANY($1::text[])",[ids]),
     pool.query("SELECT id,message,read,created_at FROM account_notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",[user.id]),
-    pool.query("SELECT id,vehicle_id AS vrm,scheduled_date::text AS date,notes,status FROM workshop_bookings WHERE garage_user_id=$1 OR $2 ORDER BY scheduled_date",[user.id,user.role==="dev_admin"]),
+    pool.query("SELECT b.id,v.vrm,scheduled_date::text AS date,b.notes,b.status FROM workshop_bookings b JOIN vehicles v ON v.id=b.vehicle_id WHERE b.garage_user_id=$1 OR $2 ORDER BY scheduled_date",[user.id,user.role==="dev_admin"]),
   ]);
   const paid = user.subscription_tier!=="free";
   const visible = (r:{vehicle_id:string;created_at:string}) => {
@@ -106,7 +109,7 @@ export async function accountState():Promise<AccountState> {
   return { user:{...profile,garage_verified:user.garage_verified&&(!user.is_sample||development)}, development,
     development_role:user.role==="dev_admin"?(user.dev_role??"superadmin"):development?user.dev_role:null,
     vehicles:records.rows.map(r=>({...((r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin")?r.archive_snapshot.vehicle:r.data),
-      vin:r.vin??r.data.vin,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,public_enabled:r.public_enabled,
+      vrm:r.vrm,vin:r.vin,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,public_enabled:r.public_enabled,
       keeper_changed_at:r.keeper_changed_at,access:r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin"?"archived":r.owner_user_id===user.id&&!activeIds.has(r.id)?"plan_locked":"active"})),
     services:history, mods:["pro_modder","god_mode"].includes(user.subscription_tier)?mods.rows.filter(visible).map(r=>({...r.data,frozen_at:r.frozen_at})):[],
     notifications:notifications.rows,bookings:bookings.rows };
@@ -146,7 +149,7 @@ export async function updateAccount(input:{full_name:string;garage_name:string;g
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   const user = await currentUser(), vrm=normalize(input.vrm);
   return transaction(async db=>{
-  const row = (await db.query("SELECT * FROM vehicles WHERE id=$1 FOR UPDATE",[vrm])).rows[0];
+  const row = (await db.query("SELECT * FROM vehicles WHERE vrm=$1 FOR UPDATE",[vrm])).rows[0];
   if(!row) throw new Error(`No vehicle passport found for ${vrm}.`);
   const admin=user.role==="dev_admin", workshop=admin||Boolean(user.role==="verified_garage"&&user.garage_verified&&user.vat_verified&&user.subscription_tier==="verified_garage");
   if(workshop && !admin && (!user.vat_verified || user.subscription_tier!=="verified_garage" || !mayStamp({role:user.role,verified:user.garage_verified,status:user.status,garageSample:user.is_sample,vehicleSample:row.is_sample,development}))) throw new Error("An approved VAT-verified workshop and an active Workshop subscription are required to sign records.");
@@ -154,16 +157,16 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   if(!workshop && (input.image || input.invoice_data) && user.subscription_tier==="free") throw new Error("Pro DIY is required for receipt uploads.");
   if(!workshop && user.role!=="dev_admin") {
     const owned=await pool.query("SELECT id FROM vehicles WHERE owner_user_id=$1 ORDER BY id",[user.id]);
-    if(owned.rows.findIndex(v=>v.id===vrm)>=vehicleLimit(user)) throw new Error("This vehicle is outside your active plan limit. Upgrade to Collector for three vehicles.");
+    if(owned.rows.findIndex(v=>v.id===row.id)>=vehicleLimit(user)) throw new Error("This vehicle is outside your active plan limit. Upgrade to Collector for three vehicles.");
   }
   const id=randomUUID(), sample=Boolean(row.is_sample||user.is_sample);
-  const data={...input,vrm,id,garage:admin?"V5Vault administrator":workshop?user.garage_name:"Owner logged",
+  const data={...input,vrm,vin:row.vin,physically_inspected_vin:Boolean(input.physically_inspected_vin),id,garage:admin?"V5Vault administrator":workshop?user.garage_name:"Owner logged",
     stamp_authority:admin?"administrator":workshop?"workshop":undefined,vat_verified:!admin&&workshop&&Boolean(user.vat_verified),
     verified:workshop,tier3:workshop,is_sample:sample,status:"approved"};
   const signature=workshop?signStamp(id,user.id,data,sample,signingSecret()):null;
-  const saved = await db.query(`INSERT INTO service_records(id,vehicle_id,created_by_user_id,data,is_verified_stamp,stamped_by_garage_id,stamp_signature,is_sample)
-    SELECT $1,$2,$3,$4,$5,$6,$7,$8 FROM vehicles WHERE id=$2 AND ($5 OR owner_user_id=$3) RETURNING id`,
-    [id,vrm,user.id,JSON.stringify(data),workshop,workshop?user.id:null,signature,sample]);
+  const saved = await db.query(`INSERT INTO service_records(id,vehicle_id,vin,physically_inspected_vin,created_by_user_id,data,is_verified_stamp,stamped_by_garage_id,stamp_signature,is_sample)
+    SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10 FROM vehicles WHERE id=$2 AND vin=$3 AND ($7 OR owner_user_id=$5) RETURNING id`,
+    [id,row.id,row.vin,data.physically_inspected_vin,user.id,JSON.stringify(data),workshop,workshop?user.id:null,signature,sample]);
   if(!saved.rowCount) throw new Error("Ownership changed. Reload your account before adding a record.");
   return serviceRow({id,data,is_verified_stamp:workshop,stamped_by_garage_id:workshop?user.id:null,stamp_signature:signature,is_sample:sample});
   });
@@ -178,9 +181,9 @@ export async function requireGarage() {
 }
 export async function book(input:{vrm:string;date:string;notes:string}) {
   const user=await requireGarage(),vrm=normalize(input.vrm);
-  const vehicle=(await pool.query("SELECT * FROM vehicles WHERE id=$1",[vrm])).rows[0];
+  const vehicle=(await pool.query("SELECT * FROM vehicles WHERE vrm=$1",[vrm])).rows[0];
   if(!vehicle || (user.role!=="dev_admin"&&user.is_sample&&!vehicle.is_sample)) throw new Error("A sample workshop can only book sample passports.");
-  await pool.query("INSERT INTO workshop_bookings(id,garage_user_id,vehicle_id,scheduled_date,notes) VALUES($1,$2,$3,$4,$5)",[randomUUID(),user.id,vrm,input.date,input.notes]);
+  await pool.query("INSERT INTO workshop_bookings(id,garage_user_id,vehicle_id,scheduled_date,notes) VALUES($1,$2,$3,$4,$5)",[randomUUID(),user.id,vehicle.id,input.date,input.notes]);
   return {ok:true};
 }
 export async function bookingStatus(id:string,status:string) {
@@ -192,10 +195,10 @@ export async function bookingStatus(id:string,status:string) {
 export async function addModification(input:Omit<Modification,"id"|"status">) {
   const user=await currentUser(),vrm=normalize(input.vrm);
   if(!["pro_modder","god_mode"].includes(user.subscription_tier)) throw new Error("Pro Modder access required.");
-  const vehicle=(await pool.query("SELECT owner_user_id FROM vehicles WHERE id=$1",[vrm])).rows[0];
+  const vehicle=(await pool.query("SELECT id,owner_user_id FROM vehicles WHERE vrm=$1",[vrm])).rows[0];
   if(!vehicle || (user.role!=="dev_admin"&&vehicle.owner_user_id!==user.id)) throw new Error("Vehicle ownership required.");
   const id=randomUUID(),data={...input,vrm,id,status:"active"};
-  await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3)",[id,vrm,JSON.stringify(data)]);
+  await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3)",[id,vehicle.id,JSON.stringify(data)]);
   return {ok:true};
 }
 export async function revertModification(input:{id:string;date:string;mileage:number}) {
@@ -228,7 +231,7 @@ export async function adminState():Promise<AdminState> {
   const admin = await requireAdmin();
   const [profiles, records] = await Promise.all([
     pool.query("SELECT id,email,full_name,role,subscription_tier,status,is_sample,garage_name,garage_registration,garage_verified,created_at,workshop_type FROM user_accounts ORDER BY created_at DESC"),
-    pool.query("SELECT id,data,owner_user_id,status,is_sample FROM vehicles ORDER BY id"),
+    pool.query("SELECT id,vin,vrm,data,owner_user_id,status,is_sample FROM vehicles ORDER BY vrm"),
   ]);
   const users:AdminUser[] = profiles.rows.map(u=>u.id===admin.id?{...u,role:admin.role,subscription_tier:admin.subscription_tier}:u);
   return {users,vehicles:records.rows.map(r=>({...r.data,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample})),
@@ -252,7 +255,7 @@ export async function reviewWorkshop(input:WorkshopReview) {
 export async function editAdminVehicle(input:AdminVehicleEdit) {
   const admin=await requireAdmin();
   return transaction(async db=>{
-  const result=await db.query("UPDATE vehicles SET data=data||$1::jsonb WHERE id=$2 RETURNING id",
+  const result=await db.query("UPDATE vehicles SET data=data||$1::jsonb WHERE vrm=$2 RETURNING id",
     [JSON.stringify({make:input.make,model:input.model,odometer:input.odometer}),normalize(input.vrm)]);
   if(!result.rowCount) throw new Error("Vehicle not found.");
   await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",[randomUUID(),admin.id,`Administrator updated vehicle details for ${normalize(input.vrm)}.`]);
@@ -260,10 +263,10 @@ export async function editAdminVehicle(input:AdminVehicleEdit) {
   });
 }
 export async function verifyStamp(id:string) {
-  const row=(await pool.query("SELECT * FROM service_records WHERE id=$1",[id])).rows[0];
+  const row=(await pool.query("SELECT s.*,v.vrm FROM service_records s JOIN vehicles v ON v.id=s.vehicle_id WHERE s.id=$1",[id])).rows[0];
   if(!row || !row.is_verified_stamp || !row.stamp_signature) return {valid:false,is_sample:false,garage:"",vrm:"",date:""};
   return {valid:checkStamp(id,row.stamped_by_garage_id,row.data,row.is_sample,row.stamp_signature,signingSecret()),is_sample:row.is_sample as boolean,
     stamp_authority:row.data.stamp_authority==="administrator"?"administrator":"workshop",
-    stamp_signature:row.stamp_signature as string,garage:row.data.garage as string,vrm:row.vehicle_id as string,
+    stamp_signature:row.stamp_signature as string,garage:row.data.garage as string,vrm:row.vrm as string,
     date:row.data.date as string,description:row.data.description as string,mileage:row.data.mileage as number};
 }
