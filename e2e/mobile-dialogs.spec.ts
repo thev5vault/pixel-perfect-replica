@@ -231,6 +231,131 @@ async function checkDialogViewport(page: Page, dialog: Locator) {
   }).toPass();
 }
 
+// Playwright cannot open a native phone keyboard. Resize only visualViewport
+// instead: unlike setViewportSize, this leaves innerHeight/dvh at 640px, matching
+// the keyboard behavior on iOS and modern Android browsers.
+async function setKeyboardViewport(page: Page, open: boolean) {
+  await page.evaluate((keyboardOpen) => {
+    const viewport = window.visualViewport;
+    if (!viewport) throw new Error("These keyboard checks require visualViewport");
+    for (const [key, value] of Object.entries({ height: 340, offsetTop: 20 })) {
+      if (keyboardOpen) Object.defineProperty(viewport, key, { configurable: true, value });
+      else Reflect.deleteProperty(viewport, key);
+    }
+    viewport.dispatchEvent(new Event("resize"));
+    viewport.dispatchEvent(new Event("scroll"));
+  }, open);
+  expect(await page.evaluate(() => window.innerHeight)).toBe(640);
+  expect((await visibleViewport(page)).bottom).toBe(open ? 360 : 640);
+}
+
+async function scrollFocusedField(dialog: Locator, label: string) {
+  const field = dialog.getByLabel(label, { exact: true });
+  await field.focus();
+  await field.evaluate((element) => element.scrollIntoView({ block: "nearest" }));
+  await expect(field).toBeFocused();
+  await expect(async () => {
+    const scroller = dialog.locator("form > .overflow-y-auto");
+    expectInside(await bounds(field), await bounds(scroller), 3);
+    expectInside(await bounds(field), await visibleViewport(dialog.page()), 3);
+  }).toPass();
+  return field;
+}
+
+async function dismissKeyboardAndCheckAction(page: Page, dialog: Locator, name: string) {
+  await dialog.locator(":focus").evaluate((element) =>
+    (element as HTMLElement).blur(),
+  );
+  await setKeyboardViewport(page, false);
+  await checkDialogViewport(page, dialog);
+  const action = dialog.getByRole("button", { name, exact: true });
+  await expect(action).toBeEnabled();
+  await action.focus();
+  await expect(action).toBeFocused();
+  expectInside(await bounds(action), await visibleViewport(page), 3);
+  // Check actual pointer reachability without creating a service record/claim.
+  await action.click({ trial: true });
+}
+
+test("service forms stay usable with a keyboard on a short portrait phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 });
+  await startSamplePreview(page);
+  await selectTier(page, /Pro DIY/);
+  await page.getByRole("button", { name: "Snap Receipt" }).click();
+  const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
+  const mileage = receipt.getByLabel("Mileage", { exact: true });
+  await mileage.fill("87420");
+  await setKeyboardViewport(page, true);
+  await expect(mileage).toBeFocused();
+  await checkDialogViewport(page, receipt);
+  await scrollFocusedField(receipt, "Mileage");
+  await scrollFocusedField(receipt, "Garage Name");
+  await scrollFocusedField(receipt, "Work Description");
+  await scrollFocusedField(receipt, "Fluid Specs");
+  await scrollFocusedField(receipt, "Labour (£)");
+  const receiptScroller = receipt.locator("form > .overflow-y-auto");
+  expect(await receiptScroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await dismissKeyboardAndCheckAction(page, receipt, "Save to Timeline");
+  await expect(mileage).toHaveValue("87420");
+  await receipt.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(receipt).toBeHidden();
+
+  await page.getByRole("button", { name: /Audi A4/ }).click();
+  await page.getByRole("menuitem", { name: /Connect New Vehicle/ }).click();
+  const vehicle = page.getByRole("dialog", { name: "Connect New Vehicle" });
+  await vehicle.getByLabel("Vehicle registration mark", { exact: true }).fill("AB14 CDE");
+  const reference = vehicle.getByLabel("11-digit V5C logbook reference", { exact: true });
+  await reference.fill("12345678901");
+  await setKeyboardViewport(page, true);
+  await expect(reference).toBeFocused();
+  await checkDialogViewport(page, vehicle);
+  await scrollFocusedField(vehicle, "11-digit V5C logbook reference");
+  const vin = await scrollFocusedField(vehicle, "VIN / chassis number on your V5C");
+  await vin.fill("SAMPLEVIN");
+  expect(await vehicle.locator("form > .overflow-y-auto").evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+  await dismissKeyboardAndCheckAction(page, vehicle, "Connect vehicle passport");
+  await expect(reference).toHaveValue("12345678901");
+  await expect(vin).toHaveValue("SAMPLEVIN");
+  await vehicle.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(vehicle).toBeHidden();
+});
+
+test("nested upgrade dismisses after the receipt form scrolls on a short phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 });
+  await startSamplePreview(page);
+  await selectTier(page, /Basic Driver \(Free\)/);
+  await page.getByRole("button", { name: "Add a basic DIY service entry" }).click();
+  const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
+  await receipt.getByLabel("Work Description", { exact: true }).focus();
+  await setKeyboardViewport(page, true);
+  await checkDialogViewport(page, receipt);
+  await scrollFocusedField(receipt, "Work Description");
+  const scroller = receipt.locator("form > .overflow-y-auto");
+  const trigger = receipt.getByRole("button", { name: /Parts vs labour cost/ });
+  await trigger.scrollIntoViewIfNeeded();
+  expect(await scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  const upgrade = page.getByRole("dialog", { name: /Upgrade to Pro DIY/ });
+  for (const dismissal of ["Close", "Escape"]) {
+    await trigger.click();
+    await expect(upgrade).toBeVisible();
+    await checkDialogViewport(page, upgrade);
+    await checkCloseFocus(page, upgrade);
+    if (dismissal === "Close") await upgrade.getByRole("button", { name: "Close" }).click();
+    else await page.keyboard.press("Escape");
+    await expect(upgrade).toBeHidden();
+    await expect(receipt).toBeVisible();
+    await expect(trigger).toBeFocused();
+    expectInside(await bounds(trigger), await bounds(scroller), 3);
+    expectInside(await bounds(trigger), await visibleViewport(page), 3);
+  }
+  await setKeyboardViewport(page, false);
+  await checkDialogViewport(page, receipt);
+  await receipt.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(receipt).toBeHidden();
+  await expect(page.locator('[data-state="open"][class*="fixed"][class*="inset-0"]')).toHaveCount(0);
+});
+
 async function checkCloseFocus(page: Page, dialog: Locator) {
   const close = dialog.getByRole("button", { name: "Close", exact: true });
   await close.focus();

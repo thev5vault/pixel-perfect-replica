@@ -281,7 +281,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950 p-5 shadow-2xl">
+      <DialogContent showCloseButton={false} className="flex max-h-[var(--dialog-max-height,90dvh)] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950 p-5 shadow-2xl">
         <ModalHeader className="border-0 bg-transparent px-0 py-0">
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" /> Snap Receipt
@@ -289,7 +289,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <DialogDescription>Add a dated service record and receipt to your vehicle.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
           <div className="grid w-full min-w-0 grid-cols-2 gap-3">
             <ModalField label="Date">{(id, labelId) => (
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>

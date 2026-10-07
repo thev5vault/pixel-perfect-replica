@@ -40,7 +40,7 @@ export function UpgradeDialog({
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent nested={nested} showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent nested={nested} showCloseButton={false} className="flex max-h-[var(--dialog-max-height,90dvh)] flex-col gap-0 overflow-hidden p-0">
         <ModalHeader>
           <DialogTitle className="flex items-center gap-2">
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}

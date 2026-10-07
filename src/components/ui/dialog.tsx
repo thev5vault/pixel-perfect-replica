@@ -17,16 +17,50 @@ const DialogClose = DialogPrimitive.Close;
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => {
+  const [viewport, setViewport] = React.useState<{ height: number; top: number } | null>(null);
+  React.useEffect(() => {
+    const visualViewport = window.visualViewport;
+    if (!visualViewport) return;
+    const update = () => {
+      // Mobile keyboards can resize only the visual viewport, leaving dvh and
+      // the layout viewport unchanged. Keep the sheet above the keyboard.
+      setViewport(
+        visualViewport.scale === 1
+          ? { height: visualViewport.height, top: visualViewport.offsetTop }
+          : null,
+      );
+    };
+    update();
+    visualViewport.addEventListener("resize", update);
+    visualViewport.addEventListener("scroll", update);
+    return () => {
+      visualViewport.removeEventListener("resize", update);
+      visualViewport.removeEventListener("scroll", update);
+    };
+  }, []);
+  return (
   <DialogPrimitive.Overlay
     ref={ref}
+    style={{
+      ...(viewport
+        ? {
+            top: viewport.top,
+            height: viewport.height,
+            bottom: "auto",
+            "--dialog-max-height": `${viewport.height * 0.9}px`,
+          }
+        : {}),
+      ...style,
+    } as React.CSSProperties}
     className={cn(
       "fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 backdrop-blur-sm p-0 overscroll-none sm:items-center sm:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
   />
-));
+  );
+});
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
@@ -40,7 +74,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[90dvh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl`,
+        `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[var(--dialog-max-height,90dvh)] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl`,
         className,
       )}
       onOpenAutoFocus={(event) => {

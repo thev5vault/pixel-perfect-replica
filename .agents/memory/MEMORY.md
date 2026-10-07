@@ -7,3 +7,4 @@
 - [Stripe connector authentication](stripe-connector-authentication.md) — use the attached connector's managed authentication, not extracted or manually substituted keys.
 - [Development JSX transforms](development-jsx-transforms.md) — production builds can pass while dev tagging breaks spaced self-closing JSX.
 - [Nested Radix dialog browser tests](nested-radix-dialog-tests.md) — nested dialogs can hide their mounted parent from accessibility queries while stacking.
+- [Keyboard viewport checks](keyboard-viewport-checks.md) — keyboard regressions need visual-only viewport reduction, not just a smaller page viewport.
