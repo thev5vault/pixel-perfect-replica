@@ -75,8 +75,13 @@ export function LockedField({ label, onClick }: { label: string; onClick: () => 
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 rounded-lg border border-dashed border-input px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+      onClick={(event) => {
+        // Safari does not focus buttons on tap; establish the return target
+        // before mounting the controlled nested dialog.
+        event.currentTarget.focus({ preventScroll: true });
+        onClick();
+      }}
+      className="flex w-full items-center justify-between gap-2 rounded-lg border border-dashed border-input px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
     >
       <span>{label}</span>
       <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">

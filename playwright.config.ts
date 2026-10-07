@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 const localChromium = "/repl/tools/bin/chromium";
 
@@ -9,15 +9,26 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: "http://127.0.0.1:5000",
-    browserName: "chromium",
     headless: true,
-    launchOptions: {
-      ...(existsSync(localChromium) ? { executablePath: localChromium } : {}),
-      args: ["--no-sandbox", "--disable-dev-shm-usage"],
-    },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        browserName: "chromium",
+        launchOptions: {
+          ...(existsSync(localChromium) ? { executablePath: localChromium } : {}),
+          args: ["--no-sandbox", "--disable-dev-shm-usage"],
+        },
+      },
+    },
+    {
+      name: "iphone-webkit",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
+  ],
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 5000 --strictPort",
     url: "http://127.0.0.1:5000",

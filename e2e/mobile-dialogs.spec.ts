@@ -28,6 +28,19 @@ function expectInside(inner: Bounds, outer: Bounds, focusInset = 0) {
   expect(inner.bottom + focusInset).toBeLessThanOrEqual(outer.bottom);
 }
 
+async function visibleViewport(page: Page): Promise<Bounds> {
+  return page.evaluate(() => {
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft ?? 0;
+    const top = viewport?.offsetTop ?? 0;
+    return {
+      left,
+      top,
+      right: left + (viewport?.width ?? window.innerWidth),
+      bottom: top + (viewport?.height ?? window.innerHeight),
+    };
+  });
+}
 function fieldControl(root: Locator, label: string) {
   return {
     control: root.getByLabel(label, { exact: true }),
@@ -66,6 +79,7 @@ async function focusAndCheck(dialog: Locator, label: string, mobile: boolean): P
   const dialogBounds = await bounds(dialog);
   expectInside(state.rect, dialogBounds, 3);
   if (state.fieldRect) expectInside(state.fieldRect, dialogBounds, 3);
+  expectInside(state.rect, await visibleViewport(control.page()), 3);
 
   if (mobile && ["INPUT", "SELECT", "TEXTAREA"].includes(state.tagName)) {
     expect(state.fontSize, `${label} should avoid mobile input zoom`).toBe("16px");
@@ -138,12 +152,7 @@ for (const viewport of viewports) {
     await page.getByRole("button", { name: "Snap Receipt" }).click();
     const proReceipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(proReceipt).toBeVisible();
-    expectInside(await bounds(proReceipt), {
-      left: 0,
-      top: 0,
-      right: viewport.width,
-      bottom: viewport.height,
-    });
+    await checkDialogViewport(page, proReceipt);
     await checkPair(proReceipt, "Date", "Mileage", viewport.mobile);
     await checkPair(proReceipt, "Category", "Garage Name", viewport.mobile);
     await checkPair(proReceipt, "Parts (£)", "Labour (£)", viewport.mobile);
@@ -157,8 +166,8 @@ for (const viewport of viewports) {
     await page.getByRole("button", { name: "Add a basic DIY service entry" }).click();
     const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(receipt).toBeVisible();
-    await receipt.getByRole("button", { name: /Parts vs labour cost/ }).click();
-
+    const upgradeTrigger = receipt.getByRole("button", { name: /Parts vs labour cost/ });
+    await upgradeTrigger.click();
     const upgrade = page.getByRole("dialog", { name: /Upgrade to Pro DIY/ });
     await expect(upgrade).toBeVisible();
     const openBackdrops = page.locator('[data-state="open"][class*="fixed"][class*="inset-0"]');
@@ -176,33 +185,59 @@ for (const viewport of viewports) {
       Number.parseInt(getComputedStyle(element).zIndex, 10),
     );
     expect(upgradeZIndex).toBeGreaterThan(parentZIndex);
-    expectInside(await bounds(upgrade), {
-      left: 0,
-      top: 0,
-      right: viewport.width,
-      bottom: viewport.height,
-    });
+    await checkDialogViewport(page, upgrade);
+    await checkCloseFocus(page, upgrade);
 
     await upgrade.getByRole("button", { name: "Close" }).click();
     await expect(upgrade).toBeHidden();
     await expect(receipt).toBeVisible();
+    await expect(upgradeTrigger).toBeFocused();
+    await checkDialogViewport(page, receipt);
+    await expect(openBackdrops).toHaveCount(1);
+
+    // Escape must dismiss only the active child, not its mounted parent.
+    await upgradeTrigger.click();
+    await expect(upgrade).toBeVisible();
+    await checkDialogViewport(page, upgrade);
+    await checkCloseFocus(page, upgrade);
+    await page.keyboard.press("Escape");
+    await expect(upgrade).toBeHidden();
+    await expect(receipt).toBeVisible();
+    await expect(upgradeTrigger).toBeFocused();
     await receipt.getByRole("button", { name: "Close" }).click();
     await expect(receipt).toBeHidden();
+    await expect(openBackdrops).toHaveCount(0);
 
     // The signed-in sample account enables the real V5C reference field.
     await page.getByRole("button", { name: /Audi A4/ }).click();
     await page.getByRole("menuitem", { name: /Connect New Vehicle/ }).click();
     const vehicleDialog = page.getByRole("dialog", { name: "Connect New Vehicle" });
     await expect(vehicleDialog).toBeVisible();
-    expectInside(await bounds(vehicleDialog), {
-      left: 0,
-      top: 0,
-      right: viewport.width,
-      bottom: viewport.height,
-    });
+    await checkDialogViewport(page, vehicleDialog);
     await focusAndCheck(vehicleDialog, "Vehicle registration mark", viewport.mobile);
     await focusAndCheck(vehicleDialog, "11-digit V5C logbook reference", viewport.mobile);
+    await focusAndCheck(vehicleDialog, "VIN / chassis number on your V5C", viewport.mobile);
+    await checkCloseFocus(page, vehicleDialog);
     await vehicleDialog.getByRole("button", { name: "Close" }).click();
     await expect(vehicleDialog).toBeHidden();
+    await expect(openBackdrops).toHaveCount(0);
   });
+}
+
+async function checkDialogViewport(page: Page, dialog: Locator) {
+  // Poll through the opening transition before measuring the sheet.
+  await expect(async () => {
+    expectInside(await bounds(dialog), await visibleViewport(page));
+  }).toPass();
+}
+
+async function checkCloseFocus(page: Page, dialog: Locator) {
+  const close = dialog.getByRole("button", { name: "Close", exact: true });
+  await close.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(close).toBeFocused();
+  await expect(close).toHaveCSS("box-shadow", /^(?!none$).+/);
+  expectInside(await bounds(close), await bounds(dialog), 3);
+  expectInside(await bounds(close), await visibleViewport(page), 3);
 }

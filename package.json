@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --project=chromium",
+    "test:browser:webkit": "playwright test --project=iphone-webkit",
+    "test:browser:all": "playwright test",
     "test:watch": "vitest"
   },
   "overrides": {

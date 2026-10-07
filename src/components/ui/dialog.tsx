@@ -32,7 +32,9 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; nested?: boolean }
->(({ className, children, showCloseButton = true, nested = false, ...props }, ref) => (
+>(({ className, children, showCloseButton = true, nested = false, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
+  return (
   <DialogPortal>
     <DialogOverlay className={nested ? "z-[60]" : undefined}>
     <DialogPrimitive.Content
@@ -41,6 +43,22 @@ const DialogContent = React.forwardRef<
         `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[90dvh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl`,
         className,
       )}
+      onOpenAutoFocus={(event) => {
+        if (nested) {
+          returnFocusRef.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }
+        onOpenAutoFocus?.(event);
+      }}
+      onCloseAutoFocus={(event) => {
+        onCloseAutoFocus?.(event);
+        // Controlled nested dialogs may have no Radix Trigger to restore.
+        // Return keyboard focus to their opener without scrolling the parent.
+        if (nested && !event.defaultPrevented && returnFocusRef.current?.isConnected) {
+          event.preventDefault();
+          returnFocusRef.current.focus({ preventScroll: true });
+        }
+      }}
       {...props}
     >
       {children}
@@ -51,7 +69,8 @@ const DialogContent = React.forwardRef<
     </DialogPrimitive.Content>
     </DialogOverlay>
   </DialogPortal>
-));
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
