@@ -57,6 +57,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([class*="text-2xl"]),
+  textarea, select { font-size: 16px !important; }
+}
+
 :root {
   --radius: 0.875rem;
   --background: oklch(0.208 0.042 265.755); /* #0F172A */

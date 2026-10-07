@@ -23,6 +23,8 @@ import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 import { DevPreviewButton } from "@/components/vault/DevPreviewButton";
+import { VehicleDataTools } from "@/components/vault/VehicleDataTools";
+import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,7 +50,7 @@ export function Dashboard() {
   const [open, setOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const motReadings = vehicle.motHistory ?? MOT_READINGS;
+  const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
 
   const history = useMemo(
     () => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)),
@@ -129,7 +131,7 @@ export function Dashboard() {
         />
       </section>
 
-      <button onClick={() => (can.diy(role) ? setOpen(true) : setUpgradeOpen(true))} className="btn-primary w-full py-4 text-base">
+      <button disabled={vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => (can.diy(role) ? setOpen(true) : setUpgradeOpen(true))} className="btn-primary w-full py-4 text-base">
         <Plus className="h-5 w-5" /> Snap Receipt
       </button>
 
@@ -160,7 +162,11 @@ export function Dashboard() {
         {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
       </section>
 
-      <SnapReceiptDialog open={open && can.diy(role)} onOpenChange={setOpen} />
+      <VehicleDataTools/>
+      <button className="btn-ghost w-full" onClick={()=>setOpen(true)} disabled={vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
+      {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
+      {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
+      <SnapReceiptDialog open={open} onOpenChange={setOpen} />
       <UpgradeDialog
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
@@ -211,6 +217,8 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [image, setImage] = useState<string>();
   const [upsell, setUpsell] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pdfReceipt,setPdfReceipt]=useState<{name:string;data:string}|undefined>();
+  const [readingPdf,setReadingPdf]=useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -257,11 +265,13 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       verified: false,
       is_verified_stamp: false,
       image: pro ? image : undefined,
+      invoice_name:pro?pdfReceipt?.name:undefined,invoice_data:pro?pdfReceipt?.data:undefined,
     });
     if (result === false) throw new Error("A linked vehicle was not found for this record.");
     toast.success("Record added to your timeline");
     setForm(empty);
     setImage(undefined);
+    setPdfReceipt(undefined);
     onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Record could not be saved");
@@ -335,6 +345,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <Field label="High-res Receipt">
                 <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
               </Field>
+              <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
             </>
           ) : (
             <div className="space-y-2">
@@ -345,7 +356,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           )}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
-            <button type="submit" disabled={saving} className="btn-primary w-full">{saving ? "Saving record…" : "Save to Timeline"}</button>
+            <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>
           </footer>
         </form>
         <UpgradeDialog open={upsell} onOpenChange={setUpsell} />

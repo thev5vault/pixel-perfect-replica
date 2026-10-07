@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const signed = Boolean(account?.signedIn && account.state);
-   const isPublic = isAuthEntry(path) || path.startsWith("/verify");
+   const isPublic = isAuthEntry(path) || path.startsWith("/verify") || path.startsWith("/v/");
   const user = account?.state?.user;
    const role = account?.state?.development_role ?? (user?.role === "dev_admin" ? "superadmin" : user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
   const garage = user?.role === "verified_garage" || role === "Garage";
@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (account && !signed && !isPublic) {
     return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">Sign in to your vehicle passport</h1><p className="mt-2 text-sm text-muted-foreground">Your records belong to your account, not this device.</p><a href="/sign-in" className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
   }
+  if (signed && isPublic && !isAuthEntry(path)) return <>{children}</>;
   if (signed && isPublic) return <div className="min-h-[100dvh] bg-slate-950" />;
   if (!account && isPublic) return <>{children}</>;
   if (!account && (!vault.unlocked || !vault.pin)) return <UnlockGate />;
@@ -78,9 +79,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
   return (
     <div className="app-viewport flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
-      <header className="sticky top-0 z-30 grid h-14 w-full shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur-md print:hidden">
+      <header className="sticky top-0 z-30 grid h-14 w-full shrink-0 grid-cols-[20%_60%_20%] items-center border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur-md print:hidden">
         <div className="flex min-w-0 items-center justify-start">
-          <Link to={garage ? "/garage" : "/vehicle"} className="flex h-11 w-11 shrink-0 items-center justify-center bg-transparent p-0.5 transition-opacity hover:opacity-80" aria-label="V5Vault home">
+          <Link to="/vehicle" className="flex h-11 w-11 shrink-0 items-center justify-center bg-transparent p-0.5 transition-opacity hover:opacity-80" aria-label="V5Vault home">
             <V5VaultLogo className="h-10 w-10" />
           </Link>
         </div>

@@ -148,7 +148,7 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
         </div>
       )}
       {m.notes && <p className="mt-2 text-sm text-muted-foreground">{m.notes}</p>}
-      {!reverted && (
+      {!reverted && !m.frozen_at && (
         <button onClick={onRevert} className="btn-ghost mt-3 w-full text-sm">
           <RotateCcw className="h-4 w-4" /> Revert to Stock
         </button>

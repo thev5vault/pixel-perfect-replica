@@ -16,7 +16,7 @@ export interface AccountContext {
   preview?: boolean;
   startPreview?: () => void;
   refresh: () => Promise<void>;
-  claimVehicle: (vrm: string, reference: string) => Promise<{ status: "approved" | "pending"; is_sample: boolean; message: string }>;
+  claimVehicle: (vrm: string, reference: string, vin?:string) => Promise<{ status: "approved" | "pending"; is_sample: boolean; message: string }>;
   switchRole: (role: Role) => Promise<void>;
   saveProfile: (profile: { full_name: string; garage_name: string; garage_registration: string; workshop_type?: "garage" | "specialist" }) => Promise<void>;
   getAdminState: () => Promise<AdminState>;
@@ -77,7 +77,7 @@ export function AccountProvider({children}:{children:ReactNode}) {
     getAdminState:async()=>api.getAdminState(),
     reviewWorkshop:async(input)=>{await api.reviewWorkshop({data:input});await refresh();},
     editVehicle:async(input)=>{await api.editAdminVehicle({data:input});await refresh();},
-    claimVehicle:async(vrm,reference)=>{const result=await api.claimVehicle({data:{vrm,reference}});await refresh();return result;},
+    claimVehicle:async(vrm,reference,vin)=>{const result=await api.claimVehicle({data:{vrm,reference,...(vin?{vin}:{})}});await refresh();return result;},
     switchRole:async(role)=>{await api.switchDevelopmentRole({data:{role}});await refresh();},
     saveProfile:async(profile)=>{await api.saveAccount({data:profile});await refresh();},
     addService:async(record)=>{await api.createServiceRecord({data:record});await refresh();},

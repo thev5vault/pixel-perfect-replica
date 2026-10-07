@@ -8,6 +8,9 @@ export interface VesData {
   colour?: string;
   motStatus?: string;
   dateOfLastV5CIssued?: string;
+  engineCapacity?: number;
+  taxStatus?: string;
+  taxDueDate?: string;
 }
 
 export interface MotData {
@@ -16,6 +19,7 @@ export interface MotData {
   manufactureDate?: string;
   fuelType?: string;
   primaryColour?: string;
+  vin?: string;
   motTests?: {
     completedDate: string;
     testResult: string;
@@ -55,5 +59,7 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
     ...(ves.fuelType ?? mot.fuelType ? { fuelType: ves.fuelType ?? mot.fuelType } : {}),
     ...(ves.colour ?? mot.primaryColour ? { colour: ves.colour ?? mot.primaryColour } : {}),
     motHistory, source: "official",
+    engineCapacity: ves.engineCapacity, taxStatus: ves.taxStatus, taxDueDate: ves.taxDueDate,
+    vin: mot.vin,
   };
 }

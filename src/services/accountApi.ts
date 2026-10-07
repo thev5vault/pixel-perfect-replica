@@ -10,10 +10,11 @@ const service = z.object({
   parts: z.array(z.object({name:z.string().max(150),partNo:z.string().max(150)})).max(50).optional(),
   fluids: z.string().max(1000).optional(), partsCost:z.number().min(0).optional(), labourCost:z.number().min(0).optional(),
   invoice_name: z.string().max(200).optional(), invoice_data: z.string().max(7000000).regex(/^data:application\/pdf;base64,[A-Za-z0-9+/=\r\n]+$/).optional(),
+  next_service_due:z.string().date().optional(),
 });
 export const getAccountState = createServerFn({method:"GET"}).handler(async () => (await import("./server/accounts")).accountState());
 export const claimVehicle = createServerFn({method:"POST"})
-  .validator(z.object({vrm, reference:z.string().regex(/^\d{11}$/)}))
+  .validator(z.object({vrm, reference:z.string().regex(/^\d{11}$/),vin:z.string().trim().min(5).max(24).optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).claim(data));
 export const switchDevelopmentRole = createServerFn({method:"POST"})
   .validator(z.object({role:z.enum(["Owner","DIY","Pro","Garage","superadmin"])}))
@@ -41,7 +42,7 @@ export const verifyWorkshopStamp = createServerFn({method:"GET"}).validator(z.ob
 export const getAdminState = createServerFn({method:"GET"})
   .handler(async () => (await import("./server/accounts")).adminState());
 export const reviewWorkshop = createServerFn({method:"POST"})
-  .validator(z.object({id:z.string().min(1).max(100),status:z.enum(["approved","rejected"])}))
+  .validator(z.object({id:z.string().min(1).max(100),status:z.enum(["approved","rejected"]),vat_verified:z.boolean().optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).reviewWorkshop(data));
 export const editAdminVehicle = createServerFn({method:"POST"})
   .validator(z.object({vrm,make:z.string().trim().min(1).max(100),model:z.string().trim().min(1).max(150),odometer:z.number().int().min(0).max(2000000)}))

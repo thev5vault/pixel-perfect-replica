@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { useAccount } from "@/lib/account-store";
 import { useState } from "react";
 import { ModalHeader } from "./ModalHeader";
+import { useV1 } from "@/lib/use-v1";
 
 export function UpgradeDialog({
   open,
@@ -21,17 +22,15 @@ export function UpgradeDialog({
   description?: string;
 }) {
   const account = useAccount();
+  const v1=useV1();
   const [busy, setBusy] = useState(false);
   async function chooseTier() {
-    if (!account?.state?.development) {
-      toast.info("Billing is not connected. No subscription has been changed.");
-      return;
-    }
-    const role = tier.toLowerCase().includes("modder") ? "Pro" : tier.toLowerCase().includes("garage") ? "Garage" : "DIY";
+    const plan = tier.toLowerCase().includes("modder") ? "pro_monthly" : tier.toLowerCase().includes("garage") || tier.toLowerCase().includes("workshop") ? "workshop_monthly" : "diy_monthly";
     setBusy(true);
     try {
-      await account.switchRole(role);
-      toast.success("Development role updated. No payment was taken.");
+      const result=await v1.checkout(plan);
+      if(result.url) {window.location.assign(result.url);return;}
+      toast.success(result.message);
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Development role could not be changed");
@@ -45,7 +44,7 @@ export function UpgradeDialog({
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}
           </DialogTitle>
         <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
-        {!account?.state?.development && <p className="mx-4 mt-3 rounded-lg border border-amber-500/25 bg-amber-950/30 p-3 text-xs text-amber-100">Billing is not connected yet. This screen will not change your plan or take payment.</p>}
+        {account?.preview && <p className="mx-4 mt-3 text-xs text-amber-100">Sample plan preview. No payment will be taken.</p>}
         </ModalHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
         <ul className="space-y-2 text-sm">
@@ -62,7 +61,7 @@ export function UpgradeDialog({
           onClick={() => void chooseTier()}
           disabled={busy}
         >
-          {account?.state?.development ? (busy ? "Updating development access…" : `Try ${tier} in development`) : "Billing not connected"}
+          {busy?"Opening checkout…":account?.preview?`Preview ${tier}`:`Continue to Stripe · ${price}`}
         </button>
         </footer>
       </DialogContent>

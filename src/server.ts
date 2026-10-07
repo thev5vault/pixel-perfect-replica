@@ -8,6 +8,7 @@ type ServerEntry = {
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
+let billingStarted = false;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -47,6 +48,14 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (new URL(request.url).pathname === "/api/stripe/webhook" && request.method === "POST") {
+        return (await import("./services/server/stripe-client")).stripeWebhook(request);
+      }
+      if (!billingStarted) {
+        billingStarted = true;
+        void import("./services/server/stripe-client").then(m=>m.initializeStripe())
+          .catch(()=>console.warn("Stripe setup is unavailable. Billing remains disabled until configuration succeeds."));
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

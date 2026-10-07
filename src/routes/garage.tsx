@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAccount } from "@/lib/account-store";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
 import { Field, ImagePicker, PageHeader, Pill } from "@/components/vault/ui-bits";
+import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
 
 const JOBS = ["Oil & Filter", "Air Filter", "Pollen Filter", "Spark Plugs", "Brake Fluid", "Tyres", "Health Check"];
 export const Route = createFileRoute("/garage")({ component: GaragePage });
@@ -12,10 +13,11 @@ export const Route = createFileRoute("/garage")({ component: GaragePage });
 function GaragePage() {
   const account = useAccount();
   const user = account?.state?.user;
-  const canStamp = user?.role === "dev_admin" || (user?.role === "verified_garage" && user.garage_verified);
+  const canStamp = user?.role === "dev_admin" || (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier==="verified_garage");
   const [vrm, setVrm] = useState("");
   const [mileage, setMileage] = useState("");
   const [notes, setNotes] = useState("");
+  const [nextDue,setNextDue]=useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [invoice, setInvoice] = useState<{ name: string; data: string }>();
   const [receipt, setReceipt] = useState<string>();
@@ -69,7 +71,7 @@ function GaragePage() {
       await account.addService({
         vrm: n, date: today(), mileage: mi, category: "Servicing", description, items,
         garage: user.garage_name.trim() || "Workshop", cost: undefined, verified: false,
-        invoice_name: invoice?.name, invoice_data: invoice?.data, image: receipt,
+        invoice_name: invoice?.name, invoice_data: invoice?.data, image: receipt,...(nextDue?{next_service_due:nextDue}:{}),
       });
       setSubmitted(true);
       toast.success("Service record submitted to the vehicle timeline");
@@ -85,12 +87,14 @@ function GaragePage() {
       {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. This is not live VAT registration verification.</p>}
     </section>
     {submitted && <div className="vault-card flex items-center gap-3 border-success/30 p-4"><ShieldCheck className="h-6 w-6 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-xs text-muted-foreground">Stamp status and verification signature are assigned by the server.</p></div></div>}
-    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Stamping is unavailable until the server confirms a verified workshop account. Saving workshop name or registration details does not grant verification.</div>}
+    <WorkshopReminders/>
+    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Stamping requires workshop approval, VAT verification and an active Workshop subscription.</div>}
     <form onSubmit={submit} className="vault-card space-y-4 p-5">
       <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Timer className="h-4 w-4" /> Fast log</div>
       <div className="grid grid-cols-2 gap-3"><Field label="Customer VRM"><input required minLength={2} maxLength={12} value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0,8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field><Field label="Odometer (mi)"><input required inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g,"").slice(0,7))} placeholder="87,420" className="field" /></Field></div>
       <div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">One-tap jobs</p><div className="mt-2 grid grid-cols-2 gap-2">{JOBS.map((job) => <button key={job} type="button" aria-pressed={selected.includes(job)} onClick={() => toggle(job)} className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-colors ${selected.includes(job) ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}><span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${selected.includes(job) ? "border-primary bg-primary text-primary-foreground" : "border-slate-600"}`}>{selected.includes(job) && <Check className="h-3 w-3" />}</span>{job}</button>)}</div></div>
       <Field label="Work notes / receipt reference"><textarea rows={2} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional job detail or receipt reference" className="field" /></Field>
+      <Field label="Next service due (optional)"><input type="date" className="field" min={today()} value={nextDue} onChange={e=>setNextDue(e.target.value)}/></Field>
       <div className="space-y-1.5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop invoice (optional)</p><label onDragOver={(e)=>e.preventDefault()} onDrop={(e)=>{e.preventDefault();void readAttachment(e.dataTransfer.files[0]);}} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-600 p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary"><FileText className="h-5 w-5" />{readingAttachment ? "Reading attachment…" : invoice ? invoice.name : "Drop an invoice photo or PDF · maximum 5 MB"}<input type="file" accept="application/pdf,.pdf,image/*" className="sr-only" disabled={readingAttachment || busy} onChange={(e) => void readAttachment(e.target.files?.[0])} /></label>{fileError && <p role="alert" className="mt-1 text-xs text-red-300">{fileError}</p>}{invoice && <button type="button" onClick={() => setInvoice(undefined)} className="mt-1 text-xs text-muted-foreground underline">Remove attachment</button>}</div>
       <div className="space-y-1.5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Receipt photo (optional)</p><ImagePicker value={receipt} onChange={setReceipt} label="Attach receipt photo" /></div>
       <p className="text-xs leading-relaxed text-muted-foreground">A record is immutable after creation. The server decides stamp provenance; incoming client flags cannot self-assert verification.</p>

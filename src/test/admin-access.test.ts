@@ -84,7 +84,7 @@ describe("Verified server-side owner permissions",()=>{
     expect(updates).toEqual([["UPDATE user_accounts SET dev_role=$1 WHERE id=$2",["Owner","clerk-owner"]]]);
   });
   it("commits approval and applicant notification together, preserving sample provenance",async()=>{
-    await reviewWorkshop({id:"application",status:"approved"});
+    await reviewWorkshop({id:"application",status:"approved",vat_verified:true});
     expect(mocks.txQuery.mock.calls[0]?.[0]).toBe("BEGIN");
     const update=mocks.txQuery.mock.calls.find(([sql])=>sql.startsWith("UPDATE user_accounts"));
     expect(update?.[1].slice(0,4)).toEqual(["approved",true,"application","clerk-owner"]);
@@ -93,18 +93,22 @@ describe("Verified server-side owner permissions",()=>{
     expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("COMMIT");
     expect(mocks.release).toHaveBeenCalledOnce();
   });
+  it("never treats approval alone as VAT evidence",async()=>{
+    await expect(reviewWorkshop({id:"application",status:"approved"})).rejects.toThrow("supporting VAT verification");
+    expect(mocks.connect).not.toHaveBeenCalled();
+  });
   it("rolls back a review when notification fails",async()=>{
     mocks.txQuery.mockImplementation(async(sql:string)=>{
       if(sql.startsWith("INSERT INTO account_notifications")) throw new Error("Notification failed");
       return {rowCount:1,rows:[{id:"application"}]};
     });
-    await expect(reviewWorkshop({id:"application",status:"approved"})).rejects.toThrow("Notification failed");
+    await expect(reviewWorkshop({id:"application",status:"approved",vat_verified:true})).rejects.toThrow("Notification failed");
     expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("ROLLBACK");
     expect(mocks.txQuery.mock.calls.some(([sql])=>sql==="COMMIT")).toBe(false);
   });
   it("rejects an already-reviewed application rather than silently approving again",async()=>{
     mocks.txQuery.mockImplementation(async(sql:string)=>({rows:[],rowCount:sql.startsWith("UPDATE")?0:1}));
-    await expect(reviewWorkshop({id:"application",status:"approved"})).rejects.toThrow("no longer pending");
+    await expect(reviewWorkshop({id:"application",status:"approved",vat_verified:true})).rejects.toThrow("no longer pending");
     expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("ROLLBACK");
   });
   it("edits only vehicle details, not ownership or V5C references",async()=>{
@@ -117,6 +121,10 @@ describe("Verified server-side owner permissions",()=>{
   });
   it("can sign a vehicle record as the administrator without impersonating its garage",async()=>{
     vi.stubEnv("SESSION_SECRET","unit-test-signing-key-only");
+    mocks.txQuery.mockImplementation(async(sql:string)=>{
+      if(sql.startsWith("SELECT * FROM vehicles"))return{rows:[{id:"AB14CDE",data:sampleAccount().vehicles[0],owner_user_id:"another-owner",status:"approved",is_sample:true}],rowCount:1};
+      return{rows:[],rowCount:1};
+    });
     const record=await createService({vrm:"AB14CDE",date:"2026-10-07",mileage:88000,category:"Servicing",
       description:"Admin inspection",items:["Inspection"],garage:"Pretend Garage"});
     expect(record.garage).toBe("V5Vault administrator");
@@ -124,7 +132,7 @@ describe("Verified server-side owner permissions",()=>{
     expect(record.stamp_authority).toBe("administrator");
     expect(record.is_verified_stamp).toBe(true);
     expect(record.is_sample).toBe(true);
-    const insertion=mocks.query.mock.calls.find(([sql])=>sql.startsWith("INSERT INTO service_records"));
+    const insertion=mocks.txQuery.mock.calls.find(([sql])=>sql.startsWith("INSERT INTO service_records"));
     mocks.query.mockResolvedValueOnce({rows:[{id:record.id,vehicle_id:"AB14CDE",data:JSON.parse(insertion?.[1][3]),
       is_sample:true,is_verified_stamp:true,stamped_by_garage_id:"clerk-owner",stamp_signature:record.stamp_signature}]});
     const proof=await verifyStamp(record.id);

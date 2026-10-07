@@ -13,8 +13,8 @@ export const ROLES: Role[] = ["Owner", "DIY", "Pro", "Garage", "superadmin"];
 export const ROLE_LABELS: Record<Role, string> = {
   Owner: "Basic Driver (Free)",
   DIY: "Pro DIY (£0.99/mo)",
-  Pro: "Pro Modder (£1.99/mo)",
-  Garage: "Verified Garage (£7.99/mo)",
+  Pro: "Pro Modder / Collector (£1.49/mo)",
+  Garage: "Verified Workshop (£12.99/mo)",
   superadmin: "Dev Owner / SuperAdmin (God Mode)",
 };
 /** Feature entitlements per tier. Pro Modder and Garage include Pro DIY features. */
@@ -47,16 +47,19 @@ export interface ServiceRecord {
   fluids?: string | undefined;
   partsCost?: number | undefined;
   labourCost?: number | undefined;
-  is_verified_stamp?: boolean;
+  is_verified_stamp?: boolean | undefined;
   stamped_by_garage_id?: string | null;
   stamp_signature?: string | null;
-  stamp_authority?: "workshop" | "administrator";
-  is_sample?: boolean;
+  stamp_authority?: "workshop" | "administrator" | undefined;
+  is_sample?: boolean | undefined;
   status?: "approved" | "pending";
   invoice_name?: string | undefined;
   invoice_data?: string | undefined;
   has_receipt?: boolean;
   has_invoice?: boolean;
+  frozen_at?: string | null | undefined;
+  vat_verified?: boolean | undefined;
+  next_service_due?: string | undefined;
 }
 export type ServiceInput = Omit<ServiceRecord, "id" | "verified"> & { verified?: boolean };
 
@@ -76,6 +79,7 @@ export interface Modification {
   tags?: string[] | undefined;
   removalDate?: string;
   removalMileage?: number;
+  frozen_at?: string | null | undefined;
 }
 
 export interface Vehicle {
@@ -85,15 +89,22 @@ export interface Vehicle {
   odometer: number;
   v5cDate: string;
   motExpiry: string;
-  year?: number;
-  fuelType?: string;
-  colour?: string;
-  motStatus?: string;
+  year?: number | undefined;
+  fuelType?: string | undefined;
+  colour?: string | undefined;
+  motStatus?: string | undefined;
   motHistory?: MotReading[];
-  source?: "demo" | "official";
+  source?: "demo" | "official" | undefined;
   owner_user_id?: string | null;
   status?: "approved" | "pending" | "rejected";
   is_sample?: boolean;
+  vin?: string | undefined;
+  engineCapacity?: number | undefined;
+  taxStatus?: string | undefined;
+  taxDueDate?: string | undefined;
+  public_enabled?: boolean;
+  keeper_changed_at?: string | null;
+  access?: "active" | "archived" | "plan_locked";
 }
 
 export interface MotReading {
@@ -274,7 +285,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   const live = account?.state;
-  const effectiveRole: Role = live?.development_role ?? (live?.user.role === "dev_admin" ? "superadmin" : live?.user.role === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
+  const effectiveRole: Role = live?.development_role ?? (live?.user.role === "dev_admin" ? "superadmin" : live?.user.role === "verified_garage" && live.user.subscription_tier === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" || live?.user.subscription_tier === "verified_garage" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
   const current = live ? { ...state, vehicles: live.vehicles, services: live.services, mods: live.mods, role: effectiveRole, unlocked: true, pin: "managed-auth", v5cRefs: {} } : state;
   const vehicle = current.vehicles.find((v) => v.vrm === state.activeVrm) ?? current.vehicles[0] ?? VEHICLES[0]!;
 

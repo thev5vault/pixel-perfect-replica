@@ -11,6 +11,7 @@ import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
+import { SharePassportModal } from "@/components/vault/SharePassportModal";
 
 export const Route = createFileRoute("/passport")({
   head: () => ({
@@ -38,7 +39,7 @@ function provenance(s: ServiceRecord) {
 const CERTS: { id: Cert; title: string; tier: string; price: string; icon: typeof Gauge; includes: string; allowed: (r: Role) => boolean }[] = [
   { id: "standard", title: "Standard Passport", tier: "Basic", price: "Free", icon: Gauge, includes: "Mileage graph, service dates, garage names, official MOT log", allowed: () => true },
   { id: "oem", title: "OEM Provenance Certificate", tier: "Pro DIY", price: "£0.99/mo", icon: Wrench, includes: "Everything in Standard, manufacturer part numbers, receipt thumbnails, parts and labour spend summary", allowed: can.diy },
-  { id: "master", title: "Master Build Sheet", tier: "Pro Modder", price: "£1.99/mo", icon: Zap, includes: "Everything in Standard and OEM, active build spec, dyno printouts, specialist stamps, reverted mods", allowed: can.vault },
+  { id: "master", title: "Master Build Sheet", tier: "Pro Modder", price: "£1.49/mo", icon: Zap, includes: "Everything in Standard and OEM, active build spec, dyno printouts, specialist stamps, reverted mods", allowed: can.vault },
 ];
 
 function PassportPage() {
@@ -48,6 +49,8 @@ function PassportPage() {
   const [loading, setLoading] = useState<Cert | null>(null);
   const [upsell, setUpsell] = useState<(typeof CERTS)[number] | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [shareOpen,setShareOpen]=useState(false);
+  const {vehicle:activeVehicle}=useVault();
 
   if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
     return <div className="vault-card p-6"><p className="font-mono text-[10px] uppercase tracking-widest text-primary">Your passport</p><h1 className="mt-2 text-2xl font-bold">Connect a vehicle to build its export.</h1><p className="mt-2 text-sm text-muted-foreground">Link a vehicle with your V5C logbook reference before creating a passport.</p><button onClick={() => setConnectOpen(true)} className="btn-primary mt-5">Connect New Vehicle</button><VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} /></div>;
@@ -65,6 +68,8 @@ function PassportPage() {
   return (
     <div className="space-y-5">
       <div className="print:hidden"><PageHeader title="Export Passport" subtitle="Resale certificates that document your vehicle history." /></div>
+      <button className="btn-primary w-full print:hidden" onClick={()=>setShareOpen(true)}><FileBadge className="h-4 w-4"/>Sales pack & shareable buyer passport</button>
+      <SharePassportModal open={shareOpen} onOpenChange={setShareOpen} vrm={activeVehicle.vrm}/>
       <div className="space-y-3 print:hidden">
         {CERTS.map((c) => {
           const ok = c.allowed(role);
@@ -106,7 +111,7 @@ function PassportPage() {
 
 function Certificate({ cert }: { cert: Cert }) {
   const { vehicle, services, mods } = useVault();
-  const motReadings = vehicle.motHistory ?? MOT_READINGS;
+  const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
   const meta = CERTS.find((c) => c.id === cert)!;
   const history = useMemo(() => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)), [services, vehicle.vrm]);
   const vMods = mods.filter((m) => m.vrm === vehicle.vrm);

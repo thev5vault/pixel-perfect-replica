@@ -1,5 +1,6 @@
 import { BadgeCheck, LockKeyhole, Wrench, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { UpgradeDialog } from "./UpgradeDialog";
 import { Button } from "@/components/ui/button";
 
 type LockedFeature = "vault" | "garage";
@@ -8,17 +9,18 @@ const copy = {
   vault: {
     title: "Pro Vault locked",
     description: "Keep every remap, performance part and reversal in one verified build history.",
-    action: "Upgrade to Pro Vault (£1.99/mo) to track remaps and mods",
+    action: "Upgrade to Collector (£1.49/mo) to track remaps and mods",
   },
   garage: {
     title: "Specialist Access Only",
-    description: "Verify your garage account (£7.99/mo) to stamp customer records.",
-    action: "Verify garage account (£7.99/mo)",
+    description: "Workshop access (£12.99/mo) requires business and VAT verification.",
+    action: "Verified Workshop (£12.99/mo)",
   },
 } satisfies Record<LockedFeature, { title: string; description: string; action: string }>;
 
 export function FeatureLock({ feature }: { feature: LockedFeature }) {
   const content = copy[feature];
+  const [upgrade,setUpgrade]=useState(false);
 
   return (
     <section className="relative min-h-[31rem] overflow-hidden rounded-xl border bg-card">
@@ -35,12 +37,13 @@ export function FeatureLock({ feature }: { feature: LockedFeature }) {
         <Button
           size="lg"
           className="mt-6 h-auto max-w-sm whitespace-normal py-3 text-center leading-5"
-          onClick={() => toast.info("Subscriptions are not connected in this preview.")}
+          onClick={() => setUpgrade(true)}
         >
           {feature === "vault" ? <Zap /> : <BadgeCheck />}
           {content.action}
         </Button>
       </div>
+      <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} tier={feature==="vault"?"Pro Modder / Collector":"Verified Workshop"} price={feature==="vault"?"£1.49/mo":"£12.99/mo"}/>
     </section>
   );
 }

@@ -19,8 +19,10 @@ import { Route as QueueRouteImport } from './routes/queue'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VaultRouteImport } from './routes/vault'
 import { Route as VehicleRouteImport } from './routes/vehicle'
+import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
+import { Route as VVrmRouteImport } from './routes/v.$vrm'
 import { Route as VerifyRecordIdRouteImport } from './routes/verify.$recordId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -73,6 +75,11 @@ const VehicleRoute = VehicleRouteImport.update({
   path: '/vehicle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
+  id: '/checkout/success',
+  path: '/checkout/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignInSplatRoute = SignInSplatRouteImport.update({
   id: '/sign-in/$',
   path: '/sign-in/$',
@@ -81,6 +88,11 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
 const SignUpSplatRoute = SignUpSplatRouteImport.update({
   id: '/sign-up/$',
   path: '/sign-up/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VVrmRoute = VVrmRouteImport.update({
+  id: '/v/$vrm',
+  path: '/v/$vrm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyRecordIdRoute = VerifyRecordIdRouteImport.update({
@@ -100,8 +112,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRoutesByTo {
@@ -115,8 +129,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRoutesById {
@@ -131,8 +147,10 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRouteTypes {
@@ -148,8 +166,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/checkout/success'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/v/$vrm'
     | '/verify/$recordId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -163,8 +183,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/checkout/success'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/v/$vrm'
     | '/verify/$recordId'
   id:
     | '__root__'
@@ -178,8 +200,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/checkout/success'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/v/$vrm'
     | '/verify/$recordId'
   fileRoutesById: FileRoutesById
 }
@@ -194,8 +218,10 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   VaultRoute: typeof VaultRoute
   VehicleRoute: typeof VehicleRoute
+  CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
+  VVrmRoute: typeof VVrmRoute
   VerifyRecordIdRoute: typeof VerifyRecordIdRoute
 }
 
@@ -271,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VehicleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/success': {
+      id: '/checkout/success'
+      path: '/checkout/success'
+      fullPath: '/checkout/success'
+      preLoaderRoute: typeof CheckoutSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in/$': {
       id: '/sign-in/$'
       path: '/sign-in/$'
@@ -283,6 +316,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up/$'
       fullPath: '/sign-up/$'
       preLoaderRoute: typeof SignUpSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/$vrm': {
+      id: '/v/$vrm'
+      path: '/v/$vrm'
+      fullPath: '/v/$vrm'
+      preLoaderRoute: typeof VVrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$recordId': {
@@ -306,8 +346,10 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   VaultRoute: VaultRoute,
   VehicleRoute: VehicleRoute,
+  CheckoutSuccessRoute: CheckoutSuccessRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
+  VVrmRoute: VVrmRoute,
   VerifyRecordIdRoute: VerifyRecordIdRoute,
 }
 export const routeTree = rootRouteImport

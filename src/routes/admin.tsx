@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { InvestorMetricsPanel } from "@/components/vault/InvestorMetricsPanel";
+import { OwnershipClaimsPanel } from "@/components/vault/OwnershipClaimsPanel";
 import {
   AlertCircle,
   BadgeCheck,
@@ -89,7 +91,8 @@ function AdminPage() {
     setActionError(null);
     setReviewingId(user.id);
     try {
-      await review({ id: user.id, status });
+      if(status==="approved"&&!account?.preview&&!window.confirm("I have checked the workshop's VAT registration and business identity using supporting evidence. Confirm VAT verification and approve?")) return;
+      await review({ id: user.id, status,vat_verified:status==="approved" });
       const load = getAdminStateRef.current;
       if (!load) throw new Error("Admin data is not available.");
       setAdminData(await load());
@@ -185,6 +188,8 @@ function AdminPage() {
         </div>
       )}
       {actionError && <Notice title="Action could not be completed" message={actionError} />}
+      <InvestorMetricsPanel/>
+      <OwnershipClaimsPanel/>
 
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Directory totals">
         <Summary icon={<Users className="h-5 w-5" />} label="Registered users" value={adminData ? users.length : null} />

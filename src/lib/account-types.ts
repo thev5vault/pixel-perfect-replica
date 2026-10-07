@@ -13,6 +13,9 @@ export interface UserAccount {
   stripe_customer_id: string | null;
   created_at: string;
   garage_verified: boolean;
+  vat_verified?: boolean;
+  email_verified?: boolean;
+  billing_unavailable?: boolean;
   garage_name: string;
   garage_registration: string;
   status: ApprovalStatus;
@@ -39,4 +42,4 @@ export interface AdminState {
   applications: AdminUser[];
 }
 export interface AdminVehicleEdit { vrm: string; make: string; model: string; odometer: number }
-export interface WorkshopReview { id: string; status: "approved" | "rejected" }
+export interface WorkshopReview { id: string; status: "approved" | "rejected"; vat_verified?: boolean | undefined }

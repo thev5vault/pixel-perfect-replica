@@ -127,7 +127,7 @@ describe("V1 polish", () => {
   it("keeps upgrade actions pinned below scrollable perks", () => {
     render(<UpgradeDialog open onOpenChange={() => {}} />);
     const dialog = screen.getByRole("dialog");
-    const upgrade = screen.getByRole("button", { name: "Billing not connected" });
+    const upgrade = screen.getByRole("button", { name: "Continue to Stripe · £0.99/mo" });
     expect(upgrade.closest("footer")).toHaveClass("flex-none", "bottom-0");
     expect(dialog.querySelector(".pb-6")).not.toContainElement(upgrade);
     expect(dialog.parentElement).toHaveClass("items-end", "sm:items-center", "overscroll-none");

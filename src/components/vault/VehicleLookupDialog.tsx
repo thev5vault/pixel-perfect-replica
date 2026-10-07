@@ -12,6 +12,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
   const { addVehicle } = useVault();
   const [plate, setPlate] = useState("");
   const [reference, setReference] = useState("");
+  const [vin,setVin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   function changeOpen(next: boolean) {
@@ -23,7 +24,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
     setBusy(true); setError("");
     try {
       if (account?.signedIn) {
-        const result = await account.claimVehicle(plate, reference.replace(/\D/g, ""));
+        const result = await account.claimVehicle(plate, reference.replace(/\D/g, ""),vin||undefined);
         toast.success(result.message || (result.status === "approved" ? "Vehicle passport connected" : "Claim submitted for review"));
         changeOpen(false);
         return;
@@ -54,6 +55,7 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
               <input required inputMode="numeric" autoComplete="off" minLength={11} maxLength={11} disabled={busy} value={reference} onChange={(e) => {setReference(e.target.value.replace(/\D/g, "").slice(0, 11));setError("");}} placeholder="11 digits on your V5C" className="field font-mono tracking-[0.2em]" />
               <span className="block text-xs text-muted-foreground">A registration lookup alone does not prove keeper status.</span>
             </label>}
+            {account?.signedIn && <label className="block space-y-2"><span className="text-sm font-semibold">VIN / chassis number on your V5C</span><input value={vin} maxLength={24} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,""))} className="field font-mono" placeholder="Chassis number (optional for samples)" /><span className="block text-xs text-muted-foreground">Live claims require supporting-document review. The document reference is never published.</span></label>}
             <div className="flex gap-2 rounded-xl border border-cyan-500/20 bg-cyan-950/30 p-3 text-xs leading-relaxed text-slate-300">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
               <p><strong className="text-cyan-200">Development samples:</strong> AB14 CDE and BUL 200 use instant sample approval for testing only. No live DVLA or V5C verification is performed. Other claims may remain pending review.</p>

@@ -3,3 +3,6 @@
 - [Sample approval scope](sample-approval-scope.md) — instantly approve development sample transfers/stamps; status flags allow later review and never establish live verification.
 - [TanStack and Clerk boundaries](tanstack-clerk-boundaries.md) — consumed POST bodies need header-only auth requests; strict SDK theme typings need care.
 - [Admin access boundaries](admin-access-boundaries.md) — verified real access and fixture-only shortcuts stay separate; tier previews never change administrator privileges.
+- [Official logo asset](official-logo-asset.md) — use the uploaded PNG exactly; do not reconstruct the shield with SVG paths.
+- [Stripe connector authentication](stripe-connector-authentication.md) — use the attached connector's managed authentication, not extracted or manually substituted keys.
+- [Development JSX transforms](development-jsx-transforms.md) — production builds can pass while dev tagging breaks spaced self-closing JSX.
