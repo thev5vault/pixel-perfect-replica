@@ -58,7 +58,7 @@
 }
 
 @media (max-width: 640px) {
-  input:not([type="checkbox"]):not([type="radio"]):not([class*="text-2xl"]),
+  input:not([type="checkbox"]):not([type="radio"]),
   textarea, select { font-size: 16px !important; }
 }
 
@@ -176,6 +176,9 @@
 
 @utility field {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-input);
   background: oklch(0.208 0.042 265.755 / 70%);

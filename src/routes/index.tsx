@@ -290,7 +290,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid w-full min-w-0 grid-cols-2 gap-3">
             <Field label="Date">
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild><button type="button" className="field text-left">{fmtDate(form.date)}</button></PopoverTrigger>
@@ -310,7 +310,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <input inputMode="numeric" required placeholder="87,420" value={form.mileage} onChange={(e) => setForm((f) => ({ ...f, mileage: e.target.value.replace(/\D/g, "") }))} className="field" />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid w-full min-w-0 grid-cols-2 gap-3">
             <Field label="Category">
               <select value={form.category} onChange={set("category")} className="field">
                 {SERVICE_CATEGORIES.map((c) => (
@@ -334,7 +334,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <Field label="Fluid Specs">
                 <input maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className="field" />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid w-full min-w-0 grid-cols-2 gap-3">
                 <Field label="Parts (£)">
                   <input inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className="field" />
                 </Field>
@@ -359,7 +359,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>
           </footer>
         </form>
-        <UpgradeDialog open={upsell} onOpenChange={setUpsell} />
+        <UpgradeDialog nested open={upsell} onOpenChange={setUpsell} />
       </DialogContent>
     </Dialog>
   );

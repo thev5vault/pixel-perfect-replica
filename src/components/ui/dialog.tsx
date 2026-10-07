@@ -21,7 +21,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm p-0 overscroll-none sm:items-center sm:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 backdrop-blur-sm p-0 overscroll-none sm:items-center sm:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -31,14 +31,14 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean }
->(({ className, children, showCloseButton = true, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { showCloseButton?: boolean; nested?: boolean }
+>(({ className, children, showCloseButton = true, nested = false, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay>
+    <DialogOverlay className={nested ? "z-[60]" : undefined}>
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 flex min-h-0 max-h-[90dvh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl",
+        `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[90dvh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl`,
         className,
       )}
       {...props}

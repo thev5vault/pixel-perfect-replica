@@ -43,7 +43,7 @@ export function VerifiedBadge({ sample, garage, signature, recordId }: { sample?
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block space-y-1.5">
+    <label className="block w-full min-w-0 overflow-hidden space-y-1.5 focus-within:rounded-md focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-900">
       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>

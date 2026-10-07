@@ -9,6 +9,7 @@ import { useV1 } from "@/lib/use-v1";
 export function UpgradeDialog({
   open,
   onOpenChange,
+  nested = false,
   tier = "Pro DIY",
   price = "£0.99/mo",
   perks = ["OEM part numbers (Bosch, Febi Bilstein…)", "Fluid specs", "Parts vs labour cost breakdown", "High-res receipt attachments"],
@@ -16,6 +17,7 @@ export function UpgradeDialog({
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  nested?: boolean;
   tier?: string;
   price?: string;
   perks?: string[];
@@ -38,7 +40,7 @@ export function UpgradeDialog({
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent nested={nested} showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
         <ModalHeader>
           <DialogTitle className="flex items-center gap-2">
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}

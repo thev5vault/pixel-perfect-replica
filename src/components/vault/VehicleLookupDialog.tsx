@@ -46,16 +46,16 @@ export function VehicleLookupDialog({ open, onOpenChange }: { open: boolean; onO
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
-            <label className="block space-y-2">
+            <label className="block w-full min-w-0 overflow-hidden space-y-2 focus-within:rounded-md focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-900">
               <span className="text-sm font-semibold">Vehicle registration mark</span>
               <input autoFocus required minLength={2} maxLength={12} disabled={busy} value={plate} onChange={(e) => {setPlate(e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, ""));setError("");}} placeholder="AB14 CDE" autoComplete="off" className="w-full rounded-xl border-2 border-slate-950 bg-[#FACC15] px-3 py-3 text-center font-mono text-2xl font-black uppercase tracking-wider text-slate-950 placeholder:text-slate-600 focus-visible:outline-cyan-400" />
             </label>
-            {account?.signedIn && <label className="block space-y-2">
+            {account?.signedIn && <label className="block w-full min-w-0 overflow-hidden space-y-2 focus-within:rounded-md focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-900">
               <span className="text-sm font-semibold">11-digit V5C logbook reference</span>
               <input required inputMode="numeric" autoComplete="off" minLength={11} maxLength={11} disabled={busy} value={reference} onChange={(e) => {setReference(e.target.value.replace(/\D/g, "").slice(0, 11));setError("");}} placeholder="11 digits on your V5C" className="field font-mono tracking-[0.2em]" />
               <span className="block text-xs text-muted-foreground">A registration lookup alone does not prove keeper status.</span>
             </label>}
-            {account?.signedIn && <label className="block space-y-2"><span className="text-sm font-semibold">VIN / chassis number on your V5C</span><input value={vin} maxLength={24} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,""))} className="field font-mono" placeholder="Chassis number (optional for samples)" /><span className="block text-xs text-muted-foreground">Live claims require supporting-document review. The document reference is never published.</span></label>}
+            {account?.signedIn && <label className="block w-full min-w-0 overflow-hidden space-y-2 focus-within:rounded-md focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:ring-offset-2 focus-within:ring-offset-slate-900"><span className="text-sm font-semibold">VIN / chassis number on your V5C</span><input value={vin} maxLength={24} onChange={e=>setVin(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,""))} className="field font-mono" placeholder="Chassis number (optional for samples)" /><span className="block text-xs text-muted-foreground">Live claims require supporting-document review. The document reference is never published.</span></label>}
             <div className="flex gap-2 rounded-xl border border-cyan-500/20 bg-cyan-950/30 p-3 text-xs leading-relaxed text-slate-300">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
               <p><strong className="text-cyan-200">Development samples:</strong> AB14 CDE and BUL 200 use instant sample approval for testing only. No live DVLA or V5C verification is performed. Other claims may remain pending review.</p>
