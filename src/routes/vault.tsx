@@ -46,7 +46,9 @@ function ProVault() {
   const [tab, setTab] = useState<"active" | "reverted">("active");
   const [adding, setAdding] = useState(false);
   const [reverting, setReverting] = useState<Modification | null>(null);
-  const list = mods.filter((m) => m.vrm === vehicle.vrm && m.status === tab);
+  const vehicleMods = (Array.isArray(mods) ? mods : []).filter((m) => m?.vrm === vehicle.vrm);
+  const diagnosticLogs = vehicleMods.filter((m) => m.status === "reverted");
+  const list = tab === "reverted" ? diagnosticLogs : vehicleMods.filter((m) => m.status === "active");
 
   return (
     <div className="space-y-5">
@@ -87,13 +89,13 @@ function ProVault() {
       )}
 
       <div className="space-y-3">
-        {list.map((m) => (
+        {(list || []).map((m) => (
           <ModCard key={m.id} m={m} onRevert={() => setReverting(m)} />
         ))}
         {list.length === 0 && (
-          <p className="vault-card p-6 text-center text-sm text-muted-foreground">
-            {tab === "active" ? "No active modifications. Your car is running stock." : "No reverted parts logged yet."}
-          </p>
+          <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-xl text-center text-slate-400 text-sm">
+            {tab === "active" ? "No active modifications. Your car is running stock." : "No diagnostic fault codes or scan logs recorded yet."}
+          </div>
         )}
       </div>
 
