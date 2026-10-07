@@ -22,3 +22,12 @@ managed app workflow failed while the test-owned server still responds.
 
 **How to apply:** Start the app first and wait for readiness, then run browser
 checks against that server. Do not add browser validation to the parallel Run group.
+
+Registering or updating a validation command can automatically add it to the
+default Run group, even when it was previously separate.
+
+**Why:** The validation registration helper reattached the browser check while
+updating its command, reintroducing the app/test-server race.
+
+**How to apply:** After changing browser validation registration, inspect the Run
+group and explicitly detach browser checks using validated workflow configuration.

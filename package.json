@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "browser:setup": "node scripts/setup-browsers.mjs",
     "test:browser": "playwright test --project=chromium",
     "test:browser:webkit": "playwright test --project=iphone-webkit",
     "test:browser:all": "playwright test",

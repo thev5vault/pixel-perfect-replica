@@ -15,6 +15,38 @@ npx playwright install --with-deps chromium webkit
 npm run test:browser:all
 ```
 
+### Replit / Nix setup
+
+The native dependencies are declared in `.replit` against `stable-25_05`.
+After those packages are available, run:
+
+```sh
+npm ci
+npm run browser:setup
+# Start the app with Run and wait until it is ready, then separately:
+npm run test:browser:all
+```
+
+`browser:setup` downloads the WebKit revision from the locked Playwright package
+and verifies that it can launch, create a page, and interact with an input.
+It also runs automatically in `scripts/post-merge.sh`. Browser downloads are
+cached, not committed. A missing browser or library is a hard failure.
+
+On Nix, `scripts/webkit-runtime.mjs` resolves the declared library outputs from
+the configured Nix channel, including ICU 74 and JPEG 8; it does not search for
+arbitrary versions in `/nix/store`. The project-owned WebKit launcher preserves
+those library paths alongside the downloaded browser's bundled libraries.
+It checks actual dependency resolution with `ldd` and selects Mesa's software
+EGL renderer explicitly. This avoids relying on a system `ldconfig` cache,
+which does not represent all Nix libraries. On macOS and ordinary Linux runners
+without `NIX_PATH`, Playwright's normal launcher is unchanged.
+
+The download command may print a warning about `libgles2` or
+`gstreamer1.0-libav` because its default Linux detector checks that system cache.
+The subsequent **WebKit readiness check**, not the download alone, establishes
+whether setup succeeded. Do not set `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS`,
+replace WebKit with Chromium, or skip failing tests.
+
 To isolate a browser:
 
 ```sh
@@ -22,12 +54,12 @@ npm run test:browser:webkit
 npm run test:browser
 ```
 
-The Replit Chromium executable is used only for the Chromium project. WebKit
-needs Playwright's own browser and native libraries; a successful download alone
-does not establish that it can launch on NixOS. Do not silently substitute
-Chromium or silently skip WebKit when its dependencies are missing. The existing
-Replit `mobile-browser` workflow runs Chromium; use the explicit WebKit/all commands
-on a supported runner or perform the real-device check below and record the result.
+The Replit Chromium executable is used only for the Chromium project. The
+`mobile-browser` validation runs both projects and is intentionally **not** part
+of the default Run group. Start the app first, then run validation separately.
+When no app is running, Playwright may start and own its development server;
+do not press Run concurrently. In CI, Playwright starts its own server and
+requires port 5000 to be free.
 
 The regression checks the visual viewport, input focus rings and minimum mobile
 font size, child/backdrop stacking, Close and Escape dismissal, and focus
@@ -64,19 +96,21 @@ device run.
    upgrade must close only that child and return focus to its trigger. A second
    Escape should close the parent.
 
-Keyboard-obscured service-form behavior is tracked separately; this check does
-not claim that desktop WebKit emulates the iOS on-screen keyboard.
+The automated short-portrait checks reduce only the visual viewport to simulate
+keyboard obstruction, preserving the layout viewport and entered values.
+This does not claim that desktop WebKit opens or emulates a native iOS keyboard.
 
 ### Result record
 
-In the task environment, Playwright WebKit downloaded but could not launch because
-native libraries were missing. No automated Safari pass or real-iPhone pass is
-claimed. Chromium results should be recorded separately from device results.
+Automated regression on Replit, 2026-10-07: **12/12 passed** with
+`npm run test:browser:all` — six Chromium cases and six iPhone-emulated WebKit
+26.6 cases. Both projects passed the 390 × 844 and 1024 × 900 field/layout and
+nested-dialog checks, plus the 390 × 640 short-portrait keyboard viewport and
+scrolled-parent nested Close/Escape checks. Focus restoration, clipping bounds,
+retained field values, footer pointer reachability, and backdrop cleanup were
+checked. No tests were skipped.
 
-Chromium regression: 390 × 844 and 1024 × 900 passed on 2026-10-07, including
-viewport bounds, visible focus, nested stacking, focus restoration, Close and
-Escape. The final Chromium run passed all four browser cases, and the final
-unit run passed all 77 tests.
+No real-iPhone pass is claimed; device results remain separate below.
 
 | Device / iOS | Date | Environment | Portrait | Landscape / bars | Focus / close | Notes |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { webkitLaunchOptions } from "./scripts/webkit-runtime.mjs";
 
 const localChromium = "/repl/tools/bin/chromium";
 
@@ -26,7 +27,11 @@ export default defineConfig({
     },
     {
       name: "iphone-webkit",
-      use: { ...devices["iPhone 13"], browserName: "webkit" },
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "webkit",
+        launchOptions: webkitLaunchOptions(),
+      },
     },
   ],
   webServer: {

@@ -2,6 +2,7 @@ modules = ["web", "nodejs-22", "python-base-3.13", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["glib", "gtk4", "pango", "harfbuzz", "gdk-pixbuf", "cairo", "vulkan-loader", "graphene", "icu74", "libxml2", "sqlite", "libxslt", "lcms2", "libevent", "libopus", "gst_all_1.gstreamer", "gst_all_1.gst-plugins-base", "gst_all_1.gst-plugins-bad", "flite", "libwebp", "libavif", "libepoxy", "xorg.libX11", "wayland", "libmanette", "enchant", "mesa", "libdrm", "hyphen", "libsecret", "atk", "at-spi2-atk", "libxkbcommon", "x264", "libgcc", "harfbuzzFull", "libjpeg8", "libgbm", "libglvnd", "gst_all_1.gst-libav"]
 
 [agent]
 expertMode = true
@@ -34,12 +35,12 @@ outputType = "webview"
 name = "mobile-browser"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run test:browser"
-
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run test:browser:all"
 
 [[ports]]
 localPort = 5000
