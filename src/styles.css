@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap");
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -102,6 +103,7 @@
   --gradient-card: linear-gradient(160deg, oklch(0.31 0.045 255), oklch(0.26 0.04 262));
   --shadow-glow: 0 0 0 1px oklch(0.715 0.126 215.2 / 35%), 0 10px 40px -10px oklch(0.715 0.126 215.2 / 55%);
   --shadow-card: 0 1px 0 0 oklch(1 0 0 / 5%) inset, 0 12px 30px -16px oklch(0 0 0 / 60%);
+  --font-mono: "DM Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -147,8 +149,8 @@
   font-weight: 700;
   padding: 0.8rem 1.1rem;
   box-shadow: var(--shadow-glow);
-  transition: transform 150ms, filter 150ms;
-  &:hover { filter: brightness(1.08); }
+   transition: transform 150ms, opacity 150ms;
+   &:hover { opacity: 0.9; }
   &:active { transform: scale(0.98); }
   &:disabled { opacity: 0.5; pointer-events: none; }
 }
@@ -194,12 +196,12 @@
 }
 
 @keyframes vault-open {
-  0% { opacity: 0; transform: scale(0.94) translateY(12px); filter: blur(6px); }
-  100% { opacity: 1; transform: none; filter: none; }
+  0% { opacity: 0; transform: scale(0.98) translateY(12px); }
+  100% { opacity: 1; transform: none; }
 }
 @keyframes shield-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px oklch(0.715 0.126 215.2 / 50%)); }
-  50% { filter: drop-shadow(0 0 16px oklch(0.715 0.126 215.2 / 90%)); }
+  0%, 100% { opacity: 0.82; }
+  50% { opacity: 1; }
 }
 @keyframes redact-in {
   from { transform: scaleX(0); }

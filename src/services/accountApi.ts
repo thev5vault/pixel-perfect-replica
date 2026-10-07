@@ -1,0 +1,40 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+const vrm = z.string().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
+const service = z.object({
+  vrm, date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), mileage: z.number().int().min(0).max(2000000),
+  category: z.enum(["Servicing","Brakes","Repairs","Tyres"]), description: z.string().min(1).max(160),
+  items: z.array(z.string().max(1000)).max(30), garage: z.string().max(100),
+  cost: z.number().min(0).max(1000000).optional(), image: z.string().max(4000000).optional(),
+  parts: z.array(z.object({name:z.string().max(150),partNo:z.string().max(150)})).max(50).optional(),
+  fluids: z.string().max(1000).optional(), partsCost:z.number().min(0).optional(), labourCost:z.number().min(0).optional(),
+  invoice_name: z.string().max(200).optional(), invoice_data: z.string().max(7000000).regex(/^data:application\/pdf;base64,[A-Za-z0-9+/=\r\n]+$/).optional(),
+});
+export const getAccountState = createServerFn({method:"GET"}).handler(async () => (await import("./server/accounts")).accountState());
+export const claimVehicle = createServerFn({method:"POST"})
+  .validator(z.object({vrm, reference:z.string().regex(/^\d{11}$/)}))
+  .handler(async ({data}) => (await import("./server/accounts")).claim(data));
+export const switchDevelopmentRole = createServerFn({method:"POST"})
+  .validator(z.object({role:z.enum(["Owner","DIY","Pro","Garage","superadmin"])}))
+  .handler(async ({data}) => (await import("./server/accounts")).developmentRole(data.role));
+export const saveAccount = createServerFn({method:"POST"})
+  .validator(z.object({full_name:z.string().trim().min(1).max(100),garage_name:z.string().max(100),garage_registration:z.string().max(40)}))
+  .handler(async ({data}) => (await import("./server/accounts")).updateAccount(data));
+export const createServiceRecord = createServerFn({method:"POST"}).validator(service)
+  .handler(async ({data}) => (await import("./server/accounts")).createService(data));
+export const markNotificationsRead = createServerFn({method:"POST"}).handler(async () => (await import("./server/accounts")).markRead());
+export const createBooking = createServerFn({method:"POST"})
+  .validator(z.object({vrm,date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),notes:z.string().max(1000)}))
+  .handler(async ({data}) => (await import("./server/accounts")).book(data));
+export const updateBooking = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string(),status:z.enum(["completed","cancelled"])}))
+  .handler(async ({data}) => (await import("./server/accounts")).bookingStatus(data.id,data.status));
+export const saveModification = createServerFn({method:"POST"})
+  .validator(z.object({vrm,name:z.string().min(1).max(160),category:z.enum(["Engine/ECU","Exhaust","Intake","Suspension","Brakes","Visual"]),installDate:z.string(),installMileage:z.number().int().min(0),gains:z.string().max(200),notes:z.string().max(2000),image:z.string().max(4000000).optional(),stage:z.string().optional(),specs:z.string().optional(),tags:z.array(z.string()).optional()}))
+  .handler(async ({data}) => (await import("./server/accounts")).addModification(data));
+export const revertModification = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string(),date:z.string(),mileage:z.number().int().min(0)}))
+  .handler(async ({data}) => (await import("./server/accounts")).revertModification(data));
+export const verifyWorkshopStamp = createServerFn({method:"GET"}).validator(z.object({id:z.string().max(100)}))
+  .handler(async ({data}) => (await import("./server/accounts")).verifyStamp(data.id));

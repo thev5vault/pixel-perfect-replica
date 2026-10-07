@@ -4,11 +4,13 @@ import { BadgeCheck, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyh
 import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { QRCodeSVG } from "qrcode.react";
-import { MOT_READINGS, can, fmtDate, fmtMiles, today, useVault, type Role } from "@/lib/vault-store";
+import { MOT_READINGS, can, fmtDate, fmtMiles, today, useVault, type Role, type ServiceRecord } from "@/lib/vault-store";
 import { PageHeader, Pill, Plate, Thumb } from "@/components/vault/ui-bits";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 import { cn } from "@/lib/utils";
+import { useAccount } from "@/lib/account-store";
+import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 
 export const Route = createFileRoute("/passport")({
   head: () => ({
@@ -26,6 +28,12 @@ export const Route = createFileRoute("/passport")({
 
 type Cert = "standard" | "oem" | "master";
 
+function provenance(s: ServiceRecord) {
+  if (s.is_verified_stamp !== true) return "Owner Logged / DIY Record";
+  if (s.is_sample === true) return `Development sample · VAT not live verified${s.stamp_signature ? ` · Signature ${s.stamp_signature}` : ""} · /verify/${s.id}`;
+  return `Verified Workshop Stamp - ${s.garage} (VAT Reg Verified)${s.stamp_signature ? ` · Signature ${s.stamp_signature}` : ""} · /verify/${s.id}`;
+}
+
 const CERTS: { id: Cert; title: string; tier: string; price: string; icon: typeof Gauge; includes: string; allowed: (r: Role) => boolean }[] = [
   { id: "standard", title: "Standard Passport", tier: "Basic", price: "Free", icon: Gauge, includes: "Mileage graph, service dates, garage names, official MOT log", allowed: () => true },
   { id: "oem", title: "OEM Provenance Certificate", tier: "Pro DIY", price: "£0.99/mo", icon: Wrench, includes: "Everything in Standard, manufacturer part numbers, receipt thumbnails, parts and labour spend summary", allowed: can.diy },
@@ -34,9 +42,15 @@ const CERTS: { id: Cert; title: string; tier: string; price: string; icon: typeo
 
 function PassportPage() {
   const { role } = useVault();
+  const account = useAccount();
   const [cert, setCert] = useState<Cert | null>(null);
   const [loading, setLoading] = useState<Cert | null>(null);
   const [upsell, setUpsell] = useState<(typeof CERTS)[number] | null>(null);
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
+    return <div className="vault-card p-6"><p className="font-mono text-[10px] uppercase tracking-widest text-primary">Your passport</p><h1 className="mt-2 text-2xl font-bold">Connect a vehicle to build its export.</h1><p className="mt-2 text-sm text-muted-foreground">Link a vehicle with your V5C logbook reference before creating a passport.</p><button onClick={() => setConnectOpen(true)} className="btn-primary mt-5">Connect New Vehicle</button><VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} /></div>;
+  }
 
   function open(c: (typeof CERTS)[number]) {
     if (!c.allowed(role)) return setUpsell(c);
@@ -98,7 +112,9 @@ function Certificate({ cert }: { cert: Cert }) {
   const active = vMods.filter((m) => m.status === "active");
   const reverted = vMods.filter((m) => m.status === "reverted");
   const reportId = `${vehicle.vrm}-${cert.toUpperCase()}-${(history.length * 7919 + vMods.length * 131 + 4127).toString(36).toUpperCase()}`;
-  const link = `https://v5vault.app/p/${reportId}`;
+  const signedRecord = history.find(s=>s.is_verified_stamp === true && s.stamp_signature);
+  const link = signedRecord ? `${typeof window !== "undefined" ? window.location.origin : ""}/verify/${signedRecord.id}` : "";
+  const sampleDocument = vehicle.source === "demo" || vehicle.is_sample === true;
   const total = history.reduce((a, s) => a + (s.cost ?? 0), 0);
   const partsTotal = history.reduce((a, s) => a + (s.partsCost ?? 0), 0);
   const labourTotal = history.reduce((a, s) => a + (s.labourCost ?? 0), 0);
@@ -119,8 +135,8 @@ function Certificate({ cert }: { cert: Cert }) {
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
                 <V5VaultLogo className="h-4 w-4" /> V5Vault · UK Vehicle Records
               </div>
-              <Pill tone="success">
-                <BadgeCheck className="h-3 w-3" /> Verified document
+              <Pill tone={sampleDocument ? "warning" : signedRecord ? "success" : "muted"}>
+                <BadgeCheck className="h-3 w-3" /> {sampleDocument ? "Development sample document" : signedRecord ? "Contains signed workshop records" : "Owner-logged document"}
               </Pill>
             </div>
             <div className="flex items-center justify-between gap-2">
@@ -135,13 +151,13 @@ function Certificate({ cert }: { cert: Cert }) {
                 <p className="text-xs text-muted-foreground">Certificate {reportId} · issued {fmtDate(today())}</p>
               </div>
               <aside className="shrink-0 rounded-md border-2 border-slate-950 bg-white p-2 text-center text-slate-950">
-                <QRCodeSVG value={link} size={90} level="H" includeMargin />
-                <p className="max-w-[96px] text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p>
+                {link ? <><QRCodeSVG value={link} size={90} level="H" includeMargin /><p className="max-w-[96px] text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p><p className="mt-1 max-w-[96px] text-[8px]">Latest workshop stamp</p></> : <p className="flex h-[90px] w-[90px] items-center justify-center text-[10px] font-semibold">No signed workshop stamp to verify</p>}
               </aside>
             </div>
             <div className="flex gap-2 print:hidden">
-              <code className="field truncate text-xs">{link}</code>
+              <code className="field truncate text-xs">{link || "No signed workshop record"}</code>
               <button
+                disabled={!link}
                 onClick={() => {
                   navigator.clipboard?.writeText(link);
                   toast.success("Share link copied");
@@ -180,7 +196,7 @@ function Certificate({ cert }: { cert: Cert }) {
           </section>
           <Table
             title="Service History"
-            rows={history.map((s) => [fmtDate(s.date), s.description, `${s.garage} · ${fmtMiles(s.mileage)}`])}
+            rows={history.map((s) => [fmtDate(s.date), s.description, `${s.garage} · ${fmtMiles(s.mileage)} · ${provenance(s)}`])}
             empty="No service records."
           />
           <Table title={vehicle.source === "official" ? "Official MOT & Mileage Log" : "Sample MOT & Mileage Log"} rows={[...motReadings].reverse().map((m) => [fmtDate(m.date), m.result, m.mileage !== undefined ? fmtMiles(m.mileage) : "Unavailable"])} empty="No MOT history available." />
@@ -282,7 +298,7 @@ function Certificate({ cert }: { cert: Cert }) {
           </section>
           <Table
             title="Specialist Stamps"
-            rows={history.filter((s) => s.tier3).map((s) => [fmtDate(s.date), s.garage, "Verified Workshop"])}
+            rows={history.filter((s) => s.is_verified_stamp === true).map((s) => [fmtDate(s.date), s.garage, provenance(s)])}
             empty="No specialist stamps yet."
           />
           <Table

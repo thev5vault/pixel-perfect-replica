@@ -2,13 +2,19 @@ import { useState } from "react";
 import { CalendarPlus, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { can, fmtDate, fmtMiles, useVault, type ServiceRecord } from "@/lib/vault-store";
+import { useAccount } from "@/lib/account-store";
 import { Pill, Thumb, VerifiedBadge } from "./ui-bits";
 import { UpgradeDialog } from "./UpgradeDialog";
 
 export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookable?: boolean }) {
   const { role } = useVault();
+  const account = useAccount();
   const pro = can.diy(role);
   const [upsell, setUpsell] = useState<"parts" | "receipt" | "cost" | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingNotes, setBookingNotes] = useState("");
+  const [bookingBusy, setBookingBusy] = useState(false);
   const hasOemSection = Boolean((s.parts?.length ?? 0) > 0 || s.fluids);
   const upsellCopy = {
     parts: "Upgrade to Pro DIY (£0.99/mo) for itemized parts and fluid specifications.",
@@ -32,8 +38,8 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             {!pro && (hasOemSection || s.partsCost != null || s.labourCost != null || s.cost != null) && (
               <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY</Pill>
             )}
-            {s.image &&
-              (pro ? (
+            {(s.image || (!pro && (s.has_receipt || s.has_invoice))) &&
+              (pro && s.image ? (
                 <Thumb src={s.image} alt={`${s.description} receipt`} />
               ) : (
                 <button
@@ -42,7 +48,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
                   className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
                   aria-label="Upgrade to Pro DIY to view receipt photo"
                 >
-                  <img src={s.image} alt="" loading="lazy" className="h-full w-full scale-110 object-cover blur-[4px]" />
+                  {s.image ? <img src={s.image} alt="" loading="lazy" className="h-full w-full scale-110 object-cover blur-[4px]" /> : <div aria-hidden="true" className="h-full w-full bg-slate-200 p-3 blur-[4px]"><div className="mb-2 h-1 w-full bg-slate-500" /><div className="mb-2 h-1 w-3/4 bg-slate-500" /><div className="h-1 w-full bg-slate-500" /></div>}
                   <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-slate-950/45 text-[9px] font-bold text-white">
                     <LockKeyhole className="h-3.5 w-3.5" />
                     Pro DIY
@@ -52,7 +58,9 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {s.verified && <VerifiedBadge tier3={s.tier3} />}
+          {s.is_verified_stamp === true
+            ? <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
+            : <Pill><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Owner Logged / DIY Record</Pill>}
           <Pill>{s.category}</Pill>
           {s.cost != null && pro && <Pill>£{s.cost.toFixed(2)}</Pill>}
           {s.cost != null && !pro && !hasOemSection && (
@@ -61,6 +69,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             </button>
           )}
         </div>
+        {pro && s.invoice_data && <a href={s.invoice_data} download={s.invoice_name || "workshop-invoice.pdf"} className="mt-3 block rounded-lg border border-slate-700 px-3 py-2 text-xs text-cyan-300">Download invoice · {s.invoice_name || "PDF"}</a>}
         {s.items.length > 0 && (
           <ul className="mt-3 space-y-1 border-t pt-3 text-sm text-muted-foreground">
             {s.items.map((it, i) => (
@@ -106,7 +115,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
                 onClick={() => setUpsell("parts")}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-2 text-xs font-medium text-cyan-400 shadow-sm transition-colors hover:bg-cyan-900/50"
               >
-                🔒 Unlock Itemized Parts &amp; Fluid Specs (£0.99/mo)
+                Unlock Itemized Parts &amp; Fluid Specs (£0.99/mo)
               </button>
             )}
             {pro && (s.partsCost != null || s.labourCost != null) && (
@@ -117,13 +126,23 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             )}
           </div>
         )}
-        {bookable && s.tier3 && (
-          <button
-            onClick={() => toast.success(`Booking request sent to ${s.garage}`, { description: "They'll confirm a slot by message (demo)." })}
-            className="btn-ghost mt-3 w-full text-sm"
-          >
-            <CalendarPlus className="h-4 w-4" /> Book with {s.garage}
-          </button>
+        {bookable && s.is_verified_stamp === true && s.is_sample !== true && account?.signedIn && (
+          <div className="mt-3">
+            {!bookingOpen ? <button type="button" onClick={() => setBookingOpen(true)} className="btn-ghost w-full text-sm"><CalendarPlus className="h-4 w-4" /> Book with {s.garage}</button> :
+              <form className="space-y-2 rounded-xl border border-slate-700 p-3" onSubmit={async (e) => {
+                e.preventDefault();
+                if (!bookingDate) return;
+                if (!account) return;
+                setBookingBusy(true);
+                try { await account.book(s.vrm, bookingDate, bookingNotes); toast.success("Booking request sent"); setBookingOpen(false); setBookingDate(""); setBookingNotes(""); }
+                catch (err) { toast.error(err instanceof Error ? err.message : "Booking could not be sent"); }
+                finally { setBookingBusy(false); }
+              }}>
+                <label className="block text-xs font-semibold">Preferred date<input required type="date" min={new Date().toISOString().slice(0,10)} value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="field mt-1" /></label>
+                <label className="block text-xs font-semibold">Notes<textarea maxLength={500} value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)} className="field mt-1" rows={2} /></label>
+                <div className="flex gap-2"><button disabled={bookingBusy} className="btn-primary flex-1 py-2 text-xs">Send request</button><button type="button" onClick={() => setBookingOpen(false)} className="btn-ghost py-2 text-xs">Cancel</button></div>
+              </form>}
+          </div>
         )}
       </div>
       <UpgradeDialog

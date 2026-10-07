@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { VaultProvider } from "@/lib/vault-store";
 import { AppShell } from "@/components/vault/AppShell";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
+import { AuthProviders } from "@/components/vault/AuthProviders";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -127,12 +128,14 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppErrorBoundary>
+      <AuthProviders>
       <VaultProvider>
         <AppShell>
           <Outlet />
         </AppShell>
         <Toaster position="top-center" />
       </VaultProvider>
+      </AuthProviders>
       </AppErrorBoundary>
     </QueryClientProvider>
   );

@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import receiptService from "@/assets/receipt-service.jpg";
 import receiptBrakes from "@/assets/receipt-brakes.jpg";
 import dynoSheet from "@/assets/dyno-sheet.jpg";
+import { useAccount } from "./account-store";
 
 export type ServiceCategory = "Servicing" | "Brakes" | "Repairs" | "Tyres";
 export type ModCategory = "Engine/ECU" | "Exhaust" | "Intake" | "Suspension" | "Brakes" | "Visual";
@@ -46,7 +47,17 @@ export interface ServiceRecord {
   fluids?: string | undefined;
   partsCost?: number | undefined;
   labourCost?: number | undefined;
+  is_verified_stamp?: boolean;
+  stamped_by_garage_id?: string | null;
+  stamp_signature?: string | null;
+  is_sample?: boolean;
+  status?: "approved" | "pending";
+  invoice_name?: string | undefined;
+  invoice_data?: string | undefined;
+  has_receipt?: boolean;
+  has_invoice?: boolean;
 }
+export type ServiceInput = Omit<ServiceRecord, "id" | "verified"> & { verified?: boolean };
 
 export interface Modification {
   id: string;
@@ -79,6 +90,9 @@ export interface Vehicle {
   motStatus?: string;
   motHistory?: MotReading[];
   source?: "demo" | "official";
+  owner_user_id?: string | null;
+  status?: "approved" | "pending" | "rejected";
+  is_sample?: boolean;
 }
 
 export interface MotReading {
@@ -209,9 +223,9 @@ interface VaultCtx extends Persisted {
   setRole: (r: Role) => void;
   setActiveVrm: (v: string) => void;
   addVehicle: (v: Vehicle) => void;
-  addService: (s: Omit<ServiceRecord, "id">) => boolean;
-  addMod: (m: Omit<Modification, "id" | "status">) => void;
-  revertMod: (id: string, date: string, mileage: number) => void;
+  addService: (s: ServiceInput) => boolean | Promise<boolean>;
+  addMod: (m: Omit<Modification, "id" | "status">) => void | Promise<void>;
+  revertMod: (id: string, date: string, mileage: number) => void | Promise<void>;
 }
 
 // Keep one context instance across hot reloads so provider and consumers always match.
@@ -226,6 +240,7 @@ export const formatVrm = (v: string) => {
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function VaultProvider({ children }: { children: ReactNode }) {
+  const account = useAccount();
   const [hydrated, setHydrated] = useState(false);
   const [state, setState] = useState<Persisted>({
     vehicles: VEHICLES,
@@ -257,7 +272,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hydrated]);
 
-  const vehicle = state.vehicles.find((v) => v.vrm === state.activeVrm) ?? state.vehicles[0]!;
+  const live = account?.state;
+  const effectiveRole: Role = live?.development_role ?? (live?.user.role === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
+  const current = live ? { ...state, vehicles: live.vehicles, services: live.services, mods: live.mods, role: effectiveRole, unlocked: true, pin: "managed-auth", v5cRefs: {} } : state;
+  const vehicle = current.vehicles.find((v) => v.vrm === state.activeVrm) ?? current.vehicles[0] ?? VEHICLES[0]!;
 
   const unlock = useCallback(
     (vrm: string, ref: string) => {
@@ -271,7 +289,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<VaultCtx>(
     () => ({
-      ...state,
+      ...current,
       hydrated,
       vehicle,
       unlock,
@@ -286,8 +304,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
           notice: "Ownership transfer detected. This vehicle has been unlinked from your account.",
         })),
       clearNotice: () => setState((s) => ({ ...s, notice: undefined })),
-      lock: () => setState((s) => ({ ...s, unlocked: false })),
-      setRole: (role) => setState((s) => ({ ...s, role })),
+      lock: () => { if(account) void account.signOut(); else setState((s) => ({ ...s, unlocked: false })); },
+      setRole: (role) => { if(account) void account.switchRole(role); else setState((s) => ({ ...s, role })); },
       setActiveVrm: (activeVrm) => setState((s) => ({ ...s, activeVrm })),
       addVehicle: (v) => {
         const vrm = normalizeVrm(v.vrm);
@@ -298,19 +316,20 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         }));
       },
       addService: (rec) => {
+        if (account) return account.addService(rec).then(() => true);
         const vrm = normalizeVrm(rec.vrm);
         if (!state.vehicles.some((v) => v.vrm === vrm)) return false;
-        setState((s) => ({ ...s, services: [...s.services, { ...rec, vrm, id: uid() }] }));
+        setState((s) => ({ ...s, services: [...s.services, { ...rec, verified: rec.verified ?? false, vrm, id: uid() }] }));
         return true;
       },
-      addMod: (m) => setState((s) => ({ ...s, mods: [...s.mods, { ...m, id: uid(), status: "active" }] })),
+      addMod: (m) => account ? account.addMod(m) : setState((s) => ({ ...s, mods: [...s.mods, { ...m, id: uid(), status: "active" }] })),
       revertMod: (id, removalDate, removalMileage) =>
-        setState((s) => ({
+        account ? account.revertMod(id,removalDate,removalMileage) : setState((s) => ({
           ...s,
           mods: s.mods.map((m) => (m.id === id ? { ...m, status: "reverted", removalDate, removalMileage } : m)),
         })),
     }),
-    [state, hydrated, vehicle, unlock],
+    [state, hydrated, vehicle, unlock, account, current],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

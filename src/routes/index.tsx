@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, Wrench } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,28 +19,33 @@ import {
 import { Field, ImagePicker, Pill, Plate } from "@/components/vault/ui-bits";
 import { TimelineItem } from "@/components/vault/TimelineItem";
 import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
+import { useAccount } from "@/lib/account-store";
+import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
+import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "My Vehicle — V5Vault Digital Vehicle Passport" },
-      { name: "description", content: "Your car's health at a glance: servicing, brakes, MOT status and verified service history." },
-      { property: "og:title", content: "My Vehicle — V5Vault" },
-      { property: "og:description", content: "Traffic-light vehicle health and a verified UK service history in your pocket." },
+      { title: "V5Vault — UK Vehicle History Passport" },
+      { name: "description", content: "A vehicle history passport for UK owners, modders and independent workshops." },
+      { property: "og:title", content: "V5Vault — UK Vehicle History Passport" },
+      { property: "og:description", content: "A portable record of vehicle history, maintenance and workshop stamps." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Dashboard,
+  component: PublicLanding,
 });
 
 function monthsBetween(a: Date, b: Date) {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
-function Dashboard() {
+export function Dashboard() {
   const { vehicle, services, role } = useVault();
+  const account = useAccount();
   const [open, setOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const motReadings = vehicle.motHistory ?? MOT_READINGS;
 
@@ -55,6 +60,19 @@ function Dashboard() {
   const motMonths = vehicle.motExpiry ? monthsBetween(new Date(), new Date(vehicle.motExpiry)) : -1;
   const serviceOk = lastService && monthsBetween(new Date(lastService.date), new Date()) < 24;
 
+  if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
+    return <section className="vault-card relative overflow-hidden p-6 sm:p-8">
+      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative">
+        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary">Your keeper record</p>
+        <h1 className="mt-3 max-w-lg text-3xl font-bold">Your passport starts with a vehicle.</h1>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">Connect a vehicle with the reference printed on your V5C logbook. This links your account to its existing history; it does not trigger a live DVLA check.</p>
+        <button type="button" onClick={() => setConnectOpen(true)} className="btn-primary mt-6"><Plus className="h-5 w-5" /> Connect New Vehicle</button>
+      </div>
+      <VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} />
+    </section>;
+  }
+
   return (
     <div className="space-y-6">
       <section className="vault-card relative overflow-hidden p-5">
@@ -66,7 +84,10 @@ function Dashboard() {
               {vehicle.make} {vehicle.model}
             </h1>
           </div>
-          <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
+          <div className="flex flex-col items-end gap-2">
+            {vehicle.status && <Pill tone={vehicle.status === "approved" ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>{vehicle.is_sample ? "Development sample · " : ""}Keeper link {vehicle.status}</Pill>}
+            <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
+          </div>
         </div>
         <div className="relative mt-4 flex items-center gap-2 text-muted-foreground">
           <Gauge className="h-4 w-4 text-primary" />
@@ -188,6 +209,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState<string>();
   const [upsell, setUpsell] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -214,7 +236,11 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           .slice(0, 20)
           .map(([name, partNo]) => ({ name: name!, partNo: partNo ?? "" }))
       : undefined;
-    addService({
+    void save();
+    async function save() {
+    setSaving(true);
+    try {
+    const result = await addService({
       vrm: vehicle.vrm,
       date: form.date,
       mileage,
@@ -228,12 +254,18 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       fluids: pro ? form.fluids.trim().slice(0, 120) || undefined : undefined,
       garage: form.garage.trim().slice(0, 80),
       verified: false,
+      is_verified_stamp: false,
       image: pro ? image : undefined,
     });
+    if (result === false) throw new Error("A linked vehicle was not found for this record.");
     toast.success("Record added to your timeline");
     setForm(empty);
     setImage(undefined);
     onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Record could not be saved");
+    } finally { setSaving(false); }
+    }
   }
 
   return (
@@ -312,11 +344,31 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           )}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
-            <button type="submit" className="btn-primary w-full">Save to Timeline</button>
+            <button type="submit" disabled={saving} className="btn-primary w-full">{saving ? "Saving record…" : "Save to Timeline"}</button>
           </footer>
         </form>
         <UpgradeDialog open={upsell} onOpenChange={setUpsell} />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PublicLanding() {
+  return (
+    <main className="min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <div className="flex items-center gap-3"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold">V5Vault</span></div>
+        <div className="flex items-center gap-2"><a href="/sign-in" className="rounded-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Sign in</a><a href="/sign-up" className="btn-primary px-4 py-2 text-sm">Create account</a></div>
+      </header>
+      <section className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-24 md:grid-cols-[1.1fr_.9fr] md:items-center">
+        <div className="absolute -left-40 top-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="relative"><p className="font-mono text-[11px] uppercase tracking-[.24em] text-cyan-300">The vehicle history passport</p><h1 className="mt-5 max-w-3xl font-display text-5xl font-extrabold leading-[1.02] tracking-[-.055em] sm:text-7xl">Every mile has a <span className="text-cyan-300">record.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">A useful, portable history for the people who know a car best: its keeper, the hands-on builder, and the independent workshop.</p><div className="mt-8 flex flex-wrap gap-3"><a href="/sign-up" className="btn-primary px-6 py-3">Start a vehicle passport</a><a href="/sign-in" className="btn-ghost px-6 py-3">Sign in to your account</a></div><p className="mt-4 text-xs text-slate-500">Connect your vehicle using the 11-digit reference on its V5C logbook. Sample approvals are clearly labelled.</p></div>
+        <div className="relative mx-auto w-full max-w-md"><div className="absolute inset-5 rounded-full bg-cyan-400/10 blur-3xl" /><div className="vault-card relative rotate-1 border-cyan-400/20 p-5 sm:p-7"><div className="flex items-center justify-between border-b border-slate-700 pb-4"><span className="font-mono text-[10px] uppercase tracking-[.2em] text-slate-400">Vehicle passport · preview</span><span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">Keeper linked</span></div><div className="mt-6 rounded-md border-2 border-slate-950 bg-[#facc15] px-4 py-2 text-center font-plate text-3xl tracking-widest text-slate-950">AB14 CDE</div><h2 className="mt-5 text-2xl font-bold">Your car. Its whole story.</h2><p className="mt-1 text-sm text-slate-400">A record that travels with the vehicle history.</p><div className="mt-6 space-y-3"><div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3"><span className="mt-1 h-2 w-2 rounded-full bg-cyan-300" /><div><p className="text-sm font-semibold">Workshop stamp · Service</p><p className="mt-1 text-xs text-slate-400">Signed record · mileage and date retained</p></div></div><div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /><div><p className="text-sm font-semibold">Owner record · Brake fluid</p><p className="mt-1 text-xs text-slate-400">Your own maintenance notes, clearly identified</p></div></div></div><div className="mt-5 flex justify-between border-t border-slate-700 pt-4 font-mono text-[10px] uppercase tracking-widest text-slate-500"><span>History with provenance</span><span>01 / 04</span></div></div></div>
+      </section>
+      <section className="border-y border-slate-800 bg-slate-900/45"><div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-3"><div><p className="font-mono text-xs text-cyan-300">01 / KEEP</p><h2 className="mt-3 text-xl font-bold">Link with your logbook</h2><p className="mt-2 text-sm leading-6 text-slate-400">Connect a registration and V5C reference. Sample claims are development-only; no live DVLA verification is implied.</p></div><div><p className="font-mono text-xs text-cyan-300">02 / RECORD</p><h2 className="mt-3 text-xl font-bold">Show who did the work</h2><p className="mt-2 text-sm leading-6 text-slate-400">Workshop-signed records stay distinct from owner-entered DIY notes.</p></div><div><p className="font-mono text-xs text-cyan-300">03 / SHARE</p><h2 className="mt-3 text-xl font-bold">Take the history with you</h2><p className="mt-2 text-sm leading-6 text-slate-400">Build a practical passport for a sale, a new workshop, or a long-term project car.</p></div></div></section>
+      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[.8fr_1.2fr] md:items-center"><div><p className="font-mono text-xs uppercase tracking-[.2em] text-cyan-300">One vehicle, a better handover</p><h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">Made for more than the day it changes hands.</h2></div><div className="grid gap-3 sm:grid-cols-2"><article className="vault-card p-5"><Gauge className="h-5 w-5 text-cyan-300" /><h3 className="mt-4 font-bold">For owners</h3><p className="mt-2 text-sm leading-6 text-slate-400">See service chronology, MOT data and your maintenance record in one place.</p></article><article className="vault-card p-5"><Wrench className="h-5 w-5 text-cyan-300" /><h3 className="mt-4 font-bold">For builders</h3><p className="mt-2 text-sm leading-6 text-slate-400">Keep an ordered modification story with provenance where available.</p></article><article className="vault-card p-5 sm:col-span-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h3 className="mt-4 font-bold">For independent workshops</h3><p className="mt-2 text-sm leading-6 text-slate-400">Fast-log jobs to linked passports. Live VAT verification is only stated when server-verified; development samples never imply it.</p></article></div></section>
+      <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8"><div className="rounded-3xl border border-cyan-400/20 bg-slate-900 p-7 sm:p-10"><p className="font-mono text-xs uppercase tracking-[.2em] text-cyan-300">Start with the logbook</p><h2 className="mt-3 text-3xl font-bold">Build a history worth keeping.</h2><p className="mt-2 max-w-xl text-sm text-slate-400">Your vehicle links and records stay attached to your account—not a sample vehicle on a shared device.</p><a href="/sign-up" className="btn-primary mt-5 px-6 py-3">Create your account</a></div></section>
+      <footer className="border-t border-slate-800 px-5 py-6 text-center text-xs text-slate-500">V5Vault · UK vehicle history passport · Development sample data is not live V5C verification.</footer>
+    </main>
   );
 }

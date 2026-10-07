@@ -2,9 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, beforeEach } from "vitest";
 import { TimelineItem } from "@/components/vault/TimelineItem";
 import { VaultProvider, type ServiceRecord } from "@/lib/vault-store";
-import { Route as HomeRoute } from "@/routes/index";
-
-const Dashboard = HomeRoute.options.component!;
+import { Dashboard } from "@/routes/index";
 
 const service: ServiceRecord = {
   id: "test-service",
@@ -43,7 +41,7 @@ describe("Pro DIY entitlements", () => {
 
     const unlockButton = screen.getByRole("button", { name: /Unlock Itemized Parts & Fluid Specs.*£0.99\/mo/i });
     expect(screen.getAllByRole("button", { name: /unlock itemized oem parts and fluid specifications/i })).toHaveLength(1);
-    expect(screen.getAllByText("🔒 Unlock Itemized Parts & Fluid Specs (£0.99/mo)")).toHaveLength(1);
+    expect(screen.getAllByText("Unlock Itemized Parts & Fluid Specs (£0.99/mo)")).toHaveLength(1);
     expect(screen.queryByText(/Upgrade to Pro DIY.*for part numbers/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /unlock itemized oem parts and fluid specifications/i }));
     expect(await screen.findByText("Upgrade to Pro DIY (£0.99/mo) for itemized parts and fluid specifications.")).toBeInTheDocument();
@@ -78,5 +76,17 @@ describe("Pro DIY entitlements", () => {
     fireEvent.click(screen.getByRole("button", { name: /snap receipt/i }));
     expect(await screen.findByText("Upgrade to Pro DIY (£0.99/mo) to upload receipts.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Snap Receipt" })).not.toBeInTheDocument();
+  });
+
+  it("does not treat imported client-side verified flags as a workshop stamp", () => {
+    render(<VaultProvider><TimelineItem s={{...service, tier3:true}} /></VaultProvider>);
+    expect(screen.getByText("Owner Logged / DIY Record")).toBeInTheDocument();
+    expect(screen.queryByText(/VAT Reg Verified/)).not.toBeInTheDocument();
+  });
+  it("shows a locked receipt teaser without exposing a redacted image", () => {
+    const {container}=render(<VaultProvider><TimelineItem s={{...service,image:undefined,has_receipt:true}} /></VaultProvider>);
+    expect(screen.getByRole("button",{name:/upgrade to pro diy to view receipt photo/i})).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".blur-\\[4px\\]")).not.toBeNull();
   });
 });

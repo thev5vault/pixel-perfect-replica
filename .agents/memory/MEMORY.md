@@ -1,2 +1,4 @@
 - [Vehicle lookup scope](vehicle-lookup-scope.md) — sample onboarding is allowed, but must be labelled and never replace a failed official lookup.
 - [Dev workflow port conflicts](dev-workflow-port-conflicts.md) — a failed workflow can coexist with an older Vite server; stop it explicitly before restarting.
+- [Sample approval scope](sample-approval-scope.md) — instantly approve development sample transfers/stamps; status flags allow later review and never establish live verification.
+- [TanStack and Clerk boundaries](tanstack-clerk-boundaries.md) — consumed POST bodies need header-only auth requests; strict SDK theme typings need care.

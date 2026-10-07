@@ -1,6 +1,8 @@
 import { LockKeyhole, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { useAccount } from "@/lib/account-store";
+import { useState } from "react";
 import { ModalHeader } from "./ModalHeader";
 
 export function UpgradeDialog({
@@ -18,6 +20,23 @@ export function UpgradeDialog({
   perks?: string[];
   description?: string;
 }) {
+  const account = useAccount();
+  const [busy, setBusy] = useState(false);
+  async function chooseTier() {
+    if (!account?.state?.development) {
+      toast.info("Billing is not connected. No subscription has been changed.");
+      return;
+    }
+    const role = tier.toLowerCase().includes("modder") ? "Pro" : tier.toLowerCase().includes("garage") ? "Garage" : "DIY";
+    setBusy(true);
+    try {
+      await account.switchRole(role);
+      toast.success("Development role updated. No payment was taken.");
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Development role could not be changed");
+    } finally { setBusy(false); }
+  }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0">
@@ -25,7 +44,8 @@ export function UpgradeDialog({
           <DialogTitle className="flex items-center gap-2">
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}
           </DialogTitle>
-          <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
+        <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
+        {!account?.state?.development && <p className="mx-4 mt-3 rounded-lg border border-amber-500/25 bg-amber-950/30 p-3 text-xs text-amber-100">Billing is not connected yet. This screen will not change your plan or take payment.</p>}
         </ModalHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
         <ul className="space-y-2 text-sm">
@@ -39,12 +59,10 @@ export function UpgradeDialog({
         <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
         <button
           className="btn-primary w-full"
-          onClick={() => {
-            toast.info("Subscriptions are not connected in this preview. Use Switch Role to try this tier.");
-            onOpenChange(false);
-          }}
+          onClick={() => void chooseTier()}
+          disabled={busy}
         >
-          Upgrade to {tier} ({price})
+          {account?.state?.development ? (busy ? "Updating development access…" : `Try ${tier} in development`) : "Billing not connected"}
         </button>
         </footer>
       </DialogContent>

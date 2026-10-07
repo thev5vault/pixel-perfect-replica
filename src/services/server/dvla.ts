@@ -30,7 +30,7 @@ async function motToken() {
   return data.access_token;
 }
 
-const samples: Record<string, Vehicle> = {
+export const samples: Record<string, Vehicle> = {
   AB14CDE: {
     vrm: "AB14CDE", make: "Audi", model: "A4 2.0 TDI", year: 2014, fuelType: "Diesel",
     odometer: 87420, v5cDate: "2019-03-15", motExpiry: "2026-11-18", motStatus: "PASSED", source: "demo",

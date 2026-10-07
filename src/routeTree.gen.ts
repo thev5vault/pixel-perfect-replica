@@ -10,19 +10,37 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as GarageRouteImport } from './routes/garage'
 import { Route as PassportRouteImport } from './routes/passport'
+import { Route as QueueRouteImport } from './routes/queue'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VaultRouteImport } from './routes/vault'
+import { Route as VehicleRouteImport } from './routes/vehicle'
+import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
+import { Route as VerifyRecordIdRouteImport } from './routes/verify.$recordId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GarageRoute = GarageRouteImport.update({
@@ -35,48 +53,150 @@ const PassportRoute = PassportRouteImport.update({
   path: '/passport',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QueueRoute = QueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VaultRoute = VaultRouteImport.update({
   id: '/vault',
   path: '/vault',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VehicleRoute = VehicleRouteImport.update({
+  id: '/vehicle',
+  path: '/vehicle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInSplatRoute = SignInSplatRouteImport.update({
+  id: '/sign-in/$',
+  path: '/sign-in/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpSplatRoute = SignUpSplatRouteImport.update({
+  id: '/sign-up/$',
+  path: '/sign-up/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyRecordIdRoute = VerifyRecordIdRouteImport.update({
+  id: '/verify/$recordId',
+  path: '/verify/$recordId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/bookings': typeof BookingsRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
+  '/queue': typeof QueueRoute
+  '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
+  '/vehicle': typeof VehicleRoute
+  '/sign-in/$': typeof SignInSplatRoute
+  '/sign-up/$': typeof SignUpSplatRoute
+  '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/bookings': typeof BookingsRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
+  '/queue': typeof QueueRoute
+  '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
+  '/vehicle': typeof VehicleRoute
+  '/sign-in/$': typeof SignInSplatRoute
+  '/sign-up/$': typeof SignUpSplatRoute
+  '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
+  '/bookings': typeof BookingsRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
+  '/queue': typeof QueueRoute
+  '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
+  '/vehicle': typeof VehicleRoute
+  '/sign-in/$': typeof SignInSplatRoute
+  '/sign-up/$': typeof SignUpSplatRoute
+  '/verify/$recordId': typeof VerifyRecordIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/garage' | '/passport' | '/vault'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/admin'
+    | '/bookings'
+    | '/garage'
+    | '/passport'
+    | '/queue'
+    | '/settings'
+    | '/vault'
+    | '/vehicle'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/verify/$recordId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/garage' | '/passport' | '/vault'
-  id: '__root__' | '/' | '/admin' | '/garage' | '/passport' | '/vault'
+  to:
+    | '/'
+    | '/account'
+    | '/admin'
+    | '/bookings'
+    | '/garage'
+    | '/passport'
+    | '/queue'
+    | '/settings'
+    | '/vault'
+    | '/vehicle'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/verify/$recordId'
+  id:
+    | '__root__'
+    | '/'
+    | '/account'
+    | '/admin'
+    | '/bookings'
+    | '/garage'
+    | '/passport'
+    | '/queue'
+    | '/settings'
+    | '/vault'
+    | '/vehicle'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/verify/$recordId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
+  BookingsRoute: typeof BookingsRoute
   GarageRoute: typeof GarageRoute
   PassportRoute: typeof PassportRoute
+  QueueRoute: typeof QueueRoute
+  SettingsRoute: typeof SettingsRoute
   VaultRoute: typeof VaultRoute
+  VehicleRoute: typeof VehicleRoute
+  SignInSplatRoute: typeof SignInSplatRoute
+  SignUpSplatRoute: typeof SignUpSplatRoute
+  VerifyRecordIdRoute: typeof VerifyRecordIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,11 +208,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/garage': {
@@ -109,6 +243,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PassportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vault': {
       id: '/vault'
       path: '/vault'
@@ -116,15 +264,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VaultRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vehicle': {
+      id: '/vehicle'
+      path: '/vehicle'
+      fullPath: '/vehicle'
+      preLoaderRoute: typeof VehicleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in/$': {
+      id: '/sign-in/$'
+      path: '/sign-in/$'
+      fullPath: '/sign-in/$'
+      preLoaderRoute: typeof SignInSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up/$': {
+      id: '/sign-up/$'
+      path: '/sign-up/$'
+      fullPath: '/sign-up/$'
+      preLoaderRoute: typeof SignUpSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$recordId': {
+      id: '/verify/$recordId'
+      path: '/verify/$recordId'
+      fullPath: '/verify/$recordId'
+      preLoaderRoute: typeof VerifyRecordIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
+  BookingsRoute: BookingsRoute,
   GarageRoute: GarageRoute,
   PassportRoute: PassportRoute,
+  QueueRoute: QueueRoute,
+  SettingsRoute: SettingsRoute,
   VaultRoute: VaultRoute,
+  VehicleRoute: VehicleRoute,
+  SignInSplatRoute: SignInSplatRoute,
+  SignUpSplatRoute: SignUpSplatRoute,
+  VerifyRecordIdRoute: VerifyRecordIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

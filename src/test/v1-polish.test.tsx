@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { VaultProvider, useVault } from "@/lib/vault-store";
 import { Route as PassportRoute } from "@/routes/passport";
-import { Route as HomeRoute } from "@/routes/index";
+import { Dashboard } from "@/routes/index";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
 import { Route as VaultRoute } from "@/routes/vault";
@@ -20,7 +20,6 @@ vi.mock("recharts", () => ({
 }));
 
 const Passport = PassportRoute.options.component!;
-const Dashboard = HomeRoute.options.component!;
 const Vault = VaultRoute.options.component!;
 
 describe("V1 polish", () => {
@@ -49,11 +48,28 @@ describe("V1 polish", () => {
     expect(doc).toHaveTextContent("DVLA Mileage Progression");
     expect(doc).toHaveTextContent("Service History");
     expect(doc).toHaveTextContent("MOT & Mileage Log");
-    expect(doc).toHaveTextContent("Scan to Verify Authenticity");
+    expect(doc).toHaveTextContent("No signed workshop stamp to verify");
+    expect(doc).toHaveTextContent("Development sample document");
+    expect(doc).not.toHaveTextContent("https://v5vault.app/p/");
     expect(doc.textContent?.includes("Manufacturer reference")).toBe(oem);
     expect(doc.textContent?.includes("Active Build Spec")).toBe(master);
     expect(doc.textContent?.includes("Reverted / Removed Modifications")).toBe(master);
     expect(doc.querySelector("button")?.closest(".print\\:hidden")).not.toBeNull();
+  });
+
+  it("links a passport QR to the actual stored workshop stamp", async () => {
+    localStorage.setItem("v5vault:v1",JSON.stringify({
+      role:"Owner",
+      services:[{id:"signed-test",vrm:"AB14CDE",date:"2026-10-07",mileage:90301,category:"Servicing",description:"Oil & Filter",items:[],garage:"Sample Workshop",verified:true,is_verified_stamp:true,is_sample:true,stamp_signature:"v1.sample.test"}],
+    }));
+    vi.useFakeTimers();
+    const {container}=render(<VaultProvider><Passport /></VaultProvider>);
+    fireEvent.click(screen.getByRole("button",{name:/Standard Passport/}));
+    await act(async()=>{vi.advanceTimersByTime(1100);});
+    const doc=container.querySelector(".passport-document")!;
+    expect(doc).toHaveTextContent("Scan to Verify Authenticity");
+    expect(doc.querySelector("code")).toHaveTextContent(`${window.location.origin}/verify/signed-test`);
+    expect(doc).toHaveTextContent("Development sample");
   });
 
   it("keeps the receipt header and Save footer outside the padded scrolling form", () => {
@@ -79,9 +95,9 @@ describe("V1 polish", () => {
       return <><p data-testid="active">{vehicle.vrm}</p><VehicleLookupDialog open onOpenChange={() => {}} /></>;
     }
     render(<VaultProvider><Probe /></VaultProvider>);
-    fireEvent.change(screen.getByLabelText("Registration number"), { target: { value: "bul 200" } });
-    expect(screen.getByLabelText("Registration number")).toHaveValue("BUL 200");
-    fireEvent.click(screen.getByRole("button", { name: "Lookup Vehicle" }));
+    fireEvent.change(screen.getByLabelText("Vehicle registration mark"), { target: { value: "bul 200" } });
+    expect(screen.getByLabelText("Vehicle registration mark")).toHaveValue("BUL 200");
+    fireEvent.click(screen.getByRole("button", { name: "Connect vehicle passport" }));
     await act(async () => {});
     expect(screen.getByTestId("active")).toHaveTextContent("BUL200");
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
@@ -111,7 +127,7 @@ describe("V1 polish", () => {
   it("keeps upgrade actions pinned below scrollable perks", () => {
     render(<UpgradeDialog open onOpenChange={() => {}} />);
     const dialog = screen.getByRole("dialog");
-    const upgrade = screen.getByRole("button", { name: "Upgrade to Pro DIY (£0.99/mo)" });
+    const upgrade = screen.getByRole("button", { name: "Billing not connected" });
     expect(upgrade.closest("footer")).toHaveClass("flex-none", "bottom-0");
     expect(dialog.querySelector(".pb-6")).not.toContainElement(upgrade);
     expect(dialog.parentElement).toHaveClass("items-end", "sm:items-center", "overscroll-none");

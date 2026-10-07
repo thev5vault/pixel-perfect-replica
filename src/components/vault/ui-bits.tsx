@@ -29,11 +29,14 @@ export function Pill({ tone = "muted", children, className }: { tone?: Tone; chi
   );
 }
 
-export function VerifiedBadge({ tier3 }: { tier3?: boolean | undefined }) {
+export function VerifiedBadge({ sample, garage, signature, recordId }: { sample?: boolean | undefined; garage?: string | undefined; signature?: string | null | undefined; recordId?: string | undefined }) {
+  if (sample) return <Pill><BadgeCheck className="h-3 w-3" />Development sample · VAT not live verified{recordId && <a href={`/verify/${encodeURIComponent(recordId)}`} className="ml-1 underline underline-offset-2">Verify</a>}{signature && <span className="font-mono text-[9px]" title={`Signature: ${signature}`}>Signed</span>}</Pill>;
   return (
     <Pill tone="success">
       <BadgeCheck className="h-3 w-3" />
-      {tier3 ? "Tier 3: Verified Workshop" : "Verified Workshop"}
+      Verified Workshop Stamp{garage ? ` - ${garage} (VAT Reg Verified)` : ""}
+      {recordId && <a href={`/verify/${encodeURIComponent(recordId)}`} className="ml-1 underline underline-offset-2">Verify</a>}
+      {signature && <span className="font-mono text-[9px]" title={`Signature: ${signature}`}>Signed</span>}
     </Pill>
   );
 }

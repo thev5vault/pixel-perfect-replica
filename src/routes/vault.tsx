@@ -8,6 +8,8 @@ import { MOD_CATEGORIES, can, fmtDate, fmtMiles, today, useVault, type ModCatego
 import { Field, ImagePicker, Pill, Thumb } from "@/components/vault/ui-bits";
 import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
+import { useAccount } from "@/lib/account-store";
+import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 
 export const Route = createFileRoute("/vault")({
   head: () => ({
@@ -25,6 +27,12 @@ export const Route = createFileRoute("/vault")({
 
 function VaultPage() {
   const { role } = useVault();
+  const account = useAccount();
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
+    return <div className="vault-card p-6"><h1 className="text-xl font-bold">Connect a vehicle before building its mod history.</h1><p className="mt-2 text-sm text-muted-foreground">A modification log belongs to a linked vehicle passport.</p><button onClick={() => setConnectOpen(true)} className="btn-primary mt-5">Connect New Vehicle</button><VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} /></div>;
+  }
 
   return (
     <div>
@@ -157,11 +165,14 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
-  function submit(e: React.FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const mi = parseInt(f.installMileage, 10);
     if (!f.name.trim() || !Number.isFinite(mi)) { toast.error("Part name and install mileage are required."); return; }
-    addMod({
+    setBusy(true);
+    try {
+    await addMod({
       vrm: vehicle.vrm,
       name: f.name.trim().slice(0, 80),
       category: f.category,
@@ -178,6 +189,8 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
     setF(empty);
     setImage(undefined);
     onOpenChange(false);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Modification could not be saved"); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -235,7 +248,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           </Field>
           </div>
           <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
-            <button type="submit" className="btn-primary w-full">Add to Active Build</button>
+            <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? "Saving…" : "Add to Active Build"}</button>
           </footer>
         </form>
       </DialogContent>
@@ -247,16 +260,21 @@ function RevertDialog({ mod, onClose }: { mod: Modification | null; onClose: () 
   const { revertMod } = useVault();
   const [date, setDate] = useState(today());
   const [mileage, setMileage] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const mi = parseInt(mileage, 10);
     if (!mod || !Number.isFinite(mi)) { return; }
     if (mi < mod.installMileage) { toast.error("Removal mileage can't be lower than install mileage."); return; }
-    revertMod(mod.id, date, mi);
-    toast.success(`${mod.name} moved to Diagnostic History`);
-    setMileage("");
-    onClose();
+    setBusy(true);
+    try {
+      await revertMod(mod.id, date, mi);
+      toast.success(`${mod.name} moved to Diagnostic History`);
+      setMileage("");
+      onClose();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Modification could not be reverted"); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -280,7 +298,7 @@ function RevertDialog({ mod, onClose }: { mod: Modification | null; onClose: () 
           </div>
           </div>
           <footer className="sticky bottom-0 z-20 flex-none border-t border-slate-800 bg-slate-900 p-4">
-          <button type="submit" className="btn-primary w-full">
+          <button type="submit" disabled={busy} className="btn-primary w-full">
             <RotateCcw className="h-4 w-4" /> Confirm Revert
           </button>
           </footer>

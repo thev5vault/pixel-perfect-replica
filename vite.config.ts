@@ -7,6 +7,8 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Clerk's canonical Node proxy and PostgreSQL require a Node runtime.
+  nitro: { preset: "node-server" },
   vite: {
     server: {
       allowedHosts: true,
