@@ -378,7 +378,10 @@ function GaragePage() {
             <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
           </label>
           <p className="break-all text-xs text-muted-foreground">{form.invoiceName ?? "PDF invoices up to 5 MB are stored privately."}</p>
-          {form.invoiceData && <button type="button" onClick={() => setForm((current) => ({ ...current, invoiceName: undefined, invoiceData: undefined }))} className="text-xs text-muted-foreground underline">Remove invoice</button>}
+          {form.invoiceData && <button type="button" onClick={() => setForm((current) => {
+            const { invoiceName: _invoiceName, invoiceData: _invoiceData, ...remaining } = current;
+            return remaining;
+          })} className="text-xs text-muted-foreground underline">Remove invoice</button>}
         </div>
       </div>
       {canScanInvoice && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={scanBusy} className="btn-secondary min-h-11 w-full">

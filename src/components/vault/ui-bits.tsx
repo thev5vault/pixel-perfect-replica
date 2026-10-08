@@ -51,12 +51,12 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export const MODAL_INPUT_CLASS =
-  "w-full h-11 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
+  "w-full h-11 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
 
 export const MODAL_SELECT_CLASS = `${MODAL_INPUT_CLASS} pr-10`;
 
 export const MODAL_TEXTAREA_CLASS =
-  "w-full min-w-0 min-h-20 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
+  "w-full min-w-0 min-h-20 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3.5 py-3 text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none [-webkit-appearance:none]";
 
 const modalFieldLabelClass = "text-[11px] font-semibold tracking-wider text-slate-400 uppercase";
 

@@ -65,16 +65,16 @@ export async function stampServiceByVIN(input: {
   physically_inspected_vin: true;
   mileage: number;
   notes: string;
-  date?: string;
-  category?: ServiceCategory;
-  components?: string[];
-  advisories?: string[];
-  cost?: number;
-  partsCost?: number;
-  labourCost?: number;
-  image?: string;
-  invoice_name?: string;
-  invoice_data?: string;
+  date?: string | undefined;
+  category?: ServiceCategory | undefined;
+  components?: string[] | undefined;
+  advisories?: string[] | undefined;
+  cost?: number | undefined;
+  partsCost?: number | undefined;
+  labourCost?: number | undefined;
+  image?: string | undefined;
+  invoice_name?: string | undefined;
+  invoice_data?: string | undefined;
 }) {
   const garage=await requireGarage();
   const vrm = normalizeVRM(input.vrm);

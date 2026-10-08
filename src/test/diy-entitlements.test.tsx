@@ -80,6 +80,24 @@ describe("Pro DIY entitlements", () => {
     expect(screen.getByRole("button", { name: /oem part numbers & fluid specs/i })).toBeInTheDocument();
   });
 
+  it("opens a separate editable DIY form with quick chips and optional proof uploads", async () => {
+    render(
+      <VaultProvider>
+        <Dashboard />
+      </VaultProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /add a basic diy service entry/i }));
+    expect(await screen.findByRole("heading", { name: "Add a Basic DIY Service Entry" })).toBeInTheDocument();
+    const workField = screen.getByLabelText("Work performed");
+    expect(workField).toBeEnabled();
+    expect(screen.getByText("Optional receipt photo · available on every plan")).toBeInTheDocument();
+    expect(screen.getByText("Optional invoice PDF · available on every plan")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Oil & filter" }));
+    expect(workField).toHaveValue("Oil & filter");
+    expect(screen.queryByText(/OEM part numbers/i)).not.toBeInTheDocument();
+  });
+
   it("does not treat imported client-side verified flags as a workshop stamp", () => {
     render(<VaultProvider><TimelineItem s={{...service, tier3:true}} /></VaultProvider>);
     expect(screen.getByText("Owner Logged / DIY Record")).toBeInTheDocument();

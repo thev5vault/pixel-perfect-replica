@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useAccount } from "./account-store";
 import { PLAN_DEFINITIONS, PLAN_KEYS } from "./plans";
 import { passportData } from "./passport-data";
-import type { BillingCatalog, InvestorMetrics, PlanKey, ReminderPreferences } from "./v1-types";
+import type { BillingCatalog, BillingInterval, InvestorMetrics, PlanKey, ReminderPreferences } from "./v1-types";
 import * as api from "@/services/v1Api";
 
 export function savePdf(file: { filename: string; base64: string }) {
@@ -35,12 +35,12 @@ export function useV1() {
         key, name: PLAN_DEFINITIONS[key].name, amount_pence: PLAN_DEFINITIONS[key].amount, currency: "gbp",
         interval: PLAN_DEFINITIONS[key].interval, price_id: `sample_${key}`,
       })) } : api.getBillingCatalog(),
-      checkout: async (plan: PlanKey, vrm?: string) => {
+      checkout: async (plan: PlanKey, vrm?: string, billingInterval?: BillingInterval) => {
         if (preview) {
-          if (plan !== "sales_pack") await account?.switchRole(plan === "workshop_monthly" ? "Garage" : plan === "diy_monthly" ? "DIY" : "Pro");
+          if (plan !== "sales_pack") await account?.switchRole(plan.startsWith("workshop_") ? "Garage" : plan.startsWith("diy_") ? "DIY" : "Pro");
           return { url: null, preview: true, message: "Sample plan preview opened. No payment was taken." };
         }
-        return api.startCheckout({ data: { plan, vrm } });
+        return api.startCheckout({ data: { plan, vrm, billingInterval } });
       },
       confirmCheckout: async (session_id: string) => {
         if (preview) return { fulfilled: false, message: "Sample previews do not create Stripe purchases." };

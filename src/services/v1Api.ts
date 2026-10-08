@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 const vrm = z.string().trim().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
-const plan = z.enum(["sales_pack", "diy_monthly", "pro_monthly", "pro_yearly", "workshop_monthly"]);
+const plan = z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]);
+const billingInterval = z.enum(["month", "year"]);
 export const getBillingCatalog = createServerFn({ method: "GET" }).handler(async () => (await import("./server/billing")).catalog());
-export const startCheckout = createServerFn({ method: "POST" }).validator(z.object({ plan, vrm: vrm.optional() }))
+export const startCheckout = createServerFn({ method: "POST" }).validator(z.object({ plan, vrm: vrm.optional(), billingInterval: billingInterval.optional() }))
   .handler(async ({ data }) => (await import("./server/billing")).checkout(data));
 export const confirmCheckout = createServerFn({ method: "POST" }).validator(z.object({ session_id: z.string().startsWith("cs_").max(150) }))
   .handler(async ({ data }) => (await import("./server/billing")).confirm(data.session_id));

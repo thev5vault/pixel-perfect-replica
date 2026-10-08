@@ -1,13 +1,20 @@
 import type { SubscriptionTier, UserAccount } from "./account-types";
-import type { PlanKey } from "./v1-types";
+import type { BillingInterval, PlanKey } from "./v1-types";
 export const PLAN_DEFINITIONS = {
   sales_pack: { name: "Certified Sales Pack", amount: 299, interval: null, tier: null, description: "A V5Vault provenance PDF and QR listing badge for one vehicle." },
-  diy_monthly: { name: "Pro DIY", amount: 99, interval: "month", tier: "pro_diy", description: "Receipt storage, OEM parts and cost breakdowns. Existing Pro DIY option." },
+  diy_monthly: { name: "Pro DIY", amount: 99, interval: "month", tier: "pro_diy", description: "Receipt storage, OEM parts and cost breakdowns." },
+  diy_yearly: { name: "Pro DIY", amount: 999, interval: "year", tier: "pro_diy", description: "Pro DIY features, billed annually." },
   pro_monthly: { name: "Pro Modder / Collector", amount: 149, interval: "month", tier: "pro_modder", description: "Receipt photo/PDF storage, cost analytics, three active vehicles and the Modder's Vault." },
   pro_yearly: { name: "Pro Modder / Collector", amount: 1499, interval: "year", tier: "pro_modder", description: "The Collector plan, billed annually." },
-  workshop_monthly: { name: "Garage Pro", amount: 1499, interval: "month", tier: "verified_garage", description: "30-day trial, unlimited VIN-stamped workshop jobs and consented customer reminders. Approval and VAT verification required." },
+  workshop_monthly: { name: "Verified Workshop / Garage Pro", amount: 999, interval: "month", tier: "verified_garage", description: "30-day trial, unlimited workshop stamps, chips and local invoice OCR. Approval and VAT verification required." },
+  workshop_yearly: { name: "Verified Workshop / Garage Pro", amount: 9999, interval: "year", tier: "verified_garage", description: "Annual workshop plan with a 30-day trial, unlimited stamps, chips and local invoice OCR. Approval and VAT verification required." },
 } as const;
 export const PLAN_KEYS = Object.keys(PLAN_DEFINITIONS) as PlanKey[];
+export function planForBillingInterval(plan: PlanKey, interval: BillingInterval): PlanKey {
+  if (plan === "sales_pack") return plan;
+  const family = plan.startsWith("diy_") ? "diy" : plan.startsWith("workshop_") ? "workshop" : "pro";
+  return `${family}_${interval === "year" ? "yearly" : "monthly"}` as PlanKey;
+}
 export function vehicleLimit(user: Pick<UserAccount, "role" | "subscription_tier">) {
   if (user.role === "dev_admin") return Number.POSITIVE_INFINITY;
   return ["pro_modder", "verified_garage"].includes(user.subscription_tier) ? 3 : 1;

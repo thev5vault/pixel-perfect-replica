@@ -1,6 +1,7 @@
 import type { Vehicle, ServiceRecord, Modification, MotReading } from "./vault-store";
 
-export type PlanKey = "sales_pack" | "diy_monthly" | "pro_monthly" | "pro_yearly" | "workshop_monthly";
+export type BillingInterval = "month" | "year";
+export type PlanKey = "sales_pack" | "diy_monthly" | "diy_yearly" | "pro_monthly" | "pro_yearly" | "workshop_monthly" | "workshop_yearly";
 export interface BillingPrice { key: PlanKey; name: string; amount_pence: number; currency: "gbp"; interval: "month" | "year" | null; price_id: string; }
 export interface BillingCatalog { prices: BillingPrice[]; test_mode: boolean; preview?: boolean; }
 export interface CheckoutResult { url: string | null; preview: boolean; message: string; }

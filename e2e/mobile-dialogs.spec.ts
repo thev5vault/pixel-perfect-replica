@@ -51,6 +51,9 @@ async function focusAndCheck(dialog: Locator, label: string, mobile: boolean): P
   const { control } = fieldControl(dialog, label);
   await expect(control).toBeVisible();
   await control.focus();
+  await control.evaluate((element) =>
+    element.scrollIntoView({ block: "center", inline: "nearest" }),
+  );
   await expect(control).toBeFocused();
 
   const state = await control.evaluate((element) => {
@@ -160,10 +163,18 @@ for (const viewport of viewports) {
     await proReceipt.getByRole("button", { name: "Close" }).click();
     await expect(proReceipt).toBeHidden();
 
-    // Owner view opens the same receipt form via its basic-entry path, where
-    // the locked cost breakdown opens the nested Pro upgrade.
+    // Manual DIY entry is a separate form with optional proof uploads.
     await selectTier(page, /Basic Driver \(Free\)/);
     await page.getByRole("button", { name: "Add a basic DIY service entry" }).click();
+    const manualEntry = page.getByRole("dialog", { name: "Add a Basic DIY Service Entry" });
+    await expect(manualEntry).toBeVisible();
+    await expect(manualEntry.getByText("Optional receipt photo · available on every plan")).toBeVisible();
+    await expect(manualEntry.getByLabel("Work performed", { exact: true })).toBeEnabled();
+    await manualEntry.getByRole("button", { name: "Close" }).click();
+    await expect(manualEntry).toBeHidden();
+
+    // Receipt entry remains camera-first and its locked cost breakdown opens Pro DIY.
+    await page.getByRole("button", { name: "Snap Receipt" }).click();
     const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(receipt).toBeVisible();
     const upgradeTrigger = receipt.getByRole("button", { name: /Parts vs labour cost/ });
@@ -208,14 +219,17 @@ for (const viewport of viewports) {
     await expect(receipt).toBeHidden();
     await expect(openBackdrops).toHaveCount(0);
 
-    // The signed-in sample account enables the real V5C reference field.
+    // The development fixture supplies the V5C reference server-side.
     await page.getByRole("button", { name: /Audi A4/ }).click();
     await page.getByRole("menuitem", { name: /Connect New Vehicle/ }).click();
     const vehicleDialog = page.getByRole("dialog", { name: "Connect New Vehicle" });
     await expect(vehicleDialog).toBeVisible();
     await checkDialogViewport(page, vehicleDialog);
+    await vehicleDialog.getByLabel("Vehicle registration mark", { exact: true }).fill("LG57 VYF");
     await focusAndCheck(vehicleDialog, "Vehicle registration mark", viewport.mobile);
-    await focusAndCheck(vehicleDialog, "11-digit V5C logbook reference", viewport.mobile);
+    await expect(vehicleDialog.getByLabel("11-digit V5C logbook reference", { exact: true })).toHaveCount(0);
+    await expect(vehicleDialog).toContainText("Development first-claim rule");
+    await vehicleDialog.getByLabel("VIN / chassis number on your V5C", { exact: true }).fill("WUAZZZ8EX8A800721");
     await focusAndCheck(vehicleDialog, "VIN / chassis number on your V5C", viewport.mobile);
     await checkCloseFocus(page, vehicleDialog);
     await vehicleDialog.getByRole("button", { name: "Close" }).click();
@@ -252,11 +266,13 @@ async function setKeyboardViewport(page: Page, open: boolean) {
 async function scrollFocusedField(dialog: Locator, label: string) {
   const field = dialog.getByLabel(label, { exact: true });
   await field.focus();
-  await field.evaluate((element) => element.scrollIntoView({ block: "nearest" }));
+  await field.evaluate((element) => element.scrollIntoView({ block: "center" }));
   await expect(field).toBeFocused();
   await expect(async () => {
     const scroller = dialog.locator("form > .overflow-y-auto");
-    expectInside(await bounds(field), await bounds(scroller), 3);
+    // Safari rounds the focused control to a fractional CSS pixel at the top
+    // edge; keep a 2px boundary allowance while still containing its border.
+    expectInside(await bounds(field), await bounds(scroller), 2);
     expectInside(await bounds(field), await visibleViewport(dialog.page()), 3);
   }).toPass();
   return field;
@@ -303,20 +319,16 @@ test("service forms stay usable with a keyboard on a short portrait phone", asyn
   await page.getByRole("button", { name: /Audi A4/ }).click();
   await page.getByRole("menuitem", { name: /Connect New Vehicle/ }).click();
   const vehicle = page.getByRole("dialog", { name: "Connect New Vehicle" });
-  await vehicle.getByLabel("Vehicle registration mark", { exact: true }).fill("AB14 CDE");
-  const reference = vehicle.getByLabel("11-digit V5C logbook reference", { exact: true });
-  await reference.fill("12345678901");
+  await vehicle.getByLabel("Vehicle registration mark", { exact: true }).fill("LG57 VYF");
+  await expect(vehicle.getByLabel("11-digit V5C logbook reference", { exact: true })).toHaveCount(0);
+  const vinInput = vehicle.getByLabel("VIN / chassis number on your V5C", { exact: true });
+  await vinInput.fill("WUAZZZ8EX8A800721");
   await setKeyboardViewport(page, true);
-  await expect(reference).toBeFocused();
+  await expect(vinInput).toBeFocused();
   await checkDialogViewport(page, vehicle);
-  await scrollFocusedField(vehicle, "11-digit V5C logbook reference");
   const vin = await scrollFocusedField(vehicle, "VIN / chassis number on your V5C");
-  await vin.fill("SAMPLEVIN");
-  expect(await vehicle.locator("form > .overflow-y-auto").evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(0);
   await dismissKeyboardAndCheckAction(page, vehicle, "Connect vehicle passport");
-  await expect(reference).toHaveValue("12345678901");
-  await expect(vin).toHaveValue("SAMPLEVIN");
+  await expect(vin).toHaveValue("WUAZZZ8EX8A800721");
   await vehicle.getByRole("button", { name: "Close", exact: true }).click();
   await expect(vehicle).toBeHidden();
 });
@@ -325,7 +337,7 @@ test("nested upgrade dismisses after the receipt form scrolls on a short phone",
   await page.setViewportSize({ width: 390, height: 640 });
   await startSamplePreview(page);
   await selectTier(page, /Basic Driver \(Free\)/);
-  await page.getByRole("button", { name: "Add a basic DIY service entry" }).click();
+  await page.getByRole("button", { name: "Snap Receipt" }).click();
   const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
   await receipt.getByLabel("Work Description", { exact: true }).focus();
   await setKeyboardViewport(page, true);

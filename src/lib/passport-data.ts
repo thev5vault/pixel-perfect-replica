@@ -6,7 +6,7 @@ export function passportData(vehicle: Vehicle, services: ServiceRecord[], mods: 
   return {
     vehicle: { vrm, make, model, odometer, odometerAvailable, v5cDate, registrationDate, motExpiry, year, fuelType, colour, engineCapacity, taxStatus, taxDueDate, motStatus,
       vin: vin ? `•••••••••••${vin.slice(-6)}` : undefined, source, is_sample: sample,
-      verification_tier, is_scrapped: Boolean(is_scrapped) },
+      verification_tier: verification_tier ?? "provisional", is_scrapped: Boolean(is_scrapped) },
     services: services.map(s => ({
       id: s.id, vrm: s.vrm, date: s.date, mileage: s.mileage, category: s.category, description: s.description,
       items: s.items, garage: s.garage, verified: s.verified, is_verified_stamp: s.is_verified_stamp,

@@ -73,7 +73,8 @@ export function parseInvoiceText(
     if (key === "servicing") return /\b(service|servicing|oil change|scheduled maintenance)\b/i.test(text);
     return false;
   });
-  if (specificCategory || categoryMatch) suggestions.category = specificCategory || categoryMatch;
+  const matchedCategory = specificCategory ?? categoryMatch;
+  if (matchedCategory) suggestions.category = matchedCategory;
 
   const foundComponents = knownComponents.filter((component) => lower.includes(component.toLowerCase()));
   if (foundComponents.length) suggestions.components = foundComponents;
@@ -181,7 +182,7 @@ async function scanPdf(blob: Blob, onProgress?: InvoiceOcrProgress): Promise<{ t
       canvas.height = Math.ceil(viewport.height);
       const context = canvas.getContext("2d");
       if (!context) throw new Error("PDF rendering is unavailable in this browser.");
-      await page.render({ canvasContext: context, viewport }).promise;
+      await page.render({ canvas, canvasContext: context, viewport }).promise;
       imagePages.push((await worker.recognize(canvas)).data.text);
       canvas.width = 0;
       canvas.height = 0;
@@ -191,7 +192,7 @@ async function scanPdf(blob: Blob, onProgress?: InvoiceOcrProgress): Promise<{ t
     }
     return { text: imagePages.join("\n"), pagesScanned: pageCount, totalPages };
   } finally {
-    await pdf.destroy();
+    await documentTask.destroy();
   }
 }
 

@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   Owner: "Basic Driver (Free)",
   DIY: "Pro DIY (£0.99/mo)",
   Pro: "Pro Modder / Collector (£1.49/mo)",
-  Garage: "Garage Pro (£14.99/mo)",
+  Garage: "Verified Workshop / Garage Pro (£9.99/mo)",
   superadmin: "Dev Owner / SuperAdmin (God Mode)",
 };
 /** Feature entitlements per tier. Pro Modder and Garage include Pro DIY features. */

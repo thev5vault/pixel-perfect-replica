@@ -3,8 +3,9 @@ import { z } from "zod";
 import { checkout } from "@/services/server/billing";
 
 const inputSchema = z.object({
-  plan: z.enum(["sales_pack", "diy_monthly", "pro_monthly", "pro_yearly", "workshop_monthly"]),
+  plan: z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]),
   vrm: z.string().trim().max(12).optional(),
+  billingInterval: z.enum(["month", "year"]).optional(),
 });
 
 export const Route = createFileRoute("/api/stripe/create-checkout-session")({

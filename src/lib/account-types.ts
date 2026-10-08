@@ -41,5 +41,5 @@ export interface AdminState {
   vehicles: Vehicle[];
   applications: AdminUser[];
 }
-export interface AdminVehicleEdit { vrm: string; make: string; model: string; odometer: number; is_scrapped?: boolean }
+export interface AdminVehicleEdit { vrm: string; make: string; model: string; odometer: number; is_scrapped?: boolean | undefined }
 export interface WorkshopReview { id: string; status: "approved" | "rejected"; vat_verified?: boolean | undefined }

@@ -133,11 +133,11 @@ function Certificate({ cert }: { cert: Cert }) {
   );
 
   return (
-    <div className="animate-vault-open">
-      <div className="passport-document">
+    <div className="min-w-0 animate-vault-open">
+      <div className="passport-document min-w-0">
         <div className="relative z-10 space-y-5">
-          <header className="passport-section space-y-4 p-5">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-300 pb-3">
+          <header className="passport-section min-w-0 space-y-4 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-300 pb-3">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
                 <V5VaultLogo className="h-4 w-4" /> V5Vault · UK Vehicle Records
               </div>
@@ -244,24 +244,28 @@ function Certificate({ cert }: { cert: Cert }) {
                 {s.image && <Thumb src={s.image} alt={`${s.description} receipt`} />}
               </div>
               <div className="mt-3">
-                <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts fitted</h4>
-                <table className="passport-table">
-                  <thead><tr><th>Part</th><th>Manufacturer reference</th></tr></thead>
-                  <tbody>
-                    {(s.parts ?? []).map((p, i) => (
-                      <tr key={i}><td>{p.name}</td><td className="font-mono">{p.partNo || "—"}</td></tr>
-                    ))}
-                    {!s.parts?.length && <tr><td colSpan={2} className="text-slate-500">No part numbers logged.</td></tr>}
-                  </tbody>
-                </table>
-                <table className="passport-table mt-3">
-                  <thead><tr><th>Cost item</th><th className="text-right">Amount</th></tr></thead>
-                  <tbody>
-                    <tr><td>Parts</td><td className="text-right">£{(s.partsCost ?? 0).toFixed(2)}</td></tr>
-                    <tr><td>Labour</td><td className="text-right">£{(s.labourCost ?? 0).toFixed(2)}</td></tr>
-                    <tr className="font-bold"><td>Total</td><td className="text-right">£{(s.cost ?? 0).toFixed(2)}</td></tr>
-                  </tbody>
-                </table>
+                <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts Breakdown</h4>
+                <div className="passport-table-scroll" role="region" aria-label="Parts breakdown table" tabIndex={0}>
+                  <table className="passport-table min-w-[28rem]">
+                    <thead><tr><th>Part</th><th>Manufacturer reference</th></tr></thead>
+                    <tbody>
+                      {(s.parts ?? []).map((p, i) => (
+                        <tr key={i}><td>{p.name}</td><td className="font-mono">{p.partNo || "—"}</td></tr>
+                      ))}
+                      {!s.parts?.length && <tr><td colSpan={2} className="text-slate-500">No part numbers logged.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="passport-table-scroll mt-3" role="region" aria-label="Itemized costs table" tabIndex={0}>
+                  <table className="passport-table min-w-[20rem]">
+                    <thead><tr><th>Cost item</th><th className="text-right">Amount</th></tr></thead>
+                    <tbody>
+                      <tr><td>Parts</td><td className="text-right">£{(s.partsCost ?? 0).toFixed(2)}</td></tr>
+                      <tr><td>Labour</td><td className="text-right">£{(s.labourCost ?? 0).toFixed(2)}</td></tr>
+                      <tr className="font-bold"><td>Total</td><td className="text-right">£{(s.cost ?? 0).toFixed(2)}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </section>
           ))}
@@ -334,18 +338,20 @@ function Table({ title, rows, empty }: { title: string; rows: string[][]; empty:
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <table className="passport-table">
-          <thead><tr><th>Date / item</th><th>Record</th><th>Details</th></tr></thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i}>
-                <td>{r[0]}</td>
-                <td>{r[1]}</td>
-                <td className="text-right">{r[2]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="passport-table-scroll" role="region" aria-label={`${title} table`} tabIndex={0}>
+          <table className="passport-table min-w-[36rem]">
+            <thead><tr><th>Date / item</th><th>Record</th><th>Details</th></tr></thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td>{r[0]}</td>
+                  <td>{r[1]}</td>
+                  <td className="text-right">{r[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

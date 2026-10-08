@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ModalHeader } from "@/components/vault/ModalHeader";
+import { BasicDiyServiceDialog } from "@/components/vault/BasicDiyServiceDialog";
 import {
   MOT_READINGS,
   SERVICE_CATEGORIES,
@@ -48,7 +49,8 @@ function monthsBetween(a: Date, b: Date) {
 export function Dashboard() {
   const { vehicle, services, role } = useVault();
   const account = useAccount();
-  const [open, setOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [diyOpen, setDiyOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
 
@@ -87,7 +89,7 @@ export function Dashboard() {
               {vehicle.make} {vehicle.model}
             </h1>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             {vehicle.status && <Pill tone={vehicle.status === "approved" ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>{vehicle.is_sample ? "Development sample · " : ""}Keeper link {vehicle.status}</Pill>}
             <Pill tone={vehicle.verification_tier === "government_data" ? "success" : vehicle.verification_tier === "workshop_checked" ? "primary" : "muted"}>
               {vehicle.verification_tier === "government_data" ? "Government data matched" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
@@ -144,7 +146,7 @@ export function Dashboard() {
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
-      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setOpen(true)} className="btn-primary w-full py-4 text-base">
+      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className="btn-primary w-full py-4 text-base">
         <Plus className="h-5 w-5" /> Snap Receipt
       </button>
 
@@ -176,10 +178,11 @@ export function Dashboard() {
       </section>
 
       <VehicleDataTools/>
-      <button className="btn-ghost w-full" onClick={()=>setOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
+      <button className="btn-ghost w-full" onClick={()=>setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
       {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
-      <SnapReceiptDialog open={open} onOpenChange={setOpen} />
+      <SnapReceiptDialog open={receiptOpen} onOpenChange={setReceiptOpen} />
+      <BasicDiyServiceDialog open={diyOpen} onOpenChange={setDiyOpen} />
     </div>
   );
 }
@@ -238,8 +241,8 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
     return Number.isFinite(n) && n >= 0 && n < 1_000_000 ? Math.round(n * 100) / 100 : undefined;
   };
 
-  async function scanAttachedInvoice() {
-    const document = pdfReceipt?.data ?? image;
+  async function scanAttachedInvoice(uploadedDocument?: string) {
+    const document = uploadedDocument ?? pdfReceipt?.data ?? image;
     if (!pro || !document || scanBusy) return;
     setScanBusy(true);
     setScanMessage("Preparing local invoice scan…");
@@ -265,6 +268,9 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         }
         if (suggestions.partsCost && !current.partsCost.trim()) next.partsCost = suggestions.partsCost;
         if (suggestions.labourCost && !current.labourCost.trim()) next.labourCost = suggestions.labourCost;
+        if (suggestions.components?.length && !current.parts.trim()) {
+          next.parts = suggestions.components.map((component) => `${component} |`).join("\n");
+        }
         return next;
       });
       const pageNote = totalPages > pagesScanned ? ` Scanned the first ${pagesScanned} of ${totalPages} pages.` : "";
@@ -339,10 +345,26 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5 text-primary" /> Snap Receipt
           </DialogTitle>
-          <DialogDescription>Add a dated service record and receipt to your vehicle.</DialogDescription>
+          <DialogDescription>Upload a receipt first. Pro DIY runs on-device OCR automatically; every suggested value remains editable before saving.</DialogDescription>
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
+          <ModalFieldGroup label="Receipt photo · available on every plan">
+            <ImagePicker value={image} onChange={(value) => {
+              setImage(value);
+              if (value && pro) void scanAttachedInvoice(value);
+            }} label="Take photo or upload" />
+          </ModalFieldGroup>
+          <ModalFieldGroup label="Invoice PDF · available on every plan">
+            <PdfReceiptPicker onChange={(file) => {
+              setPdfReceipt(file);
+              if (file?.data && pro) void scanAttachedInvoice(file.data);
+            }} onReadingChange={setReadingPdf}/>
+          </ModalFieldGroup>
+          {pro && (pdfReceipt || image) && <button type="button" onClick={() => void scanAttachedInvoice()} disabled={scanBusy || readingPdf} className="btn-secondary min-h-11 w-full">
+            {scanBusy ? "Scanning on this device…" : "Scan invoice again on this device"}
+          </button>}
+          {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
           <div className="grid w-full min-w-0 grid-cols-2 gap-3">
             <ModalField label="Date">{(id, labelId) => (
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -419,16 +441,6 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <LockedField label="Parts vs labour cost (£)" onClick={() => setUpsell(true)} />
             </div>
           )}
-          <ModalFieldGroup label="Receipt photo · available on every plan">
-            <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
-          </ModalFieldGroup>
-          <ModalFieldGroup label="Invoice PDF · available on every plan">
-            <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
-          </ModalFieldGroup>
-          {pro && (pdfReceipt || image) && <button type="button" onClick={() => void scanAttachedInvoice()} disabled={scanBusy || readingPdf} className="btn-secondary min-h-11 w-full">
-            {scanBusy ? "Scanning on this device…" : "Read invoice locally and suggest fields"}
-          </button>}
-          {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>

@@ -11,12 +11,12 @@ export function AuthFrame({ mode, children }: { mode: "sign-in" | "sign-up"; chi
   const signup = mode === "sign-up";
   const root = useRef<HTMLElement>(null);
   useEffect(() => root.current ? watchAuthInputs(root.current) : undefined, []);
-  return <main ref={root} className="vault-auth relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-slate-950 px-4 py-10">
+  return <main ref={root} className="vault-auth relative flex min-h-[100dvh] max-h-[100dvh] w-full items-start justify-center overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-950 px-4 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center sm:py-10">
     <div className="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
-    <div className="relative w-full max-w-md">
+    <div className="relative my-auto w-full min-w-0 max-w-md">
       <Link to="/" onClick={clearPendingSignup} className="mb-6 flex items-center justify-center gap-3 text-lg font-bold"><V5VaultLogo className="h-10 w-10" /> V5Vault</Link>
       {children}
-      {!signup && <DevPreviewButton />}
+      {!signup && <div className="mt-6 border-t border-slate-800 pt-4"><DevPreviewButton /></div>}
       {!signup && import.meta.env.DEV && <button type="button" onClick={() => toast.info("Biometric demo only. Use your email and password to authenticate; this prompt does not sign you in.")} className="btn-ghost mt-4 w-full"><Fingerprint className="h-4 w-4" /> Sign in with Face ID / Touch ID <span className="rounded border border-amber-500/30 px-1.5 py-0.5 text-[9px] uppercase text-amber-200">Simulation</span></button>}
       <p className="mt-5 text-center text-sm text-slate-400">
         {signup ? "Already registered?" : "New to V5Vault?"}{" "}

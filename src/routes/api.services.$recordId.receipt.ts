@@ -7,7 +7,8 @@ export const Route = createFileRoute("/api/services/$recordId/receipt")({
       GET: async ({ params }) => {
         try {
           const receipt = await serviceAttachment(params.recordId, "receipt");
-          return new Response(receipt.content, {
+          const body = Uint8Array.from(receipt.content).buffer as ArrayBuffer;
+          return new Response(body, {
             headers: {
               "Content-Type": receipt.contentType,
               "Content-Disposition": `inline; filename="${receipt.filename}"`,

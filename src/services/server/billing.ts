@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { getRequest } from "@tanstack/react-start/server";
 import type { UserAccount, SubscriptionTier } from "@/lib/account-types";
-import type { BillingCatalog, CheckoutResult, PlanKey } from "@/lib/v1-types";
-import { PLAN_DEFINITIONS, PLAN_KEYS } from "@/lib/plans";
+import type { BillingCatalog, BillingInterval, CheckoutResult, PlanKey } from "@/lib/v1-types";
+import { PLAN_DEFINITIONS, PLAN_KEYS, planForBillingInterval } from "@/lib/plans";
 import { pool, inTransaction } from "./db";
 import { currentUser } from "./accounts";
 import { initializeStripe, stripeClient, stripeSync, stripeTestMode } from "./stripe-client";
@@ -21,11 +21,17 @@ export async function catalog(): Promise<BillingCatalog> {
     await initializeStripe();
     const testMode=await stripeTestMode();
     const results = await pool.query("SELECT id,lookup_key,unit_amount,currency,recurring FROM stripe.prices WHERE active=true AND livemode=$2 AND lookup_key=ANY($1::text[])", [PLAN_KEYS.map(key => `v5vault_v1_${key}`),!testMode]);
-    return { test_mode: testMode, preview:false, prices: results.rows.filter(p => p.currency === "gbp"&&Number(p.unit_amount)===PLAN_DEFINITIONS[String(p.lookup_key).replace("v5vault_v1_","") as PlanKey].amount).map(p => {
-      const key = String(p.lookup_key).replace("v5vault_v1_", "") as PlanKey;
-      return { key, name: PLAN_DEFINITIONS[key].name, amount_pence: Number(p.unit_amount), currency: "gbp" as const,
-        interval: p.recurring?.interval ?? null, price_id: p.id };
-    }) };
+    const prices = results.rows.flatMap((price) => {
+      const key = String(price.lookup_key).replace("v5vault_v1_", "") as PlanKey;
+      const definition = PLAN_DEFINITIONS[key];
+      const interval = price.recurring?.interval ?? null;
+      if (!definition || price.currency !== "gbp" || Number(price.unit_amount) !== definition.amount || interval !== definition.interval) return [];
+      return [{
+        key, name: definition.name, amount_pence: Number(price.unit_amount), currency: "gbp" as const,
+        interval, price_id: String(price.id),
+      }];
+    });
+    return { test_mode: testMode, preview: false, prices };
   } catch {
     return {
       test_mode: true,
@@ -59,18 +65,27 @@ async function customer(user: UserAccount) {
   await (await stripeSync()).syncSingleEntity(created.id);
   return created.id;
 }
-export async function checkout(input: { plan: PlanKey; vrm?: string | undefined }): Promise<CheckoutResult> {
+function resolvePlan(plan: PlanKey, billingInterval?: BillingInterval): PlanKey {
+  if (plan === "sales_pack") return plan;
+  const interval = billingInterval ?? PLAN_DEFINITIONS[plan].interval;
+  const resolved = planForBillingInterval(plan, interval);
+  if (!(resolved in PLAN_DEFINITIONS)) throw new Error("This billing interval is not available for the selected plan.");
+  return resolved;
+}
+
+export async function checkout(input: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined }): Promise<CheckoutResult> {
   const user = await currentUser();
   if (!user.email_verified) throw new Error("Verify your account email before checkout.");
   if(user.role==="dev_admin")throw new Error("God Mode already includes all features. Use role previews; no subscription is required.");
+  const selectedPlan = resolvePlan(input.plan, input.billingInterval);
   return inTransaction(async db=>{
   await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`billing:${user.id}`]);
-  const prices = await catalog(), price = prices.prices.find(p => p.key === input.plan);
+  const prices = await catalog(), price = prices.prices.find(p => p.key === selectedPlan);
   if (prices.preview) return { url: null, preview: true, message: "Preview mode only. Stripe is unavailable, so no checkout, payment or subscription access was created." };
   if (!price) throw new Error("This Stripe price is not configured yet.");
   const stripe = await stripeClient(), customerId = await customer(user), origin = requestOrigin();
   let orderId: string | undefined;
-  if (input.plan === "sales_pack") {
+  if (selectedPlan === "sales_pack") {
     if (!input.vrm) throw new Error("Select the vehicle for this sales pack.");
     const vrm = input.vrm.replace(/\s/g, "").toUpperCase();
     const { ownerSnapshot } = await import("./passports"), snapshot = await ownerSnapshot(vrm, user);
@@ -82,17 +97,17 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined 
     const existing = await pool.query("SELECT id FROM stripe.subscriptions WHERE customer=$1 AND status IN ('active','trialing','incomplete') LIMIT 1", [customerId]);
     if (existing.rowCount) throw new Error("A subscription already exists. Use Manage Billing to change or cancel it.");
     const open=(await stripe.checkout.sessions.list({customer:customerId,limit:20})).data.filter(s=>s.mode==="subscription"&&s.status==="open");
-    const matching=open.find(s=>s.metadata?.["app"]==="v5vault"&&s.metadata?.["plan_key"]===input.plan);
+    const matching=open.find(s=>s.metadata?.["app"]==="v5vault"&&s.metadata?.["plan_key"]===selectedPlan);
     if(matching?.url)return{url:matching.url,preview:false,message:"Continue your existing checkout."};
     for(const pending of open.filter(s=>s.metadata?.["app"]==="v5vault"))await stripe.checkout.sessions.expire(pending.id);
   }
   const session = await stripe.checkout.sessions.create({
-    customer: customerId, mode: input.plan === "sales_pack" ? "payment" : "subscription",
+    customer: customerId, mode: selectedPlan === "sales_pack" ? "payment" : "subscription",
     line_items: [{ price: price.price_id, quantity: 1 }], client_reference_id: user.id,
-    metadata: { app: "v5vault", user_id: user.id, plan_key: input.plan, ...(orderId ? { order_id: orderId } : {}) },
-    ...(input.plan !== "sales_pack" ? { subscription_data: {
-      ...(input.plan === "workshop_monthly" ? { trial_period_days: 30 } : {}),
-      metadata: { app: "v5vault", user_id: user.id, plan_key: input.plan },
+    metadata: { app: "v5vault", user_id: user.id, plan_key: selectedPlan, billing_interval: PLAN_DEFINITIONS[selectedPlan].interval ?? "one_time", ...(orderId ? { order_id: orderId } : {}) },
+    ...(selectedPlan !== "sales_pack" ? { subscription_data: {
+      ...(selectedPlan.startsWith("workshop_") ? { trial_period_days: 30 } : {}),
+      metadata: { app: "v5vault", user_id: user.id, plan_key: selectedPlan, billing_interval: PLAN_DEFINITIONS[selectedPlan].interval },
     } } : {}),
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/passport`,
   });

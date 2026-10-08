@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
 import { passportData } from "@/lib/passport-data";
 import { salesReportPdf } from "@/lib/pdf-reports";
-import { vehicleLimit, PLAN_DEFINITIONS } from "@/lib/plans";
+import { vehicleLimit, PLAN_DEFINITIONS, planForBillingInterval } from "@/lib/plans";
 import { sampleAccount } from "@/lib/sample-account";
 const query=vi.hoisted(()=>vi.fn());
 vi.mock("@/services/server/db",()=>({pool:{query}}));
@@ -18,7 +18,13 @@ describe("V1 billing and private document boundaries",()=>{
     expect(PLAN_DEFINITIONS.sales_pack.amount).toBe(299);
     expect(PLAN_DEFINITIONS.pro_monthly.amount).toBe(149);
     expect(PLAN_DEFINITIONS.pro_yearly.amount).toBe(1499);
-    expect(PLAN_DEFINITIONS.workshop_monthly.amount).toBe(1499);
+    expect(PLAN_DEFINITIONS.diy_monthly.amount).toBe(99);
+    expect(PLAN_DEFINITIONS.diy_yearly.amount).toBe(999);
+    expect(PLAN_DEFINITIONS.workshop_monthly.amount).toBe(999);
+    expect(PLAN_DEFINITIONS.workshop_yearly.amount).toBe(9999);
+    expect(planForBillingInterval("diy_monthly", "year")).toBe("diy_yearly");
+    expect(planForBillingInterval("pro_yearly", "month")).toBe("pro_monthly");
+    expect(planForBillingInterval("workshop_monthly", "year")).toBe("workshop_yearly");
   });
   it("limits Free to one vehicle and Collector to three, without restricting administrators",()=>{
     const user=sampleAccount().user;

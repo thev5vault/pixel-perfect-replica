@@ -72,7 +72,11 @@ export function useSampleAccount(exit: () => void): AccountContext {
       },
       editVehicle: async input => {
         vehicleExists(input.vrm);
-        change(s=>({...s,vehicles:s.vehicles.map(v=>v.vrm===input.vrm?{...v,...input}:v)}));
+        change(s=>({...s,vehicles:s.vehicles.map(v=>{
+          if(v.vrm!==input.vrm)return v;
+          const {is_scrapped,...fields}=input;
+          return {...v,...fields,...(is_scrapped===undefined?{}:{is_scrapped})};
+        })}));
       },
     };
   }, [data, exit,commit]);
