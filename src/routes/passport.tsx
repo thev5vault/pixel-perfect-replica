@@ -84,11 +84,11 @@ function PassportPage() {
                 {loading === c.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2 font-bold">
+                  <span className="flex flex-wrap items-center gap-2 break-words font-bold hyphens-auto">
                   {c.title}
                   <Pill tone={ok ? "primary" : "muted"}>{c.tier}</Pill>
                 </span>
-                <span className="mt-1 block text-xs text-muted-foreground">{c.includes}</span>
+                <span className="mt-1 block break-words text-xs text-muted-foreground hyphens-auto">{c.includes}</span>
               </span>
               {ok ? <FileBadge className="h-5 w-5 shrink-0 text-primary" /> : <LockKeyhole className="h-5 w-5 shrink-0 text-muted-foreground" />}
             </button>
@@ -283,7 +283,7 @@ function Certificate({ cert }: { cert: Cert }) {
                   ))}
                   {!s.parts?.length && <p className="rounded-lg bg-white/80 p-3 text-sm text-slate-500">No part numbers logged.</p>}
                 </div>
-                <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-3" aria-label="Itemized costs">
+                <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-3" role="group" aria-label="Itemized costs">
                   {[
                     ["Parts", s.partsCost ?? 0],
                     ["Labour", s.labourCost ?? 0],
@@ -376,26 +376,49 @@ function Certificate({ cert }: { cert: Cert }) {
   );
 }
 
-function Table({ title, rows, empty }: { title: string; rows: string[][]; empty: string }) {
+type PassportCardRow = {
+  key: string;
+  title: string;
+  date?: string | undefined;
+  provider?: string;
+  badge?: string | undefined;
+  summaryLabel?: string;
+  summary?: string;
+  details?: { label: string; value: string }[];
+};
+
+function RecordCards({ title, rows, empty }: { title: string; rows: PassportCardRow[]; empty: string }) {
   return (
-    <section className="passport-section p-4">
+    <section className="passport-section min-w-0 p-4">
       <h3 className="mb-2 font-bold">{title}</h3>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <div className="passport-table-scroll" role="region" aria-label={`${title} table`} tabIndex={0}>
-          <table className="passport-table min-w-[36rem]">
-            <thead><tr><th>Date / item</th><th>Record</th><th>Details</th></tr></thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
-                  <td>{r[0]}</td>
-                  <td>{r[1]}</td>
-                  <td className="text-right">{r[2]}</td>
-                </tr>
+        <div className="passport-record-list min-w-0 space-y-2" role="list">
+          {rows.map((row) => (
+            <article key={row.key} className="passport-record-card min-w-0 rounded-xl border border-slate-200 bg-white/80 p-3" role="listitem">
+              <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <h4 className="break-words font-bold hyphens-auto">{row.title}</h4>
+                  {row.date && <p className="mt-0.5 break-words text-xs text-slate-600">{row.date}</p>}
+                </div>
+                {row.badge && <span className="max-w-full self-start break-words rounded-full border border-cyan-800/20 bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-900">{row.badge}</span>}
+              </div>
+              {row.provider && <p className="mt-2 min-w-0 break-words text-sm text-slate-700 hyphens-auto">{row.provider}</p>}
+              {row.summary && (
+                <div className="mt-2 min-w-0 border-t border-slate-200 pt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{row.summaryLabel ?? "Details"}</p>
+                  <p className="mt-0.5 min-w-0 break-words text-sm text-slate-800 hyphens-auto">{row.summary}</p>
+                </div>
+              )}
+              {row.details?.map((detail) => (
+                <div key={detail.label} className="mt-2 min-w-0 rounded-lg bg-slate-50 p-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{detail.label}</p>
+                  <p className="mt-0.5 min-w-0 break-words text-xs text-slate-700 hyphens-auto">{detail.value}</p>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </article>
+          ))}
         </div>
       )}
     </section>

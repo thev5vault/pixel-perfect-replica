@@ -233,6 +233,7 @@
   min-width: 0;
   overflow: visible;
   overflow-wrap: anywhere;
+  hyphens: auto;
   padding: 0.875rem;
   border: 1px solid #d6b85f;
   outline: 1px solid #0e7490;
@@ -299,43 +300,6 @@
   box-shadow: none;
 }
 
-.passport-table {
-  width: 100%;
-  border-collapse: collapse;
-  color: #0f172a;
-  font-size: 0.78rem;
-  text-align: left;
-}
-
-.passport-table-scroll {
-  width: 100%;
-  min-width: 0;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.passport-table th,
-.passport-table td {
-  border-bottom: 1px solid #cbd5e1;
-  padding: 0.45rem 0.35rem;
-  vertical-align: top;
-}
-
-.passport-table th {
-  background: #e8f1f5;
-  color: #164e63;
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.passport-table tr:last-child td {
-  border-bottom: 0;
-}
-
 .vault-auth input {
   font-size: 16px !important;
 }
@@ -381,12 +345,8 @@
     box-shadow: none;
   }
 
-  .passport-table-scroll {
-    overflow: visible;
-  }
-
   .passport-section,
-  .passport-table tr {
+  .passport-record-card {
     break-inside: avoid;
   }
 

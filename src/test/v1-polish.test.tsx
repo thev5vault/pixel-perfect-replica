@@ -51,9 +51,12 @@ describe("V1 polish", () => {
     expect(doc).toHaveTextContent("No signed workshop stamp to verify");
     expect(doc).toHaveTextContent("Development sample document");
     expect(doc).not.toHaveTextContent("https://v5vault.app/p/");
-    expect(doc.querySelectorAll(".passport-table-scroll").length).toBeGreaterThanOrEqual(2);
-    expect(doc.querySelector(".passport-table-scroll table")).toHaveClass("min-w-[36rem]");
+    expect(doc.querySelectorAll(".passport-record-list").length).toBeGreaterThanOrEqual(2);
+    expect(doc.querySelector(".passport-table-scroll")).toBeNull();
+    expect(doc.querySelector("table")).toBeNull();
+    expect(doc.querySelector(".passport-record-card")).not.toBeNull();
     expect(doc.textContent?.includes("Manufacturer reference")).toBe(oem);
+    expect(doc.textContent?.includes("Financial Summary")).toBe(oem);
     expect(doc.textContent?.includes("Active Build Spec")).toBe(master);
     expect(doc.textContent?.includes("Reverted / Removed Modifications")).toBe(master);
     expect(doc.querySelector("button")?.closest(".print\\:hidden")).not.toBeNull();
