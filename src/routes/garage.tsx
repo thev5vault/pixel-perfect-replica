@@ -8,6 +8,7 @@ import { formatVrm, readImage, today } from "@/lib/vault-store";
 import { readGarageDraft, saveGarageDraft, clearGarageDraft } from "@/lib/garage-draft";
 import { validateVIN } from "@/lib/vin";
 import { useAccount } from "@/lib/account-store";
+import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 
 const CATEGORIES = ["Servicing", "Brakes", "Repairs", "Tyres"] as const;
 const COMPONENTS = [
@@ -50,7 +51,7 @@ function GaragePage() {
   const user = account?.state?.user;
   const canStamp = user?.role === "dev_admin" ||
     (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier === "verified_garage");
-  const canUseInvoiceAi = Boolean(user && user.subscription_tier !== "free");
+  const canScanInvoice = Boolean(user && user.subscription_tier !== "free");
   const draftKey = user ? `garage-service:${user.id}` : null;
   const [form, setForm] = useState<GarageForm>(emptyForm);
   const [readyDraftKey, setReadyDraftKey] = useState<string | null>(null);
@@ -60,8 +61,8 @@ function GaragePage() {
   const [lookupBusy, setLookupBusy] = useState(false);
   const [fileBusy, setFileBusy] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiMessage, setAiMessage] = useState("");
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanMessage, setScanMessage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -156,7 +157,7 @@ function GaragePage() {
   }
 
   async function attachReceipt(file?: File) {
-    setAiMessage("");
+    setScanMessage("");
     if (!file) return;
     if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
       setError("Choose a receipt image no larger than 8 MB.");
@@ -176,7 +177,7 @@ function GaragePage() {
   }
 
   async function attachInvoice(file?: File) {
-    setAiMessage("");
+    setScanMessage("");
     if (!file) return;
     if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
       setError("Choose a PDF invoice no larger than 5 MB.");
@@ -202,21 +203,37 @@ function GaragePage() {
 
   async function scanInvoice() {
     const document = form.invoiceData || form.receipt;
-    if (!canUseInvoiceAi || !document || aiBusy) return;
-    setAiBusy(true);
-    setAiMessage("");
+    if (!canScanInvoice || !document || scanBusy) return;
+    setScanBusy(true);
+    setScanMessage("Preparing local invoice scan…");
     try {
-      const response = await fetch("/api/ai/parse-invoice", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document, filename: form.invoiceName ?? "receipt" }),
+      const blob = await (await fetch(document)).blob();
+      const { text, pagesScanned, totalPages } = await readInvoiceText(blob, setScanMessage);
+      const suggestions = parseInvoiceText(text, CATEGORIES, COMPONENTS);
+      const suggestionCount = Object.keys(suggestions).filter((key) => key !== "components" || suggestions.components?.length).length;
+      if (!suggestionCount) {
+        setScanMessage("Local OCR could not confidently identify editable fields. Your file is still attached; enter the details manually.");
+        return;
+      }
+      setForm((current) => {
+        const next = { ...current };
+        if (suggestions.mileage && !current.mileage.trim()) next.mileage = suggestions.mileage;
+        if (suggestions.date && (!current.date || current.date === today())) next.date = suggestions.date;
+        if (suggestions.category && current.category === "Servicing") next.category = suggestions.category as Category;
+        if (suggestions.notes && !current.notes.trim()) next.notes = suggestions.notes;
+        if (suggestions.partsCost && !current.partsCost.trim()) next.partsCost = suggestions.partsCost;
+        if (suggestions.labourCost && !current.labourCost.trim()) next.labourCost = suggestions.labourCost;
+        if (suggestions.components?.length) {
+          next.components = [...new Set([...current.components, ...suggestions.components])];
+        }
+        return next;
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Invoice scanning is unavailable.");
-      setAiMessage(payload.message ?? "Invoice details are ready for review.");
+      const pageNote = totalPages > pagesScanned ? ` Scanned the first ${pagesScanned} of ${totalPages} pages.` : "";
+      setScanMessage(`Local OCR suggested ${suggestionCount} field${suggestionCount === 1 ? "" : "s"}. Check and edit every value before saving; the document was processed in this browser.${pageNote}`);
     } catch (cause) {
-      setAiMessage(cause instanceof Error ? cause.message : "Invoice scanning is unavailable. Enter the fields manually.");
+      setScanMessage(`${cause instanceof Error ? cause.message : "Local OCR could not read this file."} The document remains attached; enter the fields manually.`);
     } finally {
-      setAiBusy(false);
+      setScanBusy(false);
     }
   }
 
@@ -364,10 +381,10 @@ function GaragePage() {
           {form.invoiceData && <button type="button" onClick={() => setForm((current) => ({ ...current, invoiceName: undefined, invoiceData: undefined }))} className="text-xs text-muted-foreground underline">Remove invoice</button>}
         </div>
       </div>
-      {canUseInvoiceAi && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={aiBusy} className="btn-secondary min-h-11 w-full">
-        {aiBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{aiBusy ? "Checking invoice scanner…" : "Scan invoice and suggest fields"}
+      {canScanInvoice && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={scanBusy} className="btn-secondary min-h-11 w-full">
+        {scanBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{scanBusy ? "Scanning on this device…" : "Scan locally and suggest fields"}
       </button>}
-      {aiMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{aiMessage}</p>}
+      {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
       {draftStatus && <p role="status" className="rounded-lg border border-slate-700 bg-slate-950/50 p-3 text-xs text-slate-300">{draftStatus}</p>}
       {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
       <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
