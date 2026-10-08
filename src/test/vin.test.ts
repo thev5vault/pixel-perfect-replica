@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeVIN, validateVIN } from "@/lib/vin";
+import { expectedVINCheckDigit, normalizeVIN, validateVIN } from "@/lib/vin";
 import { lookupMockRegistration } from "@/services/server/dvla";
 
 describe("VIN identity validation", () => {
@@ -13,6 +13,14 @@ describe("VIN identity validation", () => {
     "rejects invalid VIN %s",
     vin => expect(validateVIN(vin)).toBe(false),
   );
+
+  it("applies the ISO 3779 check digit to North American VINs without rejecting UK/European VINs", () => {
+    const validNorthAmericanVin = "1M8GDM9AXKP042788";
+    expect(expectedVINCheckDigit(validNorthAmericanVin)).toBe("X");
+    expect(validateVIN(validNorthAmericanVin)).toBe(true);
+    expect(validateVIN(`${validNorthAmericanVin.slice(0, 8)}9${validNorthAmericanVin.slice(9)}`)).toBe(false);
+    expect(validateVIN("WUAZZZ8EX8A800721")).toBe(true);
+  });
 });
 
 describe("Development sample vehicle lookup", () => {

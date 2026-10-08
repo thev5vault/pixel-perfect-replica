@@ -1,0 +1,33 @@
+Perform an exhaustive, end-to-end Quality Assurance (QA) sweep, visual audit, and deep code test across the entire V5Vault codebase to ensure it is 100% bug-free, pixel-perfect on mobile devices, and ready for public production release:
+
+1. COMPILER, TYPESCRIPT & COMPREHENSIVE TEST SUITE EXECUTION:
+- Run `npx tsc --noEmit` and resolve ANY remaining TypeScript type mismatches, missing optional props, or implicit `any` warnings across all client and server files.
+- Run `npm test` and execute the full suite. Ensure all 107+ unit, integration, and route tests pass with 100% success rate. Fix any failing or flaky assertions immediately.
+- Run `npm run build` to verify the production bundle builds cleanly with zero bundler errors.
+
+2. MOBILE-FIRST UI/UX, TYPOGRAPHY & VISUAL OVERLAP AUDIT:
+- Audit every single view (`/`, `/vehicle`, `/vault`, `/garage`, `/passport`, `/admin`, `/auth`, `/settings`) on narrow mobile viewports (320px to 428px width):
+  • Ensure zero text overlapping, clipped containers, or elements bursting past screen margins.
+  • Check all headings, body text, badges, buttons, and form labels for crisp legibility and high contrast ratios.
+  • Verify touch targets meet accessibility standards (minimum 48x48px zones) across all buttons and touch-chips.
+  • Inspect all modal overlays ("Snap Receipt", "Add DIY Entry", "Share Passport", "Add Modification"): verify keyboard auto-fill on mobile browsers does not obscure submit buttons or input fields.
+  • Verify that all tables on `/passport` stack into clean vertical key-value cards on mobile without horizontal scrollbars.
+
+3. WORKFLOW & TIER FEATURE DECOUPLING VERIFICATION:
+- "Snap Receipt" Flow: Confirm it launches a dedicated document-first modal that triggers local browser OCR auto-fill immediately upon photo/PDF upload while preserving editable form fields.
+- "Add a basic DIY service entry" Flow: Confirm it opens a clean manual logging form with quick-select touch chips (Oil, Brakes, Tyres, Battery, etc.) and optional static proof upload.
+- Tier Permissions: Test that features (receipt uploads, itemized parts, build sheets, garage VIN stamping) strictly respect active tier limits without blocking basic users from uploading receipt proof photos.
+
+4. BILLING TOGGLE & STRIPE CHECKOUT MAPPING:
+- Verify the 4-tier plan catalog across Settings and Tier Switcher:
+  1) Basic Driver (Free / £0.00)
+  2) Pro DIY (£0.99/mo or £9.99/yr)
+  3) Pro Modder / Collector (£1.49/mo or £14.99/yr)
+  4) Verified Workshop (£9.99/mo or £99.99/yr with 30-day trial)
+- Test the [ Monthly | Yearly (Save ~16%) ] toggle switch: ensure toggling updates prices dynamically on screen and passes the exact corresponding monthly/yearly Stripe Price ID to the server checkout handler.
+
+5. DATA INTEGRITY, VIN LOCKS & OFFLINE QUEUE:
+- Verify that ISO 3779 VIN checksum logic, 11-digit V5C reference cleaning, single-account database primary key locks, and scrapped vehicle read-only archives work flawlessly.
+- Confirm offline draft entries on the `/garage` terminal queue properly without crashing when network connection drops.
+
+Once all compiler checks, test passes, and visual corrections are complete, restart the preview server and confirm the application is live and responsive.
