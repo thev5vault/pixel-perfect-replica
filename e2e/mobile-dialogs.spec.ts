@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import QRCode from "qrcode";
 
 type ViewportCase = {
   name: string;
@@ -117,7 +118,9 @@ async function checkPair(
 async function startSamplePreview(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /Direct GodMode Bypass/ }).click();
-  await page.goto("/vehicle");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole("link", { name: "Vehicle", exact: true }).click();
+  await expect(page).toHaveURL(/\/vehicle$/);
   await expect(page.getByRole("heading", { name: "Service History" })).toBeVisible();
 }
 
@@ -125,6 +128,84 @@ async function selectTier(page: Page, tier: RegExp) {
   await page.getByRole("button", { name: "Open profile menu" }).click();
   await page.getByRole("menuitem", { name: tier }).click();
   await expect(page.getByRole("button", { name: "Open profile menu" })).toBeVisible();
+}
+
+async function checkPageHasNoHorizontalOverflow(page: Page, label: string) {
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+  }));
+  expect(widths.document, `${label} document should not scroll horizontally`).toBeLessThanOrEqual(
+    widths.viewport + 1,
+  );
+  expect(widths.body, `${label} page content should not scroll horizontally`).toBeLessThanOrEqual(
+    widths.viewport + 1,
+  );
+}
+
+async function checkInsideParent(element: Locator, label: string) {
+  const bounds = await element.evaluate((node, elementLabel) => {
+    const parent = node.parentElement;
+    if (!parent) throw new Error(`${elementLabel} is missing its layout parent.`);
+    const childRect = node.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    return {
+      child: {
+        left: childRect.left,
+        right: childRect.right,
+        top: childRect.top,
+        bottom: childRect.bottom,
+      },
+      parent: {
+        left: parentRect.left,
+        right: parentRect.right,
+        top: parentRect.top,
+        bottom: parentRect.bottom,
+      },
+      childScrollWidth: (node as HTMLElement).scrollWidth,
+      childClientWidth: (node as HTMLElement).clientWidth,
+    };
+  }, label);
+  expect(
+    bounds.child.left,
+    `${label} should stay inside its parent on the left`,
+  ).toBeGreaterThanOrEqual(bounds.parent.left - 1);
+  expect(
+    bounds.child.right,
+    `${label} should stay inside its parent on the right`,
+  ).toBeLessThanOrEqual(bounds.parent.right + 1);
+  expect(
+    bounds.childScrollWidth,
+    `${label} should not clip or scroll its content`,
+  ).toBeLessThanOrEqual(bounds.childClientWidth + 1);
+}
+
+async function addLongPartFixture(page: Page, partReference: string) {
+  await page.getByRole("button", { name: "Snap Receipt" }).click();
+  const dialog = page.getByRole("dialog", { name: "Snap Receipt" });
+  await dialog.getByLabel("Mileage", { exact: true }).fill("91000");
+  await dialog.getByLabel("Garage Name", { exact: true }).fill("Narrow Phone Layout Workshop");
+  await dialog
+    .getByLabel("Work Description", { exact: true })
+    .fill("Narrow phone overflow layout fixture");
+  await dialog
+    .getByLabel("OEM Part Numbers (name | part no.)", { exact: true })
+    .fill(`Layout fixture component | ${partReference}`);
+  await dialog.getByRole("button", { name: "Save to Timeline" }).click();
+  await expect(dialog).toBeHidden();
+}
+
+async function renderVerificationQr(page: Page) {
+  const qrSvg = await QRCode.toString("https://v5vault.app/verify/mobile-layout", {
+    type: "svg",
+    errorCorrectionLevel: "H",
+    margin: 0,
+    width: 90,
+  });
+  await page.locator(".passport-document header aside").evaluate((aside, svg) => {
+    aside.innerHTML = `${svg}<p class="max-w-full break-words text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p><p class="mt-1 max-w-full break-words text-[8px]">Latest workshop stamp</p>`;
+  }, qrSvg);
 }
 
 for (const viewport of viewports) {
@@ -383,6 +464,60 @@ test("nested upgrade dismisses after the receipt form scrolls on a short phone",
   await expect(receipt).toBeHidden();
   await expect(page.locator('[data-state="open"][class*="fixed"][class*="inset-0"]')).toHaveCount(0);
 });
+
+for (const width of [320, 390]) {
+  test(`passport certificates and shared parts fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await startSamplePreview(page);
+    await selectTier(page, /Pro Modder/);
+
+    const longPartReference = `LONGPARTREF-${"0123456789".repeat(4)}01234567`;
+    await addLongPartFixture(page, longPartReference);
+    await page.getByRole("link", { name: "Passport", exact: true }).click();
+    await expect(page).toHaveURL(/\/passport$/);
+
+    const certificates = [
+      { title: "Standard Passport", hasParts: false },
+      { title: "OEM Provenance Certificate", hasParts: true },
+      { title: "Master Build Sheet", hasParts: true },
+    ];
+
+    for (const certificate of certificates) {
+      await page.getByRole("button", { name: certificate.title, exact: false }).click();
+      const document = page.locator(".passport-document");
+      await expect(document.locator("header p.text-primary")).toHaveText(certificate.title);
+      await renderVerificationQr(page);
+      await checkPageHasNoHorizontalOverflow(page, `${certificate.title} at ${width}px`);
+      await expect(document).toHaveCSS("min-width", "0px");
+
+      const verificationCard = document.locator("header aside");
+      const qr = verificationCard.locator("svg");
+      await expect(qr).toBeVisible();
+      await checkInsideParent(verificationCard, `${certificate.title} verification card`);
+      await checkInsideParent(qr, `${certificate.title} QR code`);
+
+      if (certificate.hasParts) {
+        const partReference = document.locator(".passport-part-card p.font-mono").filter({
+          hasText: longPartReference,
+        });
+        await expect(partReference).toBeVisible();
+        await checkInsideParent(partReference, `${certificate.title} part reference`);
+      }
+    }
+
+    await page.goto("/v/AB14CDE?sample=true");
+    await expect(page.getByRole("heading", { name: "Parts Breakdown" }).first()).toBeVisible();
+    await checkPageHasNoHorizontalOverflow(page, `shared buyer passport at ${width}px`);
+    const sharedPartReferences = page.locator("main p.font-mono");
+    await expect(sharedPartReferences.first()).toBeVisible();
+    for (let index = 0; index < (await sharedPartReferences.count()); index += 1) {
+      await checkInsideParent(
+        sharedPartReferences.nth(index),
+        `shared passport part reference ${index + 1}`,
+      );
+    }
+  });
+}
 
 async function checkCloseFocus(page: Page, dialog: Locator) {
   const close = dialog.getByRole("button", { name: "Close", exact: true });
