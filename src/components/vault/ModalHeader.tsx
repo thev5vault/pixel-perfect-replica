@@ -7,7 +7,7 @@ export function ModalHeader({ children, className }: { children: ReactNode; clas
   return (
     <header className={cn("sticky top-0 z-20 flex flex-none items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3", className)}>
       <DialogHeader className="min-w-0 text-left">{children}</DialogHeader>
-      <DialogClose className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-cyan-400" aria-label="Close">
+      <DialogClose className="flex h-12 w-12 min-h-12 min-w-12 shrink-0 items-center justify-center rounded-lg p-0 text-slate-300 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-cyan-400" aria-label="Close">
         <X className="h-5 w-5" />
       </DialogClose>
     </header>
