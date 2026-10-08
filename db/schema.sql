@@ -212,7 +212,6 @@ DROP TRIGGER IF EXISTS immutable_vehicle_keeper ON vehicles;
 CREATE TRIGGER immutable_vehicle_keeper BEFORE UPDATE OF owner_user_id ON vehicles
   FOR EACH ROW EXECUTE FUNCTION prevent_active_keeper_overwrite();
 DROP TRIGGER IF EXISTS immutable_modification_history ON modifications;
-CREATE TRIGGER immutable_modification_history BEFORE UPDATE OR DELETE ON modifications FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
 DROP TRIGGER IF EXISTS immutable_keeper_history ON vehicle_transfers;
 CREATE TRIGGER immutable_keeper_history BEFORE UPDATE OR DELETE ON vehicle_transfers FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
 
@@ -279,6 +278,8 @@ ALTER TABLE vehicles ALTER COLUMN vin SET NOT NULL;
 ALTER TABLE vehicles ALTER COLUMN vrm SET NOT NULL;
 ALTER TABLE service_records ALTER COLUMN vin SET NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS vehicles_id_vin_unique_idx ON vehicles(id, vin);
+UPDATE modifications m SET data=COALESCE(m.data,'{}'::jsonb) || jsonb_build_object('vin',v.vin)
+  FROM vehicles v WHERE m.vehicle_id=v.id AND m.data->>'vin' IS DISTINCT FROM v.vin;
 DO $$
 DECLARE vrm_attnum smallint;
 DECLARE has_vrm_unique_constraint boolean;
@@ -352,3 +353,31 @@ ALTER TABLE vehicle_transfers ADD CONSTRAINT vehicle_transfers_vehicle_id_fkey F
 ALTER TABLE sales_pack_orders ADD CONSTRAINT sales_pack_orders_vehicle_id_fkey FOREIGN KEY(vehicle_id) REFERENCES vehicles(id);
 ALTER TABLE reminder_deliveries ADD CONSTRAINT reminder_deliveries_vehicle_id_fkey FOREIGN KEY(vehicle_id) REFERENCES vehicles(id);
 CREATE TRIGGER immutable_service_history BEFORE UPDATE OR DELETE ON service_records FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
+CREATE TRIGGER immutable_modification_history BEFORE UPDATE OR DELETE ON modifications FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
+CREATE OR REPLACE FUNCTION prevent_vehicle_identity_mutation() RETURNS trigger AS $$
+BEGIN
+  IF NEW.vin IS DISTINCT FROM OLD.vin OR NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'Vehicle VIN identity is immutable';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS immutable_vehicle_identity ON vehicles;
+CREATE TRIGGER immutable_vehicle_identity BEFORE UPDATE OF vin,id ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION prevent_vehicle_identity_mutation();
+CREATE OR REPLACE FUNCTION protect_modification_vehicle_binding() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE canonical_vin TEXT;
+BEGIN
+  SELECT vin INTO canonical_vin FROM vehicles WHERE id=NEW.vehicle_id;
+  IF canonical_vin IS NULL OR NEW.data->>'vin' IS DISTINCT FROM canonical_vin THEN
+    RAISE EXCEPTION 'Modification VIN must match the linked vehicle';
+  END IF;
+  IF TG_OP='UPDATE' AND
+     (NEW.vehicle_id IS DISTINCT FROM OLD.vehicle_id OR NEW.data->>'vin' IS DISTINCT FROM OLD.data->>'vin') THEN
+    RAISE EXCEPTION 'Modification history cannot be moved to a different vehicle or VIN';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS immutable_modification_vehicle_binding ON modifications;
+CREATE TRIGGER immutable_modification_vehicle_binding BEFORE INSERT OR UPDATE ON modifications
+  FOR EACH ROW EXECUTE FUNCTION protect_modification_vehicle_binding();

@@ -64,8 +64,9 @@ async function seedDevelopmentSamples() {
     {id:"sample-remap",vrm:"AB14CDE",name:"Stage 2 ECU Remap",category:"Engine/ECU",installDate:"2024-11-02",installMileage:83650,gains:"+53 bhp / +80 Nm",notes:"Development sample modification.",image:dynoSheet,status:"active",stage:"Stage 2",specs:"99 RON map · DPF-safe",tags:["Development sample"]},
     {id:"sample-intake",vrm:"AB14CDE",name:"Ramair Cold Air Intake",category:"Intake",installDate:"2024-10-10",installMileage:83020,gains:"+6 bhp",notes:"Removed due to intermittent MAF sensor fault.",status:"reverted",removalDate:"2024-12-20",removalMileage:84100},
   ];
-  for(const mod of mods) await pool.query(`INSERT INTO modifications(id,vehicle_id,vin,data)
-    SELECT $1,$2,vin,$3 FROM vehicles WHERE id=$2 ON CONFLICT(id) DO NOTHING`,
+  for(const mod of mods) await pool.query(`INSERT INTO modifications(id,vehicle_id,data)
+    SELECT $1,$2,$3::jsonb || jsonb_build_object('vin',v.vin)
+    FROM vehicles v WHERE v.id=$2 ON CONFLICT(id) DO NOTHING`,
     [mod.id,mod.vrm,JSON.stringify(mod)]);
 }
 export function serviceRow(row:{data:unknown;id:string;vin?:string;physically_inspected_vin?:boolean;is_verified_stamp:boolean;stamped_by_garage_id:string|null;stamp_signature:string|null;is_sample:boolean;frozen_at?:string|null;receipt_url?:string|null;invoice_url?:string|null}):ServiceRecord {
@@ -171,8 +172,9 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
     const owned=await pool.query("SELECT id FROM vehicles WHERE owner_user_id=$1 ORDER BY id",[user.id]);
     if(owned.rows.findIndex(v=>v.id===row.id)>=vehicleLimit(user)) throw new Error("This vehicle is outside your active plan limit. Upgrade to Collector for three vehicles.");
   }
+  const id=input.client_submission_id??randomUUID();
   if(input.client_submission_id) {
-    const existing=(await db.query("SELECT * FROM service_records WHERE client_submission_id=$1 FOR UPDATE",[input.client_submission_id])).rows[0];
+    const existing=(await db.query("SELECT * FROM service_records WHERE id=$1 FOR UPDATE",[id])).rows[0];
     if(existing) {
       if(existing.created_by_user_id!==user.id || existing.vehicle_id!==row.id || existing.vin!==row.vin) {
         throw new Error("This offline submission ID is already attached to another account or vehicle.");
@@ -180,7 +182,7 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
       return serviceRow(existing);
     }
   }
-  const id=randomUUID(), sample=Boolean(row.is_sample||user.is_sample), receiptUrl=receipt?`/api/services/${id}/receipt`:undefined,
+  const sample=Boolean(row.is_sample||user.is_sample), receiptUrl=receipt?`/api/services/${id}/receipt`:undefined,
     invoiceUrl=invoice?`/api/services/${id}/invoice`:undefined;
   const data={...input,vrm,vin:row.vin,physically_inspected_vin:Boolean(input.physically_inspected_vin),id,
     components:input.components??input.items,work_performed:input.work_performed??input.description,
@@ -193,13 +195,13 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   const saved = await db.query(`INSERT INTO service_records(
     id,vehicle_id,vin,physically_inspected_vin,created_by_user_id,data,is_verified_stamp,stamped_by_garage_id,
     stamp_signature,is_sample,stamped_by_user_id,stamped_at,service_type,mileage,components,work_performed,
-    advisories,parts,parts_cost,labour_cost,currency,receipt_url,invoice_url,client_submission_id)
+    advisories,parts,parts_cost,labour_cost,currency,receipt_url,invoice_url)
     SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CASE WHEN $7 THEN now() ELSE NULL END,
-      $12,$13,$14::jsonb,$15,$16,$17::jsonb,$18,$19,$20,$21,$22,$23
+      $12,$13,$14::jsonb,$15,$16,$17::jsonb,$18,$19,$20,$21,$22
     FROM vehicles WHERE id=$2 AND vin=$3 AND is_scrapped=false AND ($7 OR owner_user_id=$5) RETURNING id`,
     [id,row.id,row.vin,data.physically_inspected_vin,user.id,JSON.stringify(data),workshop,workshop?user.id:null,signature,sample,
       workshop?user.id:null,input.category,input.mileage,JSON.stringify(data.components),data.work_performed,data.advisories,
-      JSON.stringify(input.parts??[]),input.partsCost??null,input.labourCost??null,"GBP",receiptUrl??null,invoiceUrl??null,input.client_submission_id??null]);
+      JSON.stringify(input.parts??[]),input.partsCost??null,input.labourCost??null,"GBP",receiptUrl??null,invoiceUrl??null]);
   if(!saved.rowCount) throw new Error("Ownership changed. Reload your account before adding a record.");
   if(receipt) await db.query(`INSERT INTO service_attachments(service_record_id,attachment_type,content_type,filename,sha256,content)
     VALUES($1,'receipt',$2,$3,$4,$5)`,[id,receipt.contentType,receipt.filename,receipt.sha256,receipt.content]);
@@ -277,8 +279,8 @@ export async function addModification(input:Omit<Modification,"id"|"status">) {
   if(vehicle?.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only.");
   if(!vehicle || (user.role!=="dev_admin"&&vehicle.owner_user_id!==user.id)) throw new Error("Vehicle ownership required.");
   const id=randomUUID(),data={...input,vrm,vin:vehicle.vin,id,status:"active"};
-  await pool.query("INSERT INTO modifications(id,vehicle_id,vin,data) VALUES($1,$2,$3,$4)",
-    [id,vehicle.id,vehicle.vin,JSON.stringify(data)]);
+  await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3)",
+    [id,vehicle.id,JSON.stringify(data)]);
   return {ok:true};
 }
 export async function revertModification(input:{id:string;date:string;mileage:number}) {

@@ -98,6 +98,15 @@ export function ModalFieldGroup({ label, children }: { label: string; children: 
   );
 }
 
+export function DocumentPrivacyNotice() {
+  return (
+    <aside role="note" className="rounded-xl border border-amber-300/70 bg-amber-950/90 p-3 text-sm leading-relaxed text-amber-50 shadow-sm">
+      <strong className="font-bold text-amber-100">Privacy Notice:</strong>{" "}
+      For your security, physically mask or blur your address and 11-digit V5C reference number before uploading.
+    </aside>
+  );
+}
+
 export function ImagePicker({ value, onChange, label = "Upload image" }: { value?: string | undefined; onChange: (v?: string) => void; label?: string }) {
   const [busy, setBusy] = useState(false);
   if (value)

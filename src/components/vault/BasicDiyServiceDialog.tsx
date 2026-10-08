@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ModalHeader } from "@/components/vault/ModalHeader";
-import { ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS } from "@/components/vault/ui-bits";
+import { DocumentPrivacyNotice, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS } from "@/components/vault/ui-bits";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 import { SERVICE_CATEGORIES, today, useVault, type ServiceCategory } from "@/lib/vault-store";
 
@@ -119,6 +119,7 @@ export function BasicDiyServiceDialog({
             <ModalField label="Work performed">{(id) => (
               <textarea id={id} rows={4} maxLength={1000} required value={description} onChange={(event) => setDescription(event.target.value)} placeholder={"Oil and filter changed\nTyre pressures checked"} className={`${MODAL_TEXTAREA_CLASS} text-base`} />
             )}</ModalField>
+            <DocumentPrivacyNotice />
             <ModalFieldGroup label="Optional receipt photo · available on every plan">
               <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
             </ModalFieldGroup>

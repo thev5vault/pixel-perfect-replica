@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ModalHeader } from "@/components/vault/ModalHeader";
 import { MOD_CATEGORIES, can, fmtDate, fmtMiles, today, useVault, type ModCategory, type Modification } from "@/lib/vault-store";
-import { Field, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Thumb } from "@/components/vault/ui-bits";
+import { DocumentPrivacyNotice, Field, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Thumb } from "@/components/vault/ui-bits";
 import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
@@ -242,6 +242,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <ModalField label="Specialist Tags (comma separated)">{(id) => (
             <input id={id} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
+          <DocumentPrivacyNotice />
           <ModalFieldGroup label="Dyno Curve Printout">
             <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
           </ModalFieldGroup>

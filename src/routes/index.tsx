@@ -17,7 +17,7 @@ import {
   useVault,
   type ServiceCategory,
 } from "@/lib/vault-store";
-import { ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Plate } from "@/components/vault/ui-bits";
+import { DocumentPrivacyNotice, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS, Pill, Plate } from "@/components/vault/ui-bits";
 import { TimelineItem } from "@/components/vault/TimelineItem";
 import { LockedField, UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { useAccount } from "@/lib/account-store";
@@ -349,6 +349,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
+          <DocumentPrivacyNotice />
           <ModalFieldGroup label="Receipt photo · available on every plan">
             <ImagePicker value={image} onChange={(value) => {
               setImage(value);

@@ -74,6 +74,7 @@ export type ServiceInput = Omit<ServiceRecord, "id" | "verified"> & { verified?:
 export interface Modification {
   id: string;
   vrm: string;
+  vin?: string | undefined;
   name: string;
   category: ModCategory;
   installDate: string;

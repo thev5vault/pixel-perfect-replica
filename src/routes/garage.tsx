@@ -70,12 +70,22 @@ function hasDraftContent(form: GarageForm) {
     form.receipt || form.invoiceData);
 }
 
+function createSubmissionId() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export const Route = createFileRoute("/garage")({ component: GaragePage });
 
 function GaragePage() {
   const account = useAccount();
   const user = account?.state?.user;
-  const accountRefreshRef = useRef(account.refresh);
+  const accountRefreshRef = useRef(account?.refresh);
   const syncingOutboxRef = useRef(false);
   const canStamp = user?.role === "dev_admin" ||
     (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier === "verified_garage");
@@ -97,8 +107,8 @@ function GaragePage() {
   const [queueStatus, setQueueStatus] = useState("");
 
   useEffect(() => {
-    accountRefreshRef.current = account.refresh;
-  }, [account.refresh]);
+    accountRefreshRef.current = account?.refresh;
+  }, [account?.refresh]);
 
   useEffect(() => {
     if (!draftKey) {
@@ -175,7 +185,7 @@ function GaragePage() {
             ? `${synced} offline ${synced === 1 ? "record synced" : "records synced"} · ${remaining.length} still queued.`
             : `${synced} offline ${synced === 1 ? "record synced" : "records synced"} to the vehicle passport.`);
           toast.success(synced === 1 ? "Offline service record synced." : `${synced} offline service records synced.`);
-          void accountRefreshRef.current().catch(() => undefined);
+          void accountRefreshRef.current?.().catch(() => undefined);
         } else if (blockedMessage) {
           setQueueStatus(blockedMessage);
         } else if (remaining.length) {
@@ -382,7 +392,7 @@ function GaragePage() {
     const labourCost = form.labourCost ? Number(form.labourCost) : undefined;
     const totalCost = (partsCost ?? 0) + (labourCost ?? 0);
     const payload: GarageStampPayload = {
-      client_submission_id: crypto.randomUUID(),
+      client_submission_id: createSubmissionId(),
       vrm: registration,
       vin: form.vin.trim().toUpperCase(),
       physically_inspected_vin: true,
@@ -407,6 +417,7 @@ function GaragePage() {
       setQueuedCount((count) => count + 1);
       setQueueStatus("Service record saved offline · it is not server-signed and will sync when your connection returns.");
       toast.info("Saved offline. This service record will sync when you reconnect.");
+      if (navigator.onLine) window.dispatchEvent(new Event("online"));
     };
     if (!navigator.onLine) {
       try {
