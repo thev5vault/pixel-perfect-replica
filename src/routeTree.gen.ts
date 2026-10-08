@@ -24,10 +24,14 @@ import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as VVrmRouteImport } from './routes/v.$vrm'
 import { Route as VerifyRecordIdRouteImport } from './routes/verify.$recordId'
+import { Route as ApiAiParseInvoiceRouteImport } from './routes/api.ai.parse-invoice'
 import { Route as ApiGarageLookupRouteImport } from './routes/api.garage.lookup'
 import { Route as ApiGarageStampRouteImport } from './routes/api.garage.stamp'
+import { Route as ApiStripeCreateCheckoutSessionRouteImport } from './routes/api.stripe.create-checkout-session'
 import { Route as ApiStripeCreateWorkshopSessionRouteImport } from './routes/api.stripe.create-workshop-session'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
+import { Route as ApiServicesRecordIdInvoiceRouteImport } from './routes/api.services.$recordId.invoice'
+import { Route as ApiServicesRecordIdReceiptRouteImport } from './routes/api.services.$recordId.receipt'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -104,6 +108,11 @@ const VerifyRecordIdRoute = VerifyRecordIdRouteImport.update({
   path: '/verify/$recordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiParseInvoiceRoute = ApiAiParseInvoiceRouteImport.update({
+  id: '/api/ai/parse-invoice',
+  path: '/api/ai/parse-invoice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGarageLookupRoute = ApiGarageLookupRouteImport.update({
   id: '/api/garage/lookup',
   path: '/api/garage/lookup',
@@ -114,6 +123,12 @@ const ApiGarageStampRoute = ApiGarageStampRouteImport.update({
   path: '/api/garage/stamp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeCreateCheckoutSessionRoute =
+  ApiStripeCreateCheckoutSessionRouteImport.update({
+    id: '/api/stripe/create-checkout-session',
+    path: '/api/stripe/create-checkout-session',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiStripeCreateWorkshopSessionRoute =
   ApiStripeCreateWorkshopSessionRouteImport.update({
     id: '/api/stripe/create-workshop-session',
@@ -125,6 +140,18 @@ const ApiVaultCreateRoute = ApiVaultCreateRouteImport.update({
   path: '/api/vault/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiServicesRecordIdInvoiceRoute =
+  ApiServicesRecordIdInvoiceRouteImport.update({
+    id: '/api/services/$recordId/invoice',
+    path: '/api/services/$recordId/invoice',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiServicesRecordIdReceiptRoute =
+  ApiServicesRecordIdReceiptRouteImport.update({
+    id: '/api/services/$recordId/receipt',
+    path: '/api/services/$recordId/receipt',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -142,10 +169,14 @@ export interface FileRoutesByFullPath {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
+  '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -163,10 +194,14 @@ export interface FileRoutesByTo {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
+  '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,10 +220,14 @@ export interface FileRoutesById {
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
   '/verify/$recordId': typeof VerifyRecordIdRoute
+  '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
+  '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -208,10 +247,14 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
+    | '/api/services/$recordId/invoice'
+    | '/api/services/$recordId/receipt'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -229,10 +272,14 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
+    | '/api/services/$recordId/invoice'
+    | '/api/services/$recordId/receipt'
   id:
     | '__root__'
     | '/'
@@ -250,10 +297,14 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/v/$vrm'
     | '/verify/$recordId'
+    | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
+    | '/api/services/$recordId/invoice'
+    | '/api/services/$recordId/receipt'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,10 +323,14 @@ export interface RootRouteChildren {
   SignUpSplatRoute: typeof SignUpSplatRoute
   VVrmRoute: typeof VVrmRoute
   VerifyRecordIdRoute: typeof VerifyRecordIdRoute
+  ApiAiParseInvoiceRoute: typeof ApiAiParseInvoiceRoute
   ApiGarageLookupRoute: typeof ApiGarageLookupRoute
   ApiGarageStampRoute: typeof ApiGarageStampRoute
+  ApiStripeCreateCheckoutSessionRoute: typeof ApiStripeCreateCheckoutSessionRoute
   ApiStripeCreateWorkshopSessionRoute: typeof ApiStripeCreateWorkshopSessionRoute
   ApiVaultCreateRoute: typeof ApiVaultCreateRoute
+  ApiServicesRecordIdInvoiceRoute: typeof ApiServicesRecordIdInvoiceRoute
+  ApiServicesRecordIdReceiptRoute: typeof ApiServicesRecordIdReceiptRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -385,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRecordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/parse-invoice': {
+      id: '/api/ai/parse-invoice'
+      path: '/api/ai/parse-invoice'
+      fullPath: '/api/ai/parse-invoice'
+      preLoaderRoute: typeof ApiAiParseInvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/garage/lookup': {
       id: '/api/garage/lookup'
       path: '/api/garage/lookup'
@@ -399,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGarageStampRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/create-checkout-session': {
+      id: '/api/stripe/create-checkout-session'
+      path: '/api/stripe/create-checkout-session'
+      fullPath: '/api/stripe/create-checkout-session'
+      preLoaderRoute: typeof ApiStripeCreateCheckoutSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/create-workshop-session': {
       id: '/api/stripe/create-workshop-session'
       path: '/api/stripe/create-workshop-session'
@@ -411,6 +480,20 @@ declare module '@tanstack/react-router' {
       path: '/api/vault/create'
       fullPath: '/api/vault/create'
       preLoaderRoute: typeof ApiVaultCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/$recordId/invoice': {
+      id: '/api/services/$recordId/invoice'
+      path: '/api/services/$recordId/invoice'
+      fullPath: '/api/services/$recordId/invoice'
+      preLoaderRoute: typeof ApiServicesRecordIdInvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/services/$recordId/receipt': {
+      id: '/api/services/$recordId/receipt'
+      path: '/api/services/$recordId/receipt'
+      fullPath: '/api/services/$recordId/receipt'
+      preLoaderRoute: typeof ApiServicesRecordIdReceiptRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -432,10 +515,14 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpSplatRoute: SignUpSplatRoute,
   VVrmRoute: VVrmRoute,
   VerifyRecordIdRoute: VerifyRecordIdRoute,
+  ApiAiParseInvoiceRoute: ApiAiParseInvoiceRoute,
   ApiGarageLookupRoute: ApiGarageLookupRoute,
   ApiGarageStampRoute: ApiGarageStampRoute,
+  ApiStripeCreateCheckoutSessionRoute: ApiStripeCreateCheckoutSessionRoute,
   ApiStripeCreateWorkshopSessionRoute: ApiStripeCreateWorkshopSessionRoute,
   ApiVaultCreateRoute: ApiVaultCreateRoute,
+  ApiServicesRecordIdInvoiceRoute: ApiServicesRecordIdInvoiceRoute,
+  ApiServicesRecordIdReceiptRoute: ApiServicesRecordIdReceiptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

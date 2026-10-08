@@ -13,8 +13,8 @@ const copy = {
   },
   garage: {
     title: "Specialist Access Only",
-    description: "Workshop access (£12.99/mo) requires business and VAT verification.",
-    action: "Verified Workshop (£12.99/mo)",
+    description: "Garage Pro (£14.99/mo) includes a 30-day trial and requires business approval and VAT verification.",
+    action: "Garage Pro (£14.99/mo)",
   },
 } satisfies Record<LockedFeature, { title: string; description: string; action: string }>;
 
@@ -43,7 +43,7 @@ export function FeatureLock({ feature }: { feature: LockedFeature }) {
           {content.action}
         </Button>
       </div>
-      <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} tier={feature==="vault"?"Pro Modder / Collector":"Verified Workshop"} price={feature==="vault"?"£1.49/mo":"£12.99/mo"}/>
+      <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} tier={feature==="vault"?"Pro Modder / Collector":"Garage Pro"} price={feature==="vault"?"£1.49/mo":"£14.99/mo"}/>
     </section>
   );
 }

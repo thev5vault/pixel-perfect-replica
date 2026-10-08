@@ -6,6 +6,10 @@ const service = z.object({
   vrm, date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), mileage: z.number().int().min(0).max(2000000),
   category: z.enum(["Servicing","Brakes","Repairs","Tyres"]), description: z.string().min(1).max(160),
   items: z.array(z.string().max(1000)).max(30), garage: z.string().max(100),
+  components: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
+  work_performed: z.string().max(2000).optional(),
+  advisories: z.array(z.string().trim().min(1).max(500)).max(30).optional(),
+  currency: z.literal("GBP").optional(),
   cost: z.number().min(0).max(1000000).optional(), image: z.string().max(4000000).optional(),
   parts: z.array(z.object({name:z.string().max(150),partNo:z.string().max(150)})).max(50).optional(),
   fluids: z.string().max(1000).optional(), partsCost:z.number().min(0).optional(), labourCost:z.number().min(0).optional(),
@@ -50,5 +54,5 @@ export const reviewWorkshop = createServerFn({method:"POST"})
   .validator(z.object({id:z.string().min(1).max(100),status:z.enum(["approved","rejected"]),vat_verified:z.boolean().optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).reviewWorkshop(data));
 export const editAdminVehicle = createServerFn({method:"POST"})
-  .validator(z.object({vrm,make:z.string().trim().min(1).max(100),model:z.string().trim().min(1).max(150),odometer:z.number().int().min(0).max(2000000)}))
+  .validator(z.object({vrm,make:z.string().trim().min(1).max(100),model:z.string().trim().min(1).max(150),odometer:z.number().int().min(0).max(2000000),is_scrapped:z.boolean().optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).editAdminVehicle(data));

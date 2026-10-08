@@ -54,6 +54,13 @@ function PublicBuyerPassport() {
           <Stat icon={<Wrench/>} label="Service records" value={String(passport.services.length)}/>
           <Stat icon={<BadgeCheck/>} label="Workshop stamps" value={String(passport.verified_stamp_count)}/>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            {passport.vehicle.verification_tier === "government_data" ? "Government data matched" : passport.vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
+          </span>
+          {passport.vehicle.is_scrapped && <span role="status" className="rounded-full border border-amber-500/35 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-800">Scrapped · history read-only</span>}
+        </div>
+        {passport.vehicle.is_scrapped && <p className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-900">This vehicle is marked as scrapped. The shared passport preserves its history and does not accept new records.</p>}
         {passport.vehicle.source === "user-provided" && <p className="mt-4 rounded-lg border border-warning/35 bg-warning/10 p-3 text-xs text-warning">
           Vehicle specifications were supplied for this record and have not been verified by a live DVLA/DVSA lookup.
         </p>}

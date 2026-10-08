@@ -8,6 +8,7 @@ describe("vehicle lookup data", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
   beforeEach(() => {
     vi.unstubAllEnvs();
+    vi.stubEnv("GOV_API_ENABLED", "false");
     for (const key of ["DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
     localStorage.clear();
   });
@@ -42,11 +43,13 @@ describe("vehicle lookup data", () => {
   });
 
   it("fails explicitly for incomplete API credentials", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("MOT_HISTORY_CLIENT_ID", "example-test-id");
     await expect(lookupRegistration("BUL200")).rejects.toThrow("configuration is incomplete");
   });
 
   it("posts normalized registration to VES and does not silently fall back on provider failure", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("DVLA_VES_API_KEY", "test-key");
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ make: "AUDI", fuelType: "DIESEL", yearOfManufacture: 2014 })))
       .mockResolvedValueOnce(new Response("", { status: 503 }));
@@ -57,6 +60,7 @@ describe("vehicle lookup data", () => {
   });
 
   it("obtains an MOT OAuth token and uses the API key on the official history request", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("MOT_HISTORY_API_KEY", "test-api-key");
     vi.stubEnv("MOT_HISTORY_CLIENT_ID", "test-client");
     vi.stubEnv("MOT_HISTORY_CLIENT_SECRET", "test-secret");

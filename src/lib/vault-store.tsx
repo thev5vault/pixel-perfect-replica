@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   Owner: "Basic Driver (Free)",
   DIY: "Pro DIY (£0.99/mo)",
   Pro: "Pro Modder / Collector (£1.49/mo)",
-  Garage: "Verified Workshop (£12.99/mo)",
+  Garage: "Garage Pro (£14.99/mo)",
   superadmin: "Dev Owner / SuperAdmin (God Mode)",
 };
 /** Feature entitlements per tier. Pro Modder and Garage include Pro DIY features. */
@@ -62,6 +62,11 @@ export interface ServiceRecord {
   frozen_at?: string | null | undefined;
   vat_verified?: boolean | undefined;
   next_service_due?: string | undefined;
+  components?: string[] | undefined;
+  work_performed?: string | undefined;
+  advisories?: string[] | undefined;
+  receipt_url?: string | undefined;
+  currency?: "GBP" | undefined;
 }
 export type ServiceInput = Omit<ServiceRecord, "id" | "verified"> & { verified?: boolean };
 
@@ -110,6 +115,8 @@ export interface Vehicle {
   public_enabled?: boolean;
   keeper_changed_at?: string | null;
   access?: "active" | "archived" | "plan_locked";
+  verification_tier?: "provisional" | "workshop_checked" | "government_data";
+  is_scrapped?: boolean;
 }
 
 export interface MotReading {

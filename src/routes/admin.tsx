@@ -46,6 +46,7 @@ function AdminPage() {
   const [draftMake, setDraftMake] = useState("");
   const [draftModel, setDraftModel] = useState("");
   const [draftOdometer, setDraftOdometer] = useState("");
+  const [draftScrapped, setDraftScrapped] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const getAdminStateRef = useRef(account?.getAdminState);
   const reviewWorkshopRef = useRef(account?.reviewWorkshop);
@@ -109,6 +110,7 @@ function AdminPage() {
     setDraftMake(vehicle.make);
     setDraftModel(vehicle.model);
     setDraftOdometer(String(vehicle.odometer));
+    setDraftScrapped(vehicle.is_scrapped === true);
   };
 
   const saveVehicle = async (event: FormEvent<HTMLFormElement>, vrm: string) => {
@@ -123,7 +125,7 @@ function AdminPage() {
     setActionError(null);
     setSavingVrm(vrm);
     try {
-      await edit({ vrm, make: draftMake.trim(), model: draftModel.trim(), odometer });
+      await edit({ vrm, make: draftMake.trim(), model: draftModel.trim(), odometer, is_scrapped: draftScrapped });
       const load = getAdminStateRef.current;
       if (!load) throw new Error("Admin data is not available.");
       setAdminData(await load());
@@ -353,7 +355,7 @@ function AdminPage() {
                       {isEditing && (
                         <form
                           id={`edit-${encodeURIComponent(vehicle.vrm)}`}
-                          className="mt-4 grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-4"
+                          className="mt-4 grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-5"
                           onSubmit={(event) => void saveVehicle(event, vehicle.vrm)}
                         >
                           <label className="space-y-1">
@@ -367,6 +369,10 @@ function AdminPage() {
                           <label className="space-y-1">
                             <span className="text-xs font-semibold text-muted-foreground">Odometer (miles)</span>
                             <input className="field" type="number" min="0" step="1" value={draftOdometer} onChange={(event) => setDraftOdometer(event.target.value)} required />
+                          </label>
+                          <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm sm:items-center">
+                            <input type="checkbox" checked={draftScrapped} onChange={(event) => setDraftScrapped(event.target.checked)} className="h-4 w-4 accent-cyan-400" />
+                            <span>Scrapped / archive read-only</span>
                           </label>
                           <div className="flex items-end">
                             <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-3 py-2" disabled={savingVrm !== null}>

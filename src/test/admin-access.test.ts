@@ -126,7 +126,7 @@ describe("Verified server-side owner permissions",()=>{
       return{rows:[],rowCount:1};
     });
     const record=await createService({vrm:"AB14CDE",date:"2026-10-07",mileage:88000,category:"Servicing",
-      description:"Admin inspection",items:["Inspection"],garage:"Pretend Garage"});
+      description:"Admin inspection",items:["Inspection"],garage:"Pretend Garage",physically_inspected_vin:true});
     expect(record.garage).toBe("V5Vault administrator");
     expect(record.stamped_by_garage_id).toBe("clerk-owner");
     expect(record.stamp_authority).toBe("administrator");

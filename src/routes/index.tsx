@@ -49,7 +49,6 @@ export function Dashboard() {
   const account = useAccount();
   const [open, setOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
 
   const history = useMemo(
@@ -89,6 +88,10 @@ export function Dashboard() {
           </div>
           <div className="flex flex-col items-end gap-2">
             {vehicle.status && <Pill tone={vehicle.status === "approved" ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>{vehicle.is_sample ? "Development sample · " : ""}Keeper link {vehicle.status}</Pill>}
+            <Pill tone={vehicle.verification_tier === "government_data" ? "success" : vehicle.verification_tier === "workshop_checked" ? "primary" : "muted"}>
+              {vehicle.verification_tier === "government_data" ? "Government data matched" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
+            </Pill>
+            {vehicle.is_scrapped && <Pill tone="warning">Scrapped · read-only</Pill>}
             <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
             {vehicle.registrationDate && <Pill tone="muted">First registered · {fmtDate(vehicle.registrationDate)}</Pill>}
           </div>
@@ -139,7 +142,8 @@ export function Dashboard() {
         />
       </section>
 
-      <button disabled={vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => (can.diy(role) ? setOpen(true) : setUpgradeOpen(true))} className="btn-primary w-full py-4 text-base">
+      {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
+      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setOpen(true)} className="btn-primary w-full py-4 text-base">
         <Plus className="h-5 w-5" /> Snap Receipt
       </button>
 
@@ -171,16 +175,10 @@ export function Dashboard() {
       </section>
 
       <VehicleDataTools/>
-      <button className="btn-ghost w-full" onClick={()=>setOpen(true)} disabled={vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
+      <button className="btn-ghost w-full" onClick={()=>setOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
       {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
       <SnapReceiptDialog open={open} onOpenChange={setOpen} />
-      <UpgradeDialog
-        open={upgradeOpen}
-        onOpenChange={setUpgradeOpen}
-        description="Upgrade to Pro DIY (£0.99/mo) to upload receipts."
-        perks={["Upload and keep high-resolution receipt photos"]}
-      />
     </div>
   );
 }
@@ -237,6 +235,10 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (vehicle.is_scrapped) {
+      toast.error("This scrapped vehicle passport is read-only.");
+      return;
+    }
     const mileage = parseInt(form.mileage, 10);
     if (!form.description.trim() || !form.garage.trim() || !Number.isFinite(mileage) || mileage < 0 || mileage > 2_000_000) {
       toast.error("Add a description, garage name and a valid mileage.");
@@ -272,8 +274,8 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       garage: form.garage.trim().slice(0, 80),
       verified: false,
       is_verified_stamp: false,
-      image: pro ? image : undefined,
-      invoice_name:pro?pdfReceipt?.name:undefined,invoice_data:pro?pdfReceipt?.data:undefined,
+      image,
+      invoice_name:pdfReceipt?.name,invoice_data:pdfReceipt?.data,
     });
     if (result === false) throw new Error("A linked vehicle was not found for this record.");
     toast.success("Record added to your timeline");
@@ -350,20 +352,19 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                   <input id={id} inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className={MODAL_INPUT_CLASS} />
                 )}</ModalField>
               </div>
-              <ModalFieldGroup label="High-res Receipt">
-                <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
-              </ModalFieldGroup>
-              <ModalFieldGroup label="Receipt PDF">
-                <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
-              </ModalFieldGroup>
             </>
           ) : (
             <div className="space-y-2">
               <LockedField label="OEM part numbers & fluid specs" onClick={() => setUpsell(true)} />
               <LockedField label="Parts vs labour cost (£)" onClick={() => setUpsell(true)} />
-              <LockedField label="Receipt photo upload" onClick={() => setUpsell(true)} />
             </div>
           )}
+          <ModalFieldGroup label="Receipt photo · available on every plan">
+            <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
+          </ModalFieldGroup>
+          <ModalFieldGroup label="Invoice PDF · available on every plan">
+            <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
+          </ModalFieldGroup>
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>

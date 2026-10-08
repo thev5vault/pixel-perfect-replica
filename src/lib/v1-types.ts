@@ -2,7 +2,7 @@ import type { Vehicle, ServiceRecord, Modification, MotReading } from "./vault-s
 
 export type PlanKey = "sales_pack" | "diy_monthly" | "pro_monthly" | "pro_yearly" | "workshop_monthly";
 export interface BillingPrice { key: PlanKey; name: string; amount_pence: number; currency: "gbp"; interval: "month" | "year" | null; price_id: string; }
-export interface BillingCatalog { prices: BillingPrice[]; test_mode: boolean; }
+export interface BillingCatalog { prices: BillingPrice[]; test_mode: boolean; preview?: boolean; }
 export interface CheckoutResult { url: string | null; preview: boolean; message: string; }
 export interface PdfDownload { filename: string; base64: string; }
 export interface PublicPassport {

@@ -18,7 +18,7 @@ describe("V1 billing and private document boundaries",()=>{
     expect(PLAN_DEFINITIONS.sales_pack.amount).toBe(299);
     expect(PLAN_DEFINITIONS.pro_monthly.amount).toBe(149);
     expect(PLAN_DEFINITIONS.pro_yearly.amount).toBe(1499);
-    expect(PLAN_DEFINITIONS.workshop_monthly.amount).toBe(1299);
+    expect(PLAN_DEFINITIONS.workshop_monthly.amount).toBe(1499);
   });
   it("limits Free to one vehicle and Collector to three, without restricting administrators",()=>{
     const user=sampleAccount().user;

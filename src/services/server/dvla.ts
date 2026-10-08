@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { parseVehicleData, type VesData, type MotData } from "../vehicle-data";
 import type { Vehicle } from "@/lib/vault-store";
 import { LG57_VYF, LG57_VYF_VIN, normalizeRegistration } from "@/lib/vehicle-claim-policy";
-import { normalizeVIN, validateVIN } from "@/lib/vin";
+import { normalizeVIN, validateVIN, vinMatchesMake } from "@/lib/vin";
 import { pool } from "./db";
 
 let tokenCache: { token: string; expires: number } | undefined;
@@ -39,6 +39,7 @@ export const samples: Record<string, Vehicle> = {
     vrm: "AB14CDE", make: "Audi", model: "A4 2.0 TDI", year: 2014, fuelType: "Diesel",
     vin: "WAUZZZ8K9EA000001",
     odometer: 87420, v5cDate: "2019-03-15", motExpiry: "2026-11-18", motStatus: "PASSED", source: "demo",
+    verification_tier: "provisional",
     motHistory: [
       { date: "2023-11-15", mileage: 80480, result: "Pass" },
       { date: "2025-11-18", mileage: 86900, result: "Pass", advisories: ["Sample advisory: front tyre approaching wear limit"] },
@@ -48,6 +49,7 @@ export const samples: Record<string, Vehicle> = {
     vrm: "BUL200", make: "Volkswagen", model: "Golf GTI", year: 2018, fuelType: "Petrol",
     vin: "WVWZZZ1KZJW000001",
     odometer: 46210, v5cDate: "2022-06-10", motExpiry: "2027-02-12", motStatus: "PASSED", source: "demo",
+    verification_tier: "provisional",
     motHistory: [
       { date: "2024-02-10", mileage: 35100, result: "Pass" },
       { date: "2025-02-11", mileage: 40560, result: "Fail", advisories: ["Sample defect: worn front brake pads"] },
@@ -74,6 +76,7 @@ const suppliedVehicleRecords: Record<string, Vehicle> = {
     v5cDate: "",
     motHistory: [],
     source: "user-provided",
+    verification_tier: "provisional",
   },
 };
 
@@ -98,7 +101,7 @@ async function persistSuppliedVehicle(vehicle: Vehicle) {
   if (existing) {
     if (existing.data?.source === "official") return;
     await pool.query(
-      "UPDATE vehicles SET data=data || $1::jsonb WHERE vin=$2 AND vrm=$3",
+      "UPDATE vehicles SET data=data || $1::jsonb,verification_tier='provisional' WHERE vin=$2 AND vrm=$3",
       [merge, vin, vrm],
     );
     return;
@@ -115,14 +118,14 @@ export function lookupMockRegistration(input: string) {
   const vehicle = suppliedVehicleRecords[vrm] ?? samples[vrm];
   if (!vehicle) throw new Error("Live lookup is not configured. Sample lookup is available for AB14 CDE and BUL 200; LG57 VYF has a separate supplied record.");
   return {
-    vehicle: { ...vehicle },
+    vehicle: { ...vehicle, verification_tier: "provisional" as const },
     notice: vehicle.source === "user-provided"
       ? "Vehicle details supplied for LG57 VYF. No live DVLA/DVSA lookup was performed; these values are unverified."
       : "Development demo sample vehicle only. These mock specifications are not an official DVLA/DVSA lookup.",
   };
 }
 
-export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
+async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
   const vesKey = process.env["DVLA_VES_API_KEY"];
   const motKeys = ["MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"];
   const hasMot = motKeys.every((key) => !!process.env[key]);
@@ -153,6 +156,10 @@ export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicl
   ]);
   let vehicle = parseVehicleData(vrm, ves, mot);
   if (mot.vin && validateVIN(normalizeVIN(mot.vin))) vehicle.vin = normalizeVIN(mot.vin);
+  if (vehicle.vin && !vinMatchesMake(vehicle.vin, vehicle.make)) {
+    throw new Error("The VIN manufacturer prefix does not match the government vehicle make. Manual review is required.");
+  }
+  vehicle.verification_tier = vehicle.vin && validateVIN(vehicle.vin) ? "government_data" : "provisional";
   if (normalizeRegistration(vrm) === LG57_VYF) {
     const supplied = suppliedVehicleRecords[LG57_VYF]!;
     if (vehicle.vin && normalizeVIN(vehicle.vin) !== supplied.vin) {
@@ -176,3 +183,63 @@ export async function lookupRegistration(vrm: string): Promise<{ vehicle: Vehicl
   }
   return { vehicle, notice: hasMot && vesKey ? "Vehicle and MOT history loaded from official APIs." : "Vehicle loaded. Some fields are unavailable because only one official API is configured." };
 }
+
+async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehicle; notice: string }> {
+  const response = await jsonRequest<MotData | MotData[]>(
+    `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(vrm)}`,
+    { headers: { "X-API-Key": apiKey } },
+    "DVSA MOT",
+  );
+  const mot = Array.isArray(response) ? response[0] : response;
+  if (!mot) throw new Error("The DVSA lookup returned no vehicle record.");
+  const vehicle = parseVehicleData(vrm, {}, mot);
+  if (vehicle.vin && validateVIN(vehicle.vin) && !vinMatchesMake(vehicle.vin, vehicle.make)) {
+    throw new Error("The DVSA VIN manufacturer prefix does not match the returned make. Manual review is required.");
+  }
+  vehicle.verification_tier = vehicle.vin && validateVIN(vehicle.vin) ? "government_data" : "provisional";
+  if (normalizeRegistration(vrm) === LG57_VYF) {
+    const supplied = suppliedVehicleRecords[LG57_VYF]!;
+    if (vehicle.vin && validateVIN(vehicle.vin) && normalizeVIN(vehicle.vin) !== supplied.vin) {
+      throw new Error("The official lookup VIN differs from the saved LG57 VYF identity. Manual review is required.");
+    }
+    Object.assign(vehicle, {
+      ...supplied,
+      ...vehicle,
+      vin: vehicle.vin || supplied.vin,
+      model: vehicle.model === "Model unavailable" ? supplied.model : vehicle.model,
+      registrationDate: supplied.registrationDate,
+      colour: vehicle.colour || supplied.colour,
+      fuelType: vehicle.fuelType || supplied.fuelType,
+      motExpiry: vehicle.motExpiry || supplied.motExpiry,
+      source: vehicle.vin && vehicle.motExpiry ? "official" : "user-provided",
+      verification_tier: vehicle.vin && vehicle.motExpiry ? "government_data" : "provisional",
+    });
+  }
+  return { vehicle, notice: "Vehicle and MOT history loaded from the enabled DVSA API. Values reflect the source response." };
+}
+
+/** Provider switch: official government APIs stay opt-in; fixtures never replace a failed live lookup. */
+export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
+  const vrm = normalizeRegistration(inputVrm);
+  if (process.env["GOV_API_ENABLED"] !== "true") {
+    const supplied = suppliedVehicleRecords[vrm];
+    if (supplied) {
+      await persistSuppliedVehicle(supplied);
+      return {
+        vehicle: { ...supplied },
+        notice: "Vehicle details were supplied for this record. No live DVLA/DVSA lookup was performed; values are unverified.",
+      };
+    }
+    return lookupMockRegistration(vrm);
+  }
+
+  const dvsaKey = process.env["DVSA_API_KEY"];
+  if (dvsaKey) return lookupDvsa(vrm, dvsaKey);
+  const legacyConfigured = Boolean(process.env["DVLA_VES_API_KEY"] ||
+    process.env["MOT_HISTORY_API_KEY"] || process.env["MOT_HISTORY_CLIENT_ID"] ||
+    process.env["MOT_HISTORY_CLIENT_SECRET"] || process.env["MOT_HISTORY_TOKEN_URL"]);
+  if (!legacyConfigured) throw new Error("Government lookups are enabled, but no DVSA_API_KEY or complete DVLA/MOT API configuration is available.");
+  return lookupLegacyGovernmentRegistration(vrm);
+}
+
+export const lookupRegistration = getVehicleData;

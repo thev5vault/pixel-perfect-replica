@@ -1,182 +1,377 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { BadgeCheck, Check, FileText, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { BadgeCheck, Camera, Check, FileText, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { useAccount } from "@/lib/account-store";
-import { formatVrm, readImage, today } from "@/lib/vault-store";
-import { Field, ImagePicker, PageHeader, Pill } from "@/components/vault/ui-bits";
+import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
+import { formatVrm, readImage, today } from "@/lib/vault-store";
+import { readGarageDraft, saveGarageDraft, clearGarageDraft } from "@/lib/garage-draft";
+import { validateVIN } from "@/lib/vin";
+import { useAccount } from "@/lib/account-store";
 
-const JOBS = ["Oil & Filter", "Air Filter", "Pollen Filter", "Spark Plugs", "Brake Fluid", "Tyres", "Health Check"];
+const CATEGORIES = ["Servicing", "Brakes", "Repairs", "Tyres"] as const;
+const COMPONENTS = [
+  "Engine oil", "Oil filter", "Air filter", "Cabin filter", "Spark plugs",
+  "Brake pads", "Brake discs", "Brake fluid", "Tyres", "Battery", "Coolant", "Suspension",
+];
+
+type Category = (typeof CATEGORIES)[number];
+type GarageForm = {
+  vrm: string;
+  vin: string;
+  physicalVinInspected: boolean;
+  mileage: string;
+  date: string;
+  category: Category;
+  components: string[];
+  notes: string;
+  advisories: string;
+  partsCost: string;
+  labourCost: string;
+  receipt?: string;
+  invoiceName?: string;
+  invoiceData?: string;
+};
+
+function emptyForm(): GarageForm {
+  return { vrm: "", vin: "", physicalVinInspected: false, mileage: "", date: today(), category: "Servicing", components: [], notes: "", advisories: "", partsCost: "", labourCost: "" };
+}
+
+function hasDraftContent(form: GarageForm) {
+  return Boolean(form.vrm.trim() || form.vin.trim() || form.physicalVinInspected || form.mileage || form.components.length ||
+    form.notes.trim() || form.advisories.trim() || form.partsCost || form.labourCost ||
+    form.receipt || form.invoiceData);
+}
+
 export const Route = createFileRoute("/garage")({ component: GaragePage });
 
 function GaragePage() {
   const account = useAccount();
   const user = account?.state?.user;
-  const canStamp = user?.role === "dev_admin" || (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier==="verified_garage");
-  const [vrm, setVrm] = useState("");
-  const [mileage, setMileage] = useState("");
-  const [notes, setNotes] = useState("");
-  const [nextDue,setNextDue]=useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [invoice, setInvoice] = useState<{ name: string; data: string }>();
-  const [receipt, setReceipt] = useState<string>();
-  const [fileError, setFileError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [readingAttachment, setReadingAttachment] = useState(false);
-  const [testerVrm, setTesterVrm] = useState("");
-  const [testerVin, setTesterVin] = useState("");
-  const [testerMileage, setTesterMileage] = useState("");
-  const [testerNotes, setTesterNotes] = useState("");
-  const [physicalVinInspected, setPhysicalVinInspected] = useState(false);
-  const [mockSpecs, setMockSpecs] = useState("");
+  const canStamp = user?.role === "dev_admin" ||
+    (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier === "verified_garage");
+  const canUseInvoiceAi = Boolean(user && user.subscription_tier !== "free");
+  const draftKey = user ? `garage-service:${user.id}` : null;
+  const [form, setForm] = useState<GarageForm>(emptyForm);
+  const [readyDraftKey, setReadyDraftKey] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState("");
+  const [lookupDetails, setLookupDetails] = useState("");
+  const [lookupSource, setLookupSource] = useState<"official" | "unverified" | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
-  const [testerBusy, setTesterBusy] = useState(false);
-  const [testerSuccess, setTesterSuccess] = useState(false);
-  const [testerError, setTesterError] = useState("");
-  async function fetchMockSpecs() {
+  const [fileBusy, setFileBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (!draftKey) {
+      setReadyDraftKey(null);
+      return;
+    }
+    let active = true;
+    setForm(emptyForm());
+    setReadyDraftKey(null);
+    setDraftStatus("");
+    void readGarageDraft<GarageForm>(draftKey).then((draft) => {
+      if (!active) return;
+      if (draft?.value && hasDraftContent(draft.value)) {
+        setForm({ ...emptyForm(), ...draft.value });
+        setDraftStatus(`Saved on this device ${new Date(draft.savedAt).toLocaleString("en-GB")} · not server-signed.`);
+      }
+      setReadyDraftKey(draftKey);
+    }).catch(() => {
+      if (active) {
+        setDraftStatus("Local draft storage is unavailable in this browser.");
+        setReadyDraftKey(draftKey);
+      }
+    });
+    return () => { active = false; };
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || readyDraftKey !== draftKey) return;
+    const key = draftKey;
+    const timer = window.setTimeout(() => {
+      if (!hasDraftContent(form)) {
+        void clearGarageDraft(key).catch(() => undefined);
+        return;
+      }
+      setDraftStatus("Saving this draft on this device…");
+      void saveGarageDraft(key, form)
+        .then(() => setDraftStatus("Saved locally · not server-signed"))
+        .catch(() => setDraftStatus("Draft could not be saved locally. Keep this page open."));
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, readyDraftKey, form]);
+
+  function change<K extends keyof GarageForm>(key: K, value: GarageForm[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function lookupVehicle() {
+    if (lookupBusy || !form.vrm.trim()) return;
     setLookupBusy(true);
-    setTesterError("");
-    setTesterSuccess(false);
+    setError("");
+    setLookupDetails("");
     try {
       const response = await fetch("/api/garage/lookup", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vrm: testerVrm }),
+        body: JSON.stringify({ vrm: form.vrm }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Sample lookup failed.");
-      setTesterVrm(payload.vehicle.vrm);
-      setTesterVin(payload.vehicle.vin ?? "");
-      setTesterMileage(payload.vehicle.odometerAvailable === false ? "" : String(payload.vehicle.odometer ?? ""));
-      setMockSpecs(`${payload.vehicle.year} ${payload.vehicle.make} ${payload.vehicle.model} · MOT ${payload.vehicle.motExpiry}`);
-    } catch (error) {
-      setTesterError(error instanceof Error ? error.message : "Sample lookup failed.");
-    } finally { setLookupBusy(false); }
+      if (!response.ok) throw new Error(payload.error ?? "Vehicle lookup failed.");
+      const vehicle = payload.vehicle;
+      setForm((current) => ({
+        ...current,
+        vrm: vehicle.vrm,
+        vin: vehicle.vin ?? current.vin,
+        mileage: vehicle.odometerAvailable === false ? current.mileage : String(vehicle.odometer ?? current.mileage),
+      }));
+      const detail = [
+        vehicle.year,
+        vehicle.make,
+        vehicle.model,
+        vehicle.colour,
+        vehicle.fuelType,
+        vehicle.motExpiry ? `MOT expiry ${vehicle.motExpiry}` : undefined,
+      ].filter(Boolean).join(" · ");
+      setLookupDetails(`${detail || vehicle.vrm}. ${payload.notice ?? ""}`.trim());
+      setLookupSource(vehicle.source === "official" ? "official" : "unverified");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Vehicle lookup failed.");
+    } finally {
+      setLookupBusy(false);
+    }
   }
-  async function submitVINStamp(event: React.FormEvent) {
-    event.preventDefault();
-    if (!canStamp || testerBusy) return;
-    setTesterBusy(true);
-    setTesterError("");
-    setTesterSuccess(false);
+
+  function toggleComponent(component: string) {
+    setForm((current) => ({
+      ...current,
+      components: current.components.includes(component)
+        ? current.components.filter((item) => item !== component)
+        : [...current.components, component],
+    }));
+  }
+
+  async function attachReceipt(file?: File) {
+    setAiMessage("");
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
+      setError("Choose a receipt image no larger than 8 MB.");
+      return;
+    }
+    setFileBusy(true);
+    setError("");
     try {
+      const receipt = await readImage(file);
+      if (receipt.length > 4_000_000) throw new Error("The resized receipt image is too large. Choose a smaller photo.");
+      change("receipt", receipt);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Receipt image could not be read.");
+    } finally {
+      setFileBusy(false);
+    }
+  }
+
+  async function attachInvoice(file?: File) {
+    setAiMessage("");
+    if (!file) return;
+    if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
+      setError("Choose a PDF invoice no larger than 5 MB.");
+      return;
+    }
+    setFileBusy(true);
+    setError("");
+    try {
+      const invoiceData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Invoice could not be read."));
+        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Invoice could not be read."));
+        reader.readAsDataURL(file);
+      });
+      if (invoiceData.length > 7_000_000) throw new Error("The invoice PDF is too large.");
+      setForm((current) => ({ ...current, invoiceName: file.name.slice(0, 150), invoiceData }));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Invoice could not be read.");
+    } finally {
+      setFileBusy(false);
+    }
+  }
+
+  async function scanInvoice() {
+    const document = form.invoiceData || form.receipt;
+    if (!canUseInvoiceAi || !document || aiBusy) return;
+    setAiBusy(true);
+    setAiMessage("");
+    try {
+      const response = await fetch("/api/ai/parse-invoice", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document, filename: form.invoiceName ?? "receipt" }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Invoice scanning is unavailable.");
+      setAiMessage(payload.message ?? "Invoice details are ready for review.");
+    } catch (cause) {
+      setAiMessage(cause instanceof Error ? cause.message : "Invoice scanning is unavailable. Enter the fields manually.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || fileBusy || !user || !canStamp) return;
+    setError("");
+    setSuccess("");
+    const registration = form.vrm.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const mileage = Number(form.mileage);
+    if (!registration || !Number.isInteger(mileage) || mileage < 0 || mileage > 2_000_000) {
+      setError("Enter a valid registration and odometer reading.");
+      return;
+    }
+    if (!validateVIN(form.vin)) {
+      setError("Enter a valid 17-character VIN. VINs do not contain I, O or Q.");
+      return;
+    }
+    if (!form.physicalVinInspected) {
+      setError("Confirm that you physically inspected and matched the VIN on the vehicle.");
+      return;
+    }
+    if (!form.components.length && !form.notes.trim()) {
+      setError("Select at least one component or describe the work performed.");
+      return;
+    }
+    const draft = { ...form, vrm: registration };
+    if (draftKey) {
+      try { await saveGarageDraft(draftKey, draft); }
+      catch { setDraftStatus("Could not save this draft locally. Keep this page open while submitting."); }
+    }
+    if (!navigator.onLine) {
+      setDraftStatus("Offline draft saved on this device · no server stamp has been created.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const partsCost = form.partsCost ? Number(form.partsCost) : undefined;
+      const labourCost = form.labourCost ? Number(form.labourCost) : undefined;
+      const totalCost = (partsCost ?? 0) + (labourCost ?? 0);
       const response = await fetch("/api/garage/stamp", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          vrm: testerVrm, vin: testerVin, physically_inspected_vin: physicalVinInspected,
-          mileage: Number(testerMileage), notes: testerNotes,
+          vrm: registration,
+          vin: form.vin,
+          physically_inspected_vin: form.physicalVinInspected,
+          mileage,
+          date: form.date || today(),
+          category: form.category,
+          components: form.components,
+          notes: form.notes.trim(),
+          advisories: form.advisories.split(/\n+/).map((line) => line.trim()).filter(Boolean),
+          ...(partsCost !== undefined ? { partsCost } : {}),
+          ...(labourCost !== undefined ? { labourCost } : {}),
+          ...(form.partsCost || form.labourCost ? { cost: totalCost } : {}),
+          ...(form.receipt ? { image: form.receipt } : {}),
+          ...(form.invoiceData ? { invoice_data: form.invoiceData, invoice_name: form.invoiceName } : {}),
         }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "The workshop service could not be stamped.");
-      setTesterSuccess(true);
-      setTesterNotes("");
-      setPhysicalVinInspected(false);
-      toast.success("VIN-linked service record added to the vehicle timeline.");
-    } catch (error) {
-      setTesterError(error instanceof Error ? error.message : "The workshop service could not be stamped.");
-    } finally { setTesterBusy(false); }
-  }
-  async function readAttachment(file?: File) {
-    if (!file) return;
-    setReadingAttachment(true);
-    setFileError("");
-    try {
-      if (file.size > 5 * 1024 * 1024) throw new Error("Please use an attachment smaller than 5 MB.");
-      if (file.type.startsWith("image/")) setReceipt(await readImage(file));
-      else await readInvoice(file);
-    } catch (error) { setFileError(error instanceof Error ? error.message : "The attachment could not be read."); }
-    finally { setReadingAttachment(false); }
-  }
-  function toggle(job: string) { setSelected((prev) => prev.includes(job) ? prev.filter((x) => x !== job) : [...prev, job]); }
-  async function readInvoice(file?: File) {
-    setFileError("");
-    if (!file) { setInvoice(undefined); return; }
-    if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
-      setInvoice(undefined); setFileError("Choose a PDF no larger than 5 MB."); return;
+      if (!response.ok) throw new Error(payload.error ?? "The workshop record could not be saved.");
+      if (draftKey) await clearGarageDraft(draftKey).catch(() => undefined);
+      setForm(emptyForm());
+      setDraftStatus("");
+      setSuccess(`Server-signed service record saved for ${formatVrm(registration)}. The VIN check and stamp status are recorded by the server.`);
+      toast.success("VIN-linked service record added to the vehicle passport.");
+      void account.refresh().catch(() => undefined);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "The workshop record could not be saved.";
+      setError(message);
+      if (!navigator.onLine || cause instanceof TypeError) {
+        setDraftStatus("Could not reach the server. Your saved draft is not signed; retry when online.");
+      }
+    } finally {
+      setBusy(false);
     }
-    try {
-      const data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error("The invoice could not be read."));
-        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("The invoice could not be read."));
-        reader.readAsDataURL(file);
-      });
-      setInvoice({ name: file.name.slice(0, 200), data });
-    } catch (error) { setFileError(error instanceof Error ? error.message : "The invoice could not be read."); }
   }
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (busy || readingAttachment) return;
-    if (!account || !user) return;
-    const mi = Number(mileage);
-    const n = vrm.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (!n || !Number.isInteger(mi) || mi < 0 || mi > 2_000_000 || (!selected.length && !notes.trim())) {
-      toast.error("Enter a valid registration, mileage and at least one job or work note."); return;
-    }
-    if (!canStamp) { toast.error("Only a server-verified workshop can stamp a record."); return; }
-    setBusy(true); setSubmitted(false);
-    try {
-      const noteLines = notes.trim().split(/\n+/).map((x) => x.trim()).filter(Boolean);
-      const description = (selected[0] ?? noteLines[0] ?? "Workshop job").slice(0, 80);
-      const items = [...selected.filter((job) => job !== description), ...noteLines.filter((line) => line !== description)].slice(0, 30);
-      await account.addService({
-        vrm: n, date: today(), mileage: mi, category: "Servicing", description, items,
-        garage: user.garage_name.trim() || "Workshop", cost: undefined, verified: false,
-        invoice_name: invoice?.name, invoice_data: invoice?.data, image: receipt,...(nextDue?{next_service_due:nextDue}:{}),
-      });
-      setSubmitted(true);
-      toast.success("Service record submitted to the vehicle timeline");
-      setVrm(""); setMileage(""); setNotes(""); setSelected([]); setInvoice(undefined); setReceipt(undefined);
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Record could not be stamped"); }
-    finally { setBusy(false); }
-  }
+
   return <div className="space-y-5">
-    <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Fast-log an independent workshop job to a customer's vehicle passport." />
+    <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="VIN-checked workshop service history and supporting documents." />
     <section className="vault-card flex flex-wrap items-center justify-between gap-4 p-4">
       <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop</p><h2 className="mt-1 truncate text-lg font-bold">{user?.garage_name || "Workshop profile"}</h2><p className="mt-1 text-xs text-muted-foreground">Registration {user?.garage_registration || "not provided"}</p></div>
-      <Pill tone={user?.garage_verified ? "success" : "warning"}>{user?.garage_verified ? <><BadgeCheck className="h-3 w-3" /> Server verified</> : "Verification not confirmed"}</Pill>
-      {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. This is not live VAT registration verification.</p>}
+      <Pill tone={user?.garage_verified && user?.vat_verified ? "success" : "warning"}>{user?.garage_verified && user?.vat_verified ? <><BadgeCheck className="h-3 w-3" /> VAT status verified</> : "Verification not confirmed"}</Pill>
+      {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. Sample approvals do not verify live VAT registration.</p>}
     </section>
-    {submitted && <div className="vault-card flex items-center gap-3 border-success/30 p-4"><ShieldCheck className="h-6 w-6 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-xs text-muted-foreground">Stamp status and verification signature are assigned by the server.</p></div></div>}
-    <WorkshopReminders/>
-    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">Stamping requires workshop approval, VAT verification and an active Workshop subscription.</div>}
-    {canStamp && <section className="vault-card space-y-4 p-5">
+    {success && <div role="status" className="vault-card flex items-start gap-3 border-success/30 p-4"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-sm text-muted-foreground">{success}</p></div></div>}
+    <WorkshopReminders />
+    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">A server-approved workshop account with VAT verification and an active Garage Pro subscription is required to stamp service records.</div>}
+    {canStamp && <form onSubmit={(event) => void submit(event)} className="vault-card space-y-5 p-5">
       <div>
-        <h2 className="font-semibold text-foreground">VIN-linked workshop tester</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use the clearly labelled development lookup to test VIN-bound stamps. Sample specs are not an official DVLA/DVSA lookup.</p>
+        <h2 className="font-semibold text-foreground">VIN-verified fast log</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">A service stamp is created only after the server confirms the vehicle record, your workshop access and the physical VIN inspection.</p>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <Field label="Vehicle registration"><input value={testerVrm} onChange={e=>setTesterVrm(formatVrm(e.target.value).slice(0,8))} placeholder="AB14 CDE" maxLength={8} className="field font-mono uppercase" /></Field>
-        <button type="button" onClick={()=>void fetchMockSpecs()} disabled={lookupBusy || !testerVrm.trim()} className="btn-secondary min-h-11 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Fetching…" : "Auto-Fetch mock specs"}</button>
+        <Field label="Vehicle registration"><input required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field>
+        <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-11 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
       </div>
-      {mockSpecs && <p role="status" className="rounded-lg border border-amber-400/25 bg-amber-950/20 p-3 text-xs text-amber-100">{mockSpecs} · Development sample</p>}
-      <form onSubmit={submitVINStamp} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="17-character VIN"><input required minLength={17} maxLength={17} value={testerVin} onChange={e=>setTesterVin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,17))} placeholder="VIN / chassis number" className="field font-mono uppercase" /><span className="text-right text-[11px] text-muted-foreground">{testerVin.length}/17</span></Field>
-          <Field label="Odometer mileage (mi)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={testerMileage} onChange={e=>setTesterMileage(e.target.value)} placeholder="87420" className="field" /></Field>
+      {lookupDetails && <p role="status" className={`rounded-lg border p-3 text-xs leading-relaxed ${lookupSource === "official" ? "border-emerald-400/30 bg-emerald-950/25 text-emerald-100" : "border-amber-400/25 bg-amber-950/20 text-amber-100"}`}>
+        {lookupSource === "official" ? "Government source · " : "Unverified sample/supplied data · "}{lookupDetails}
+      </p>}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="17-character VIN"><input required minLength={17} maxLength={17} value={form.vin} onChange={(event) => change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17))} placeholder="VIN / chassis number" className="field font-mono uppercase" /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
+        <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className="field" /></Field>
+      </div>
+      <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
+        <input required type="checkbox" checked={form.physicalVinInspected} onChange={(event) => change("physicalVinInspected", event.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
+        <span>I physically inspected the VIN on the vehicle and matched it to the registration and service record.</span>
+      </label>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service category</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {CATEGORIES.map((category) => <button key={category} type="button" aria-pressed={form.category === category} onClick={() => change("category", category)}
+            className={`min-h-11 rounded-xl border px-3 text-sm font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
         </div>
-        <Field label="Service notes"><textarea required rows={2} maxLength={1000} value={testerNotes} onChange={e=>setTesterNotes(e.target.value)} placeholder="Describe the work performed" className="field" /></Field>
-        <label className="flex min-h-11 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
-          <input required type="checkbox" checked={physicalVinInspected} onChange={e=>setPhysicalVinInspected(e.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
-          <span>I physically inspected the VIN stamped on the vehicle and matched it to this record.</span>
-        </label>
-        {testerError && <p role="alert" className="text-sm text-red-300">{testerError}</p>}
-        {testerSuccess && <p role="status" className="rounded-xl border border-emerald-400/30 bg-emerald-950/25 p-3 text-sm text-emerald-200">Service record saved and linked to VIN {testerVin}.</p>}
-        <button type="submit" disabled={testerBusy || !physicalVinInspected} className="btn-primary w-full py-3"><ShieldCheck className="h-4 w-4" />{testerBusy ? "Saving VIN-linked stamp…" : "Stamp Service to VIN"}</button>
-      </form>
-    </section>}
-    <form onSubmit={submit} className="vault-card space-y-4 p-5">
-      <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Timer className="h-4 w-4" /> Fast log</div>
-      <div className="grid grid-cols-2 gap-3"><Field label="Customer VRM"><input required minLength={2} maxLength={12} value={vrm} onChange={(e) => setVrm(formatVrm(e.target.value).slice(0,8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field><Field label="Odometer (mi)"><input required inputMode="numeric" value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g,"").slice(0,7))} placeholder="87,420" className="field" /></Field></div>
-      <div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">One-tap jobs</p><div className="mt-2 grid grid-cols-2 gap-2">{JOBS.map((job) => <button key={job} type="button" aria-pressed={selected.includes(job)} onClick={() => toggle(job)} className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition-colors ${selected.includes(job) ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}><span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${selected.includes(job) ? "border-primary bg-primary text-primary-foreground" : "border-slate-600"}`}>{selected.includes(job) && <Check className="h-3 w-3" />}</span>{job}</button>)}</div></div>
-      <Field label="Work notes / receipt reference"><textarea rows={2} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional job detail or receipt reference" className="field" /></Field>
-      <Field label="Next service due (optional)"><input type="date" className="field" min={today()} value={nextDue} onChange={e=>setNextDue(e.target.value)}/></Field>
-      <div className="space-y-1.5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop invoice (optional)</p><label onDragOver={(e)=>e.preventDefault()} onDrop={(e)=>{e.preventDefault();void readAttachment(e.dataTransfer.files[0]);}} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-600 p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary"><FileText className="h-5 w-5" />{readingAttachment ? "Reading attachment…" : invoice ? invoice.name : "Drop an invoice photo or PDF · maximum 5 MB"}<input type="file" accept="application/pdf,.pdf,image/*" className="sr-only" disabled={readingAttachment || busy} onChange={(e) => void readAttachment(e.target.files?.[0])} /></label>{fileError && <p role="alert" className="mt-1 text-xs text-red-300">{fileError}</p>}{invoice && <button type="button" onClick={() => setInvoice(undefined)} className="mt-1 text-xs text-muted-foreground underline">Remove attachment</button>}</div>
-      <div className="space-y-1.5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Receipt photo (optional)</p><ImagePicker value={receipt} onChange={setReceipt} label="Attach receipt photo" /></div>
-      <p className="text-xs leading-relaxed text-muted-foreground">A record is immutable after creation. The server decides stamp provenance; incoming client flags cannot self-assert verification.</p>
-      <button type="submit" disabled={busy || readingAttachment || !canStamp} className="btn-primary w-full py-4"><Upload className="h-5 w-5" />{busy ? "Submitting verified record…" : "Stamp Verified Job to Vehicle Timeline"}</button>
-    </form>
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work performed / components</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
+            className={`min-h-10 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+            {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{component}
+          </button>)}
+        </div>
+      </div>
+      <Field label="Work performed / notes"><textarea rows={3} maxLength={2000} value={form.notes} onChange={(event) => change("notes", event.target.value)} placeholder="Describe the work carried out" className="field" /></Field>
+      <Field label="Advisories (optional)"><textarea rows={2} maxLength={2000} value={form.advisories} onChange={(event) => change("advisories", event.target.value)} placeholder="One advisory per line" className="field" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className="field" /></Field>
+        <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className="field" /></Field>
+      </div>
+      <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><Camera className="h-4 w-4 text-cyan-400" /> Attach receipt photo
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
+          </label>
+          <p className="text-xs text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Available on all account tiers; stored privately."}</p>
+          {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="text-xs text-muted-foreground underline">Remove photo</button>}
+        </div>
+        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><FileText className="h-4 w-4 text-cyan-400" /> Attach invoice PDF
+            <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
+          </label>
+          <p className="break-all text-xs text-muted-foreground">{form.invoiceName ?? "PDF invoices up to 5 MB are stored privately."}</p>
+          {form.invoiceData && <button type="button" onClick={() => setForm((current) => ({ ...current, invoiceName: undefined, invoiceData: undefined }))} className="text-xs text-muted-foreground underline">Remove invoice</button>}
+        </div>
+      </div>
+      {canUseInvoiceAi && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={aiBusy} className="btn-secondary min-h-11 w-full">
+        {aiBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{aiBusy ? "Checking invoice scanner…" : "Scan invoice and suggest fields"}
+      </button>}
+      {aiMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{aiMessage}</p>}
+      {draftStatus && <p role="status" className="rounded-lg border border-slate-700 bg-slate-950/50 p-3 text-xs text-slate-300">{draftStatus}</p>}
+      {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
+      <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
+      <button type="submit" disabled={busy || fileBusy} className="btn-primary w-full py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+    </form>}
   </div>;
 }

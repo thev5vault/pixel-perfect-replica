@@ -1,9 +1,10 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { pool } from "./db";
 import { paidTier } from "./billing";
 import { vehicleLimit } from "@/lib/plans";
 import { createClerkClient } from "@clerk/backend";
+import { vinMatchesMake } from "@/lib/vin";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { getRequest } from "@tanstack/react-start/server";
 import type { AccountState, UserAccount, AdminState, AdminUser, AdminVehicleEdit, WorkshopReview } from "@/lib/account-types";
@@ -65,10 +66,12 @@ async function seedDevelopmentSamples() {
   ];
   for(const mod of mods) await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING",[mod.id,mod.vrm,JSON.stringify(mod)]);
 }
-export function serviceRow(row:{data:unknown;id:string;vin?:string;physically_inspected_vin?:boolean;is_verified_stamp:boolean;stamped_by_garage_id:string|null;stamp_signature:string|null;is_sample:boolean;frozen_at?:string|null}):ServiceRecord {
+export function serviceRow(row:{data:unknown;id:string;vin?:string;physically_inspected_vin?:boolean;is_verified_stamp:boolean;stamped_by_garage_id:string|null;stamp_signature:string|null;is_sample:boolean;frozen_at?:string|null;receipt_url?:string|null;invoice_url?:string|null}):ServiceRecord {
   const verified=Boolean(row.is_verified_stamp && row.stamped_by_garage_id && row.stamp_signature &&
     checkStamp(row.id,row.stamped_by_garage_id,row.data,row.is_sample,row.stamp_signature,signingSecret()));
-  return {...row.data as ServiceRecord,id:row.id,vin:row.vin??(row.data as ServiceRecord).vin,
+  const record=row.data as ServiceRecord;
+  return {...record,id:row.id,image:row.receipt_url??record.image,receipt_url:row.receipt_url??record.receipt_url,
+    invoice_data:row.invoice_url??record.invoice_data,vin:row.vin??record.vin,
     physically_inspected_vin:row.physically_inspected_vin??(row.data as ServiceRecord).physically_inspected_vin,is_verified_stamp:verified,verified,
     tier3:verified,stamped_by_garage_id:row.stamped_by_garage_id,
     stamp_signature:row.stamp_signature,is_sample:row.is_sample,frozen_at:row.frozen_at};
@@ -100,17 +103,19 @@ export async function accountState():Promise<AccountState> {
     const record=serviceRow(row), vehicle=records.rows.find(v=>v.id===row.vehicle_id);
     const receiptAllowed=paid && (user.role==="dev_admin" || row.created_by_user_id===user.id || Boolean(vehicle?.archive_cutoff) ||
       (vehicle?.owner_user_id===user.id && !row.frozen_at));
-    return {...record,has_receipt:Boolean(record.image),has_invoice:Boolean(record.invoice_data),
-      image:receiptAllowed?record.image:undefined,invoice_data:receiptAllowed?record.invoice_data:undefined};
+    return {...record,has_receipt:Boolean(record.image || record.receipt_url),has_invoice:Boolean(record.invoice_data),
+      image:receiptAllowed?record.image:undefined,receipt_url:receiptAllowed?record.receipt_url:undefined,
+      invoice_data:receiptAllowed?record.invoice_data:undefined};
   }).map(record=> paid ? record : {...record,
     parts:record.parts?.map(p=>({...p,partNo:"••••••••"})),fluids:record.fluids?"••••••••":undefined,image:undefined,
-    invoice_data:undefined,partsCost:undefined,labourCost:undefined});
+    receipt_url:undefined,invoice_data:undefined,partsCost:undefined,labourCost:undefined});
   const activeIds=new Set(records.rows.filter(r=>r.owner_user_id===user.id).map(r=>String(r.id)).sort().slice(0,vehicleLimit(user)));
   return { user:{...profile,garage_verified:user.garage_verified&&(!user.is_sample||development)}, development,
     development_role:user.role==="dev_admin"?(user.dev_role??"superadmin"):development?user.dev_role:null,
     vehicles:records.rows.map(r=>({...((r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin")?r.archive_snapshot.vehicle:r.data),
       vrm:r.vrm,vin:r.vin,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,public_enabled:r.public_enabled,
-      keeper_changed_at:r.keeper_changed_at,access:r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin"?"archived":r.owner_user_id===user.id&&!activeIds.has(r.id)?"plan_locked":"active"})),
+       keeper_changed_at:r.keeper_changed_at,verification_tier:r.verification_tier??"provisional",is_scrapped:Boolean(r.is_scrapped),
+       access:r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin"?"archived":r.owner_user_id===user.id&&!activeIds.has(r.id)?"plan_locked":"active"})),
     services:history, mods:["pro_modder","god_mode"].includes(user.subscription_tier)?mods.rows.filter(visible).map(r=>({...r.data,frozen_at:r.frozen_at})):[],
     notifications:notifications.rows,bookings:bookings.rows };
 }
@@ -148,28 +153,90 @@ export async function updateAccount(input:{full_name:string;garage_name:string;g
 }
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   const user = await currentUser(), vrm=normalize(input.vrm);
+  const receipt = decodeAttachment(input.image,"receipt","receipt.jpg");
+  const invoice = decodeAttachment(input.invoice_data,"invoice",input.invoice_name??"invoice.pdf");
   return transaction(async db=>{
   const row = (await db.query("SELECT * FROM vehicles WHERE vrm=$1 FOR UPDATE",[vrm])).rows[0];
   if(!row) throw new Error(`No vehicle passport found for ${vrm}.`);
+  if(row.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only and new service records are blocked.");
   const admin=user.role==="dev_admin", workshop=admin||Boolean(user.role==="verified_garage"&&user.garage_verified&&user.vat_verified&&user.subscription_tier==="verified_garage");
   if(workshop && !admin && (!user.vat_verified || user.subscription_tier!=="verified_garage" || !mayStamp({role:user.role,verified:user.garage_verified,status:user.status,garageSample:user.is_sample,vehicleSample:row.is_sample,development}))) throw new Error("An approved VAT-verified workshop and an active Workshop subscription are required to sign records.");
   if(!workshop && row.owner_user_id!==user.id) throw new Error("Only the owner can add a DIY record.");
-  if(!workshop && (input.image || input.invoice_data) && user.subscription_tier==="free") throw new Error("Pro DIY is required for receipt uploads.");
+  if(workshop && input.physically_inspected_vin !== true) throw new Error("A workshop must physically inspect and match the VIN before stamping.");
+  if(input.vin && input.vin.toUpperCase() !== row.vin) throw new Error("The service record VIN does not match this vehicle passport.");
+  if(input.vin && !vinMatchesMake(input.vin,row.data?.make ?? "")) throw new Error("The VIN manufacturer prefix does not match this vehicle make.");
   if(!workshop && user.role!=="dev_admin") {
     const owned=await pool.query("SELECT id FROM vehicles WHERE owner_user_id=$1 ORDER BY id",[user.id]);
     if(owned.rows.findIndex(v=>v.id===row.id)>=vehicleLimit(user)) throw new Error("This vehicle is outside your active plan limit. Upgrade to Collector for three vehicles.");
   }
-  const id=randomUUID(), sample=Boolean(row.is_sample||user.is_sample);
-  const data={...input,vrm,vin:row.vin,physically_inspected_vin:Boolean(input.physically_inspected_vin),id,garage:admin?"V5Vault administrator":workshop?user.garage_name:"Owner logged",
+  const id=randomUUID(), sample=Boolean(row.is_sample||user.is_sample), receiptUrl=receipt?`/api/services/${id}/receipt`:undefined,
+    invoiceUrl=invoice?`/api/services/${id}/invoice`:undefined;
+  const data={...input,vrm,vin:row.vin,physically_inspected_vin:Boolean(input.physically_inspected_vin),id,
+    components:input.components??input.items,work_performed:input.work_performed??input.description,
+    advisories:input.advisories??[],currency:"GBP" as const,image:receiptUrl,receipt_url:receiptUrl,
+    invoice_data:invoiceUrl,invoice_url:invoiceUrl,invoice_name:invoice?.filename??input.invoice_name,
+    receipt_sha256:receipt?.sha256,invoice_sha256:invoice?.sha256,has_receipt:Boolean(receipt),garage:admin?"V5Vault administrator":workshop?user.garage_name:"Owner logged",
     stamp_authority:admin?"administrator":workshop?"workshop":undefined,vat_verified:!admin&&workshop&&Boolean(user.vat_verified),
     verified:workshop,tier3:workshop,is_sample:sample,status:"approved"};
   const signature=workshop?signStamp(id,user.id,data,sample,signingSecret()):null;
-  const saved = await db.query(`INSERT INTO service_records(id,vehicle_id,vin,physically_inspected_vin,created_by_user_id,data,is_verified_stamp,stamped_by_garage_id,stamp_signature,is_sample)
-    SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10 FROM vehicles WHERE id=$2 AND vin=$3 AND ($7 OR owner_user_id=$5) RETURNING id`,
-    [id,row.id,row.vin,data.physically_inspected_vin,user.id,JSON.stringify(data),workshop,workshop?user.id:null,signature,sample]);
+  const saved = await db.query(`INSERT INTO service_records(
+    id,vehicle_id,vin,physically_inspected_vin,created_by_user_id,data,is_verified_stamp,stamped_by_garage_id,
+    stamp_signature,is_sample,stamped_by_user_id,stamped_at,service_type,mileage,components,work_performed,
+    advisories,parts,parts_cost,labour_cost,currency,receipt_url,invoice_url)
+    SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CASE WHEN $7 THEN now() ELSE NULL END,
+      $12,$13,$14::jsonb,$15,$16,$17::jsonb,$18,$19,$20,$21,$22
+    FROM vehicles WHERE id=$2 AND vin=$3 AND is_scrapped=false AND ($7 OR owner_user_id=$5) RETURNING id`,
+    [id,row.id,row.vin,data.physically_inspected_vin,user.id,JSON.stringify(data),workshop,workshop?user.id:null,signature,sample,
+      workshop?user.id:null,input.category,input.mileage,JSON.stringify(data.components),data.work_performed,data.advisories,
+      JSON.stringify(input.parts??[]),input.partsCost??null,input.labourCost??null,"GBP",receiptUrl??null,invoiceUrl??null]);
   if(!saved.rowCount) throw new Error("Ownership changed. Reload your account before adding a record.");
-  return serviceRow({id,data,is_verified_stamp:workshop,stamped_by_garage_id:workshop?user.id:null,stamp_signature:signature,is_sample:sample});
+  if(receipt) await db.query(`INSERT INTO service_attachments(service_record_id,attachment_type,content_type,filename,sha256,content)
+    VALUES($1,'receipt',$2,$3,$4,$5)`,[id,receipt.contentType,receipt.filename,receipt.sha256,receipt.content]);
+  if(invoice) await db.query(`INSERT INTO service_attachments(service_record_id,attachment_type,content_type,filename,sha256,content)
+    VALUES($1,'invoice',$2,$3,$4,$5)`,[id,invoice.contentType,invoice.filename,invoice.sha256,invoice.content]);
+  if(workshop) await db.query(`UPDATE vehicles SET verification_tier=CASE WHEN verification_tier='government_data'
+    THEN verification_tier ELSE 'workshop_checked' END WHERE vin=$1 AND is_scrapped=false`,[row.vin]);
+  return serviceRow({id,data,receipt_url:receiptUrl??null,invoice_url:invoiceUrl??null,is_verified_stamp:workshop,stamped_by_garage_id:workshop?user.id:null,stamp_signature:signature,is_sample:sample});
   });
+}
+
+function decodeAttachment(dataUri:string|undefined,type:"receipt"|"invoice",filename:string) {
+  if(!dataUri) return undefined;
+  const match=/^data:(image\/(?:jpeg|png|webp)|application\/pdf);base64,([A-Za-z0-9+/=\r\n]+)$/.exec(dataUri);
+  if(!match || (type==="receipt"&&!match[1]!.startsWith("image/")) || (type==="invoice"&&match[1]!=="application/pdf")) {
+    throw new Error(type==="receipt"?"Receipt photos must be JPEG, PNG or WebP images.":"Workshop invoices must be PDF files.");
+  }
+  const content=Buffer.from(match[2]!.replace(/\s/g,""),"base64");
+  const maxBytes=type==="receipt"?3*1024*1024:5*1024*1024;
+  if(!content.length||content.length>maxBytes) throw new Error(type==="receipt"?"Receipt photos must be 3 MB or smaller after resizing.":"Invoice PDFs must be 5 MB or smaller.");
+  const sha256=createHash("sha256").update(content).digest("hex");
+  return {contentType:match[1]!,content,sha256,filename:filename.replace(/[^A-Za-z0-9._ -]/g,"_").slice(0,150)||`${type}.pdf`};
+}
+
+export async function serviceAttachment(id:string,type:"receipt"|"invoice") {
+  const user=await currentUser();
+  const row=(await pool.query(`SELECT s.receipt_url,s.invoice_url,s.frozen_at,s.created_by_user_id,s.stamped_by_garage_id,
+    s.data,s.vehicle_id,v.owner_user_id,a.content_type,a.filename,a.sha256,a.content
+    FROM service_records s JOIN vehicles v ON v.id=s.vehicle_id
+    LEFT JOIN service_attachments a ON a.service_record_id=s.id AND a.attachment_type=$2 WHERE s.id=$1`,
+    [id,type])).rows[0];
+  const url=type==="receipt"?row?.receipt_url:row?.invoice_url;
+  if(!url||!row.content) throw new Error("Attachment not found.");
+  const createdBy= row.created_by_user_id===user.id || row.stamped_by_garage_id===user.id;
+  const currentKeeper=row.owner_user_id===user.id && !row.frozen_at;
+  const admin=user.role==="dev_admin";
+  let archiveKeeper=false;
+  if(row.frozen_at) {
+    const transfer=await pool.query(`SELECT 1 FROM vehicle_transfers WHERE vehicle_id=$1
+      AND previous_keeper_id=$2 AND transferred_at >= (SELECT created_at FROM service_records WHERE id=$3) LIMIT 1`,
+      [row.vehicle_id,user.id,id]);
+    archiveKeeper=Boolean(transfer.rowCount);
+  }
+  if(!createdBy&&!currentKeeper&&!archiveKeeper&&!admin) throw new Error("Receipt access is limited to the vehicle keeper and the record creator.");
+  const expected=(row.data as Record<string,unknown>)[`${type}_sha256`];
+  const actual=createHash("sha256").update(row.content).digest("hex");
+  if(typeof expected!=="string"||expected!==row.sha256||actual!==row.sha256) throw new Error("The receipt failed its integrity check.");
+  return { content:row.content as Buffer, contentType:row.content_type as string, filename:row.filename as string };
 }
 export async function markRead() {
   const user=await currentUser(); await pool.query("UPDATE account_notifications SET read=true WHERE user_id=$1",[user.id]);return {ok:true};
@@ -195,7 +262,8 @@ export async function bookingStatus(id:string,status:string) {
 export async function addModification(input:Omit<Modification,"id"|"status">) {
   const user=await currentUser(),vrm=normalize(input.vrm);
   if(!["pro_modder","god_mode"].includes(user.subscription_tier)) throw new Error("Pro Modder access required.");
-  const vehicle=(await pool.query("SELECT id,owner_user_id FROM vehicles WHERE vrm=$1",[vrm])).rows[0];
+  const vehicle=(await pool.query("SELECT id,owner_user_id,is_scrapped FROM vehicles WHERE vrm=$1",[vrm])).rows[0];
+  if(vehicle?.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only.");
   if(!vehicle || (user.role!=="dev_admin"&&vehicle.owner_user_id!==user.id)) throw new Error("Vehicle ownership required.");
   const id=randomUUID(),data={...input,vrm,id,status:"active"};
   await pool.query("INSERT INTO modifications(id,vehicle_id,data) VALUES($1,$2,$3)",[id,vehicle.id,JSON.stringify(data)]);
@@ -205,7 +273,8 @@ export async function revertModification(input:{id:string;date:string;mileage:nu
   const user=await currentUser();
   if(!["pro_modder","god_mode"].includes(user.subscription_tier)) throw new Error("Pro Modder access required.");
   const result=await pool.query(`UPDATE modifications m SET data=data||$1::jsonb FROM vehicles v
-    WHERE m.id=$2 AND m.vehicle_id=v.id AND m.frozen_at IS NULL AND (v.owner_user_id=$3 OR $4) RETURNING m.id`,
+    WHERE m.id=$2 AND m.vehicle_id=v.id AND m.frozen_at IS NULL AND v.is_scrapped=false
+    AND (v.owner_user_id=$3 OR $4) RETURNING m.id`,
     [JSON.stringify({status:"reverted",removalDate:input.date,removalMileage:input.mileage}),input.id,user.id,user.role==="dev_admin"]);
   if(!result.rowCount) throw new Error("Modification not found.");
   return {ok:true};
@@ -231,10 +300,11 @@ export async function adminState():Promise<AdminState> {
   const admin = await requireAdmin();
   const [profiles, records] = await Promise.all([
     pool.query("SELECT id,email,full_name,role,subscription_tier,status,is_sample,garage_name,garage_registration,garage_verified,created_at,workshop_type FROM user_accounts ORDER BY created_at DESC"),
-    pool.query("SELECT id,vin,vrm,data,owner_user_id,status,is_sample FROM vehicles ORDER BY vrm"),
+    pool.query("SELECT id,vin,vrm,data,owner_user_id,status,is_sample,verification_tier,is_scrapped FROM vehicles ORDER BY vrm"),
   ]);
   const users:AdminUser[] = profiles.rows.map(u=>u.id===admin.id?{...u,role:admin.role,subscription_tier:admin.subscription_tier}:u);
-  return {users,vehicles:records.rows.map(r=>({...r.data,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample})),
+  return {users,vehicles:records.rows.map(r=>({...r.data,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,
+    verification_tier:r.verification_tier??"provisional",is_scrapped:Boolean(r.is_scrapped)})),
     applications:users.filter(u=>u.id!==admin.id&&u.status==="pending"&&u.garage_name.trim()&&u.garage_registration.trim())};
 }
 export async function reviewWorkshop(input:WorkshopReview) {
@@ -255,10 +325,16 @@ export async function reviewWorkshop(input:WorkshopReview) {
 export async function editAdminVehicle(input:AdminVehicleEdit) {
   const admin=await requireAdmin();
   return transaction(async db=>{
-  const result=await db.query("UPDATE vehicles SET data=data||$1::jsonb WHERE vrm=$2 RETURNING id",
-    [JSON.stringify({make:input.make,model:input.model,odometer:input.odometer}),normalize(input.vrm)]);
+  const details={make:input.make,model:input.model,odometer:input.odometer,
+    ...(input.is_scrapped===undefined?{}:{is_scrapped:input.is_scrapped})};
+  const result=await db.query(`UPDATE vehicles SET data=data||$1::jsonb,
+    is_scrapped=CASE WHEN $3::boolean IS NULL THEN is_scrapped ELSE $3 END,
+    scrapped_at=CASE WHEN $3::boolean IS NULL THEN scrapped_at WHEN $3 THEN COALESCE(scrapped_at,now()) ELSE NULL END
+    WHERE vrm=$2 RETURNING id`,
+    [JSON.stringify(details),normalize(input.vrm),input.is_scrapped??null]);
   if(!result.rowCount) throw new Error("Vehicle not found.");
-  await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",[randomUUID(),admin.id,`Administrator updated vehicle details for ${normalize(input.vrm)}.`]);
+  await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",[randomUUID(),admin.id,
+    `Administrator updated vehicle details${input.is_scrapped===undefined?"":` and scrap status for ${normalize(input.vrm)}`}.`]);
   return {ok:true};
   });
 }

@@ -17,14 +17,25 @@ export function requestOrigin() {
   return url.origin;
 }
 export async function catalog(): Promise<BillingCatalog> {
-  await initializeStripe();
-  const testMode=await stripeTestMode();
-  const results = await pool.query("SELECT id,lookup_key,unit_amount,currency,recurring FROM stripe.prices WHERE active=true AND livemode=$2 AND lookup_key=ANY($1::text[])", [PLAN_KEYS.map(key => `v5vault_v1_${key}`),!testMode]);
-  return { test_mode: testMode, prices: results.rows.filter(p => p.currency === "gbp"&&Number(p.unit_amount)===PLAN_DEFINITIONS[String(p.lookup_key).replace("v5vault_v1_","") as PlanKey].amount).map(p => {
-    const key = String(p.lookup_key).replace("v5vault_v1_", "") as PlanKey;
-    return { key, name: PLAN_DEFINITIONS[key].name, amount_pence: Number(p.unit_amount), currency: "gbp" as const,
-      interval: p.recurring?.interval ?? null, price_id: p.id };
-  }) };
+  try {
+    await initializeStripe();
+    const testMode=await stripeTestMode();
+    const results = await pool.query("SELECT id,lookup_key,unit_amount,currency,recurring FROM stripe.prices WHERE active=true AND livemode=$2 AND lookup_key=ANY($1::text[])", [PLAN_KEYS.map(key => `v5vault_v1_${key}`),!testMode]);
+    return { test_mode: testMode, preview:false, prices: results.rows.filter(p => p.currency === "gbp"&&Number(p.unit_amount)===PLAN_DEFINITIONS[String(p.lookup_key).replace("v5vault_v1_","") as PlanKey].amount).map(p => {
+      const key = String(p.lookup_key).replace("v5vault_v1_", "") as PlanKey;
+      return { key, name: PLAN_DEFINITIONS[key].name, amount_pence: Number(p.unit_amount), currency: "gbp" as const,
+        interval: p.recurring?.interval ?? null, price_id: p.id };
+    }) };
+  } catch {
+    return {
+      test_mode: true,
+      preview: true,
+      prices: PLAN_KEYS.map((key) => ({
+        key, name: PLAN_DEFINITIONS[key].name, amount_pence: PLAN_DEFINITIONS[key].amount,
+        currency: "gbp" as const, interval: PLAN_DEFINITIONS[key].interval, price_id: `preview_${key}`,
+      })),
+    };
+  }
 }
 export async function paidTier(user: UserAccount): Promise<{ tier: SubscriptionTier; unavailable: boolean }> {
   if (user.is_sample && process.env["NODE_ENV"] !== "production") return { tier: user.subscription_tier, unavailable: false };
@@ -55,6 +66,7 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined 
   return inTransaction(async db=>{
   await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`billing:${user.id}`]);
   const prices = await catalog(), price = prices.prices.find(p => p.key === input.plan);
+  if (prices.preview) return { url: null, preview: true, message: "Preview mode only. Stripe is unavailable, so no checkout, payment or subscription access was created." };
   if (!price) throw new Error("This Stripe price is not configured yet.");
   const stripe = await stripeClient(), customerId = await customer(user), origin = requestOrigin();
   let orderId: string | undefined;

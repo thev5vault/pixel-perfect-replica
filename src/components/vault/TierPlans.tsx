@@ -9,7 +9,7 @@ const planCopy: Record<Exclude<PlanKey, "sales_pack">, { title: string; detail: 
   diy_monthly: { title: "Pro DIY", detail: "£0.99 / month", features: ["Receipt storage", "OEM parts and cost breakdowns", "Legacy plan option"] },
   pro_monthly: { title: "Pro Modder / Collector", detail: "£1.49 / month", features: ["Three active vehicles", "Receipts and cost analytics", "Modder’s Vault"] },
   pro_yearly: { title: "Pro Modder / Collector", detail: "£14.99 / year", features: ["Three active vehicles", "Receipts and cost analytics", "Modder’s Vault"] },
-  workshop_monthly: { title: "Verified Workshop", detail: "£12.99 / month", features: ["Workshop terminal", "Consented customer reminders", "Approval and VAT verification required"] },
+  workshop_monthly: { title: "Garage Pro", detail: "£14.99 / month", features: ["30-day trial", "Unlimited VIN-stamped workshop jobs", "Approved workshop and VAT verification required"] },
 };
 
 export function TierPlans({ vrm, compact = false }: Props) {
@@ -38,7 +38,7 @@ export function TierPlans({ vrm, compact = false }: Props) {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Plans & access</p>
       <h2 className="mt-1 text-xl font-bold">Built for the way you keep cars.</h2>
       <p className="mt-1 text-sm text-muted-foreground">Prices are shown in GBP. Workshop tools require approval and VAT verification.</p>
-       {catalog&&<p className="mt-3 text-xs font-semibold text-amber-300">{v1.preview?"Sample preview · no Stripe checkout or charges":catalog.test_mode?"Stripe SANDBOX · test payments only":"Live Stripe billing"}</p>}
+        {catalog&&<p className="mt-3 text-xs font-semibold text-amber-300">{catalog.preview?"Preview prices only · Stripe unavailable, no checkout or charges":v1.preview?"Sample preview · no Stripe checkout or charges":catalog.test_mode?"Stripe SANDBOX · test payments only":"Live Stripe billing"}</p>}
     </div>
     {error && <p role="alert" className="mx-4 mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">{error}</p>}
     {!catalog ? <div className="space-y-3 p-5" role="status"><div className="h-5 w-40 animate-pulse rounded bg-muted"/><div className="h-20 animate-pulse rounded-xl bg-muted/70"/></div> :

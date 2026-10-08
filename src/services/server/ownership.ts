@@ -46,6 +46,7 @@ export async function claim(input: { vrm: string; reference?: string | undefined
   if (!row && normalizeRegistration(vrm) === LG57_VYF) {
     row = (await pool.query("SELECT * FROM vehicles WHERE vin=$1", [LG57_VYF_VIN])).rows[0];
   }
+  if (row?.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only and cannot be claimed.");
   if (row?.owner_user_id && row.owner_user_id !== user.id) {
     throw new Error("Vehicle already registered to an active keeper.");
   }
@@ -71,8 +72,9 @@ export async function claim(input: { vrm: string; reference?: string | undefined
       }
       if (collision) throw new Error("This VIN or registration is already linked to another vehicle.");
       const data={...lookup.vehicle,vrm,vin};
-      await pool.query("INSERT INTO vehicles(id,vin,vrm,data,is_sample,status) VALUES($1,$2,$3,$4,$5,'pending') ON CONFLICT(vin) DO NOTHING",
-        [randomUUID(),vin,vrm,JSON.stringify(data),lookup.vehicle.source === "demo"]);
+      await pool.query(`INSERT INTO vehicles(id,vin,vrm,data,is_sample,status,verification_tier)
+        VALUES($1,$2,$3,$4,$5,'pending',$6) ON CONFLICT(vin) DO NOTHING`,
+        [randomUUID(),vin,vrm,JSON.stringify(data),lookup.vehicle.source === "demo",lookup.vehicle.verification_tier??"provisional"]);
     }
   }
   return inTransaction(async db => {
@@ -153,6 +155,7 @@ export async function refreshVehicle(inputVrm: string) {
   for (const reading of frozen) history.set(reading.date, reading);
   if (lookup.vehicle.vin && validateVIN(lookup.vehicle.vin) && normalizeVIN(lookup.vehicle.vin) !== row.vin) throw new Error("Official lookup VIN differs from the vehicle's saved identity. Manual review is required.");
   const data = { ...row.data, ...lookup.vehicle, vrm:row.vrm, vin:row.vin, motHistory: [...history.values()].sort((a: any, b: any) => a.date.localeCompare(b.date)) };
-  await pool.query("UPDATE vehicles SET data=$1 WHERE id=$2", [JSON.stringify(data), row.id]);
+  await pool.query(`UPDATE vehicles SET data=$1,verification_tier=CASE WHEN $2='government_data'
+    THEN 'government_data' ELSE verification_tier END WHERE id=$3`, [JSON.stringify(data),lookup.vehicle.verification_tier??"provisional",row.id]);
   return { ok: true, message: "Official vehicle details refreshed. Frozen pre-transfer MOT readings were preserved." };
 }

@@ -145,6 +145,13 @@ function Certificate({ cert }: { cert: Cert }) {
                 <BadgeCheck className="h-3 w-3" /> {sampleDocument ? "Development sample document" : signedRecord ? "Contains signed workshop records" : "Owner-logged document"}
               </Pill>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <Pill tone={vehicle.verification_tier === "government_data" ? "success" : vehicle.verification_tier === "workshop_checked" ? "primary" : "muted"}>
+                {vehicle.verification_tier === "government_data" ? "Government data matched" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
+              </Pill>
+              {vehicle.is_scrapped && <Pill tone="warning">Scrapped · passport read-only</Pill>}
+            </div>
+            {vehicle.is_scrapped && <p className="rounded-lg border border-amber-500/25 bg-amber-950/20 p-3 text-xs leading-relaxed text-amber-900 print:text-amber-950">This vehicle is marked as scrapped. This certificate preserves its history; no new workshop or owner service records can be added.</p>}
             <div className="flex items-center justify-between gap-2">
               <Plate vrm={vehicle.vrm} />
             </div>

@@ -66,7 +66,7 @@ describe("Pro DIY entitlements", () => {
     expect(screen.getByText("£642.00")).toBeInTheDocument();
   });
 
-  it("opens the Pro DIY receipt upgrade instead of the free-tier entry form", async () => {
+  it("lets Free users open the service-entry form with uploads while keeping itemized fields locked", async () => {
     render(
       <VaultProvider>
         <Dashboard />
@@ -74,8 +74,10 @@ describe("Pro DIY entitlements", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /snap receipt/i }));
-    expect(await screen.findByText("Upgrade to Pro DIY (£0.99/mo) to upload receipts.")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Snap Receipt" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Snap Receipt" })).toBeInTheDocument();
+    expect(screen.getByText("Receipt photo · available on every plan")).toBeInTheDocument();
+    expect(screen.getByText("Invoice PDF · available on every plan")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /oem part numbers & fluid specs/i })).toBeInTheDocument();
   });
 
   it("does not treat imported client-side verified flags as a workshop stamp", () => {

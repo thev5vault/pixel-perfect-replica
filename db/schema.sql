@@ -24,16 +24,30 @@ CREATE TABLE IF NOT EXISTS vehicles (
   v5c_reference_hash TEXT,
   data JSONB NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  is_sample BOOLEAN NOT NULL DEFAULT false
+  is_sample BOOLEAN NOT NULL DEFAULT false,
+  verification_tier TEXT NOT NULL DEFAULT 'provisional' CHECK (verification_tier IN ('provisional','workshop_checked','government_data')),
+  is_scrapped BOOLEAN NOT NULL DEFAULT false,
+  scrapped_at TIMESTAMPTZ
 );
 CREATE TABLE IF NOT EXISTS ownership_claims (
   id TEXT PRIMARY KEY,
   vehicle_id TEXT NOT NULL REFERENCES vehicles(id),
   user_id TEXT NOT NULL REFERENCES user_accounts(id),
+  vin TEXT REFERENCES vehicles(vin),
   reference_hash TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
   is_sample BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS service_attachments (
+  service_record_id TEXT NOT NULL REFERENCES service_records(id),
+  attachment_type TEXT NOT NULL CHECK (attachment_type IN ('receipt','invoice')),
+  content_type TEXT NOT NULL CHECK (content_type IN ('image/jpeg','image/png','image/webp','application/pdf')),
+  filename TEXT NOT NULL DEFAULT 'receipt.jpg',
+  sha256 TEXT NOT NULL CHECK (sha256 ~ '^[a-f0-9]{64}$'),
+  content BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (service_record_id,attachment_type)
 );
 CREATE TABLE IF NOT EXISTS service_records (
   id TEXT PRIMARY KEY,
@@ -93,6 +107,9 @@ ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vin TEXT;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vrm TEXT;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS keeper_changed_at TIMESTAMPTZ;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS public_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS verification_tier TEXT NOT NULL DEFAULT 'provisional';
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS is_scrapped BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS scrapped_at TIMESTAMPTZ;
 ALTER TABLE ownership_claims ADD COLUMN IF NOT EXISTS vin TEXT;
 ALTER TABLE ownership_claims ADD COLUMN IF NOT EXISTS review_reason TEXT;
 ALTER TABLE ownership_claims ADD COLUMN IF NOT EXISTS reviewed_by TEXT REFERENCES user_accounts(id);
@@ -100,6 +117,41 @@ ALTER TABLE ownership_claims ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
 ALTER TABLE service_records ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMPTZ;
 ALTER TABLE service_records ADD COLUMN IF NOT EXISTS vin TEXT;
 ALTER TABLE service_records ADD COLUMN IF NOT EXISTS physically_inspected_vin BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS stamped_by_user_id TEXT REFERENCES user_accounts(id);
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS stamped_at TIMESTAMPTZ;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS service_type TEXT;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS mileage INTEGER;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS components JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS work_performed TEXT;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS advisories TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS parts JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS parts_cost NUMERIC(12,2);
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS labour_cost NUMERIC(12,2);
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'GBP';
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+ALTER TABLE service_records ADD COLUMN IF NOT EXISTS invoice_url TEXT;
+CREATE TABLE IF NOT EXISTS service_attachments (
+  service_record_id TEXT NOT NULL REFERENCES service_records(id),
+  attachment_type TEXT NOT NULL CHECK (attachment_type IN ('receipt','invoice')),
+  content_type TEXT NOT NULL CHECK (content_type IN ('image/jpeg','image/png','image/webp','application/pdf')),
+  filename TEXT NOT NULL DEFAULT 'receipt.jpg',
+  sha256 TEXT NOT NULL CHECK (sha256 ~ '^[a-f0-9]{64}$'),
+  content BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (service_record_id,attachment_type)
+);
+UPDATE ownership_claims c SET vin=v.vin
+  FROM vehicles v WHERE c.vehicle_id=v.id AND c.vin IS NULL;
+ALTER TABLE ownership_claims ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE ownership_claims ADD CONSTRAINT ownership_claims_vin_fkey
+    FOREIGN KEY (vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE vehicles ADD CONSTRAINT vehicles_verification_tier_check
+    CHECK (verification_tier IN ('provisional','workshop_checked','government_data'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS service_attachments_record_idx ON service_attachments(service_record_id);
 ALTER TABLE modifications ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMPTZ;
 ALTER TABLE modifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 CREATE TABLE IF NOT EXISTS vehicle_transfers (
