@@ -25,6 +25,7 @@ import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
 import { DevPreviewButton } from "@/components/vault/DevPreviewButton";
 import { VehicleDataTools } from "@/components/vault/VehicleDataTools";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
+import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -218,6 +219,8 @@ function HealthCard({
 function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { vehicle, addService, role } = useVault();
   const pro = can.diy(role);
+  const quickWorkItems = ["Oil & filter", "Brakes", "Tyres", "Battery", "Coolant", "Inspection"];
+  const invoiceComponents = ["Engine oil", "Oil filter", "Air filter", "Cabin filter", "Brake pads", "Brake discs", "Brake fluid", "Tyres", "Battery", "Coolant", "Suspension"];
   const empty = { date: today(), mileage: "", category: "Servicing" as ServiceCategory, description: "", garage: "", parts: "", fluids: "", partsCost: "", labourCost: "" };
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState<string>();
@@ -225,6 +228,8 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [saving, setSaving] = useState(false);
   const [pdfReceipt,setPdfReceipt]=useState<{name:string;data:string}|undefined>();
   const [readingPdf,setReadingPdf]=useState(false);
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanMessage, setScanMessage] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -232,6 +237,44 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
     const n = parseFloat(v);
     return Number.isFinite(n) && n >= 0 && n < 1_000_000 ? Math.round(n * 100) / 100 : undefined;
   };
+
+  async function scanAttachedInvoice() {
+    const document = pdfReceipt?.data ?? image;
+    if (!pro || !document || scanBusy) return;
+    setScanBusy(true);
+    setScanMessage("Preparing local invoice scan…");
+    try {
+      const blob = await (await fetch(document)).blob();
+      const { text, pagesScanned, totalPages } = await readInvoiceText(blob, setScanMessage);
+      const suggestions = parseInvoiceText(text, SERVICE_CATEGORIES, invoiceComponents);
+      const suggestionCount = Object.keys(suggestions).filter((key) => key !== "components" || suggestions.components?.length).length;
+      if (!suggestionCount) {
+        setScanMessage("Local OCR could not confidently identify editable fields. Your document is still attached; enter the details manually.");
+        return;
+      }
+      setForm((current) => {
+        const next = { ...current };
+        if (suggestions.mileage && !current.mileage.trim()) next.mileage = suggestions.mileage;
+        if (suggestions.date && (!current.date || current.date === today())) next.date = suggestions.date;
+        if (suggestions.category && current.category === "Servicing" &&
+            SERVICE_CATEGORIES.includes(suggestions.category as ServiceCategory)) {
+          next.category = suggestions.category as ServiceCategory;
+        }
+        if (!current.description.trim()) {
+          next.description = (suggestions.notes || suggestions.components?.join("\n") || "").slice(0, 1000);
+        }
+        if (suggestions.partsCost && !current.partsCost.trim()) next.partsCost = suggestions.partsCost;
+        if (suggestions.labourCost && !current.labourCost.trim()) next.labourCost = suggestions.labourCost;
+        return next;
+      });
+      const pageNote = totalPages > pagesScanned ? ` Scanned the first ${pagesScanned} of ${totalPages} pages.` : "";
+      setScanMessage(`Local OCR suggested ${suggestionCount} field${suggestionCount === 1 ? "" : "s"}. Review and edit the values before saving; the document stayed in this browser.${pageNote}`);
+    } catch (error) {
+      setScanMessage(`${error instanceof Error ? error.message : "Local OCR could not read this file."} The document remains attached; enter the details manually.`);
+    } finally {
+      setScanBusy(false);
+    }
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -335,6 +378,23 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <ModalField label="Work Description">{(id) => (
             <textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className={MODAL_TEXTAREA_CLASS} />
           )}</ModalField>
+          <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Quick add work items</p>
+            <div className="flex flex-wrap gap-2">
+              {quickWorkItems.map((item) => {
+                const selected = form.description.split(/\n+/).some((line) => line.trim().toLowerCase() === item.toLowerCase());
+                return <button key={item} type="button" aria-pressed={selected} onClick={() => setForm((current) => {
+                  const lines = current.description.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+                  const existing = lines.findIndex((line) => line.toLowerCase() === item.toLowerCase());
+                  if (existing >= 0) lines.splice(existing, 1);
+                  else lines.push(item);
+                  return { ...current, description: lines.join("\n").slice(0, 1000) };
+                })} className={`min-h-10 rounded-full border px-3 text-xs font-medium transition-colors ${selected ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                  {item}
+                </button>;
+              })}
+            </div>
+          </div>
 
           {pro ? (
             <>
@@ -365,6 +425,10 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <ModalFieldGroup label="Invoice PDF · available on every plan">
             <PdfReceiptPicker onChange={setPdfReceipt} onReadingChange={setReadingPdf}/>
           </ModalFieldGroup>
+          {pro && (pdfReceipt || image) && <button type="button" onClick={() => void scanAttachedInvoice()} disabled={scanBusy || readingPdf} className="btn-secondary min-h-11 w-full">
+            {scanBusy ? "Scanning on this device…" : "Read invoice locally and suggest fields"}
+          </button>}
+          {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>

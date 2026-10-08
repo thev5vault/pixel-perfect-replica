@@ -49,7 +49,7 @@ export function parseInvoiceText(
 ): InvoiceSuggestions {
   const text = rawText.replace(/\r/g, "\n").replace(/[ \t]+/g, " ");
   const suggestions: InvoiceSuggestions = {};
-  const mileage = text.match(/(?:odometer|mileage|milage|miles)\D{0,24}([\d,]{4,8})/i)?.[1];
+  const mileage = text.match(/(?:odometer|mileage|milage|miles)\D{0,24}([\d,]+)/i)?.[1];
   if (mileage) {
     const numeric = Number(mileage.replace(/,/g, ""));
     if (Number.isInteger(numeric) && numeric >= 0 && numeric <= 2_000_000) suggestions.mileage = String(numeric);
@@ -59,12 +59,21 @@ export function parseInvoiceText(
   if (date) suggestions.date = date;
 
   const lower = text.toLowerCase();
+  const categoryPatterns: [string, RegExp][] = [
+    ["brakes", /\bbrake\b/i],
+    ["tyres", /\b(tyre|tire|puncture|wheel alignment)\b/i],
+    ["repairs", /\b(repair|diagnos|fault)\w*/i],
+  ];
+  const specificCategory = categoryPatterns
+    .map(([key, pattern]) => categories.find((category) => category.toLowerCase() === key && pattern.test(text)))
+    .find(Boolean);
   const categoryMatch = categories.find((category) => {
     const key = category.toLowerCase();
-    return lower.includes(key) || (key === "servicing" && /\b(service|oil change|scheduled maintenance)\b/i.test(text)) ||
-      (key === "tyres" && /\b(tyre|tire|puncture|wheel alignment)\b/i.test(text));
+    if (lower.includes(key)) return true;
+    if (key === "servicing") return /\b(service|servicing|oil change|scheduled maintenance)\b/i.test(text);
+    return false;
   });
-  if (categoryMatch) suggestions.category = categoryMatch;
+  if (specificCategory || categoryMatch) suggestions.category = specificCategory || categoryMatch;
 
   const foundComponents = knownComponents.filter((component) => lower.includes(component.toLowerCase()));
   if (foundComponents.length) suggestions.components = foundComponents;
@@ -78,7 +87,8 @@ export function parseInvoiceText(
   const workLines = text.split("\n")
     .map((line) => line.trim().replace(/\s+/g, " "))
     .filter((line) => line.length >= 5 && line.length <= 160 && !excluded.test(line))
-    .filter((line) => /\b(replac|fit|inspect|service|oil|filter|brake|tyre|tire|battery|coolant|suspension|repair|flush|diagnos|labou?r)\b/i.test(line));
+    .filter((line) => !/^(?:parts?|spare parts|labou?r|work charges)\s*(?:cost|total)?\s*[:\-]?\s*(?:GBP|£)?\s*[\d,.]+$/i.test(line))
+    .filter((line) => /\b(replac|fit|inspect|oil|filter|brake|tyre|tire|battery|coolant|suspension|repair|flush|diagnos|labou?r)\b/i.test(line));
   if (workLines.length) suggestions.notes = [...new Set(workLines)].slice(0, 8).join("\n").slice(0, 1600);
 
   return suggestions;

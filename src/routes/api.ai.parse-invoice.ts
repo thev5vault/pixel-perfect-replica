@@ -20,11 +20,13 @@ export const Route = createFileRoute("/api/ai/parse-invoice")({
           const parsed = inputSchema.safeParse(await request.json());
           if (!parsed.success) return Response.json({ error: "Upload a valid invoice image or PDF." }, { status: 400 });
 
-          // No vision/OCR provider is connected yet. Do not imply that content
-          // was scanned or return fabricated extraction results.
+          // Hosted AI parsing is intentionally not configured. Document
+          // extraction happens in the browser; do not scan remotely or invent
+          // suggestions when this endpoint is called directly.
           return Response.json({
-            error: "AI invoice scanning is unavailable because no scanning provider is connected. You can still attach the document and enter details manually.",
+            error: "Hosted AI invoice parsing is not configured. Use local on-device scanning or enter the fields manually.",
             manual_entry: true,
+            local_ocr_available: true,
             filename: parsed.data.filename,
           }, { status: 503 });
         } catch (error) {
