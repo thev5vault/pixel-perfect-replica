@@ -267,7 +267,7 @@ function Certificate({ cert }: { cert: Cert }) {
                   <h3 className="passport-service-description mt-2 break-words font-bold hyphens-auto">{s.description}</h3>
                   {s.fluids && <p className="break-words text-xs text-muted-foreground hyphens-auto">Fluids: {s.fluids}</p>}
                 </div>
-                {s.image && <div className="max-w-full self-start"><Thumb src={s.image} alt={`${s.description} receipt`} /></div>}
+                {s.image && <div className="passport-receipt-image max-w-full self-start"><Thumb src={s.image} alt={`${s.description} receipt`} /></div>}
               </div>
               <div className="mt-3 min-w-0">
                 <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts Breakdown</h4>
@@ -323,9 +323,9 @@ function Certificate({ cert }: { cert: Cert }) {
                     </div>
                   </div>
                   {m.image && (
-                    <div className="mt-3">
+                    <div className="passport-dyno-image mt-3">
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dyno Curve Printout</p>
-                      <img src={m.image} alt={`${m.name} dyno curve`} className="w-full rounded-lg border" />
+                      <img src={m.image} alt={`${m.name} dyno curve`} className="passport-dyno-photo w-full rounded-lg border" />
                     </div>
                   )}
                   {m.tags && m.tags.length > 0 && (

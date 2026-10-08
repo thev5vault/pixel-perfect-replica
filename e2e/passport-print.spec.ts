@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import QRCode from "qrcode";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 const longRecordMarker = "PRINT-LONG-RECORD";
 const longRecordEnd = "PRINT-LONG-RECORD-END";
@@ -77,6 +77,7 @@ async function makePdfTextPages(pdfBytes: Uint8Array) {
   const pageBounds: {
     width: number;
     height: number;
+    imagePaintCount: number;
     textBoxes: { x: number; y: number; width: number; height: number; text: string }[];
   }[] = [];
 
@@ -84,6 +85,13 @@ async function makePdfTextPages(pdfBytes: Uint8Array) {
     const page = await pdf.getPage(pageNumber);
     const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
+    const operators = await page.getOperatorList();
+    const imagePaintCount = operators.fnArray.filter(
+      (operation) =>
+        operation === OPS.paintImageXObject ||
+        operation === OPS.paintInlineImageXObject ||
+        operation === OPS.paintImageMaskXObject,
+    ).length;
     const items = content.items as Array<{
       str?: string;
       transform?: number[];
@@ -95,6 +103,7 @@ async function makePdfTextPages(pdfBytes: Uint8Array) {
     pageBounds.push({
       width: viewport.width,
       height: viewport.height,
+      imagePaintCount,
       textBoxes: textItems.flatMap((item) => {
         const x = item.transform?.[4];
         const y = item.transform?.[5];
@@ -124,9 +133,15 @@ test("Standard, OEM and Master certificates keep long records readable in printe
   });
 
   const certificates = [
-    { name: "Standard Passport", financials: false, parts: false },
-    { name: "OEM Provenance Certificate", financials: true, parts: true },
-    { name: "Master Build Sheet", financials: true, parts: true },
+    { name: "Standard Passport", financials: false, parts: false, receipts: 0, dynoImages: 0 },
+    {
+      name: "OEM Provenance Certificate",
+      financials: true,
+      parts: true,
+      receipts: 2,
+      dynoImages: 0,
+    },
+    { name: "Master Build Sheet", financials: true, parts: true, receipts: 2, dynoImages: 1 },
   ];
 
   await page.getByRole("link", { name: "Passport", exact: true }).click();
@@ -166,12 +181,74 @@ test("Standard, OEM and Master certificates keep long records readable in printe
     expect(printLayout.qrWidth).toBeLessThanOrEqual(printLayout.verificationWidth);
     expect(printLayout.verificationText).toContain("Scan to Verify Authenticity");
 
+    const imageLayout = await page
+      .locator(
+        ".passport-document .passport-receipt-image img, .passport-document .passport-dyno-photo",
+      )
+      .evaluateAll(async (images) => {
+        return Promise.all(
+          images.map(async (element) => {
+            if (!(element instanceof HTMLImageElement)) {
+              throw new Error("A print evidence image is not an image element.");
+            }
+            element.loading = "eager";
+            await element.decode();
+            const rect = element.getBoundingClientRect();
+            const documentRect = element.closest(".passport-document")!.getBoundingClientRect();
+            const wrapper = element.closest(".passport-receipt-image, .passport-dyno-image");
+            return {
+              alt: element.alt,
+              width: rect.width,
+              height: rect.height,
+              naturalWidth: element.naturalWidth,
+              naturalHeight: element.naturalHeight,
+              insideCertificate:
+                rect.left >= documentRect.left &&
+                rect.top >= documentRect.top &&
+                rect.right <= documentRect.right &&
+                rect.bottom <= documentRect.bottom,
+              aspectRatio: rect.width / rect.height,
+              naturalAspectRatio: element.naturalWidth / element.naturalHeight,
+              objectFit: getComputedStyle(element).objectFit,
+              breakInside: wrapper ? getComputedStyle(wrapper).breakInside : "",
+              isDyno: element.classList.contains("passport-dyno-photo"),
+            };
+          }),
+        );
+      });
+    const receiptImages = imageLayout.filter((image) => !image.isDyno);
+    const dynoImages = imageLayout.filter((image) => image.isDyno);
+    expect(receiptImages, `${certificate.name} receipt image count`).toHaveLength(
+      certificate.receipts,
+    );
+    expect(dynoImages, `${certificate.name} dyno image count`).toHaveLength(certificate.dynoImages);
+    for (const image of imageLayout) {
+      expect(image.naturalWidth).toBeGreaterThan(0);
+      expect(image.naturalHeight).toBeGreaterThan(0);
+      expect(image.width).toBeGreaterThan(100);
+      expect(image.height).toBeGreaterThan(100);
+      expect(image.insideCertificate).toBe(true);
+      expect(image.objectFit).toBe("contain");
+      expect(image.breakInside).toContain("avoid");
+      expect(
+        Math.abs(image.aspectRatio - image.naturalAspectRatio),
+        `${image.alt} should keep its full aspect ratio`,
+      ).toBeLessThan(0.03);
+      if (image.isDyno) {
+        expect(image.height).toBeLessThanOrEqual((100 * 96) / 25.4 + 1);
+      } else {
+        expect(image.width).toBeLessThanOrEqual((86 * 96) / 25.4 + 1);
+        expect(image.height).toBeLessThanOrEqual((82 * 96) / 25.4 + 1);
+      }
+    }
+
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       preferCSSPageSize: true,
     });
     const { pageTexts, pageBounds } = await makePdfTextPages(new Uint8Array(pdfBuffer));
+    const imagePaintCount = pageBounds.reduce((count, bounds) => count + bounds.imagePaintCount, 0);
     const allText = pageTexts.join(" ").replace(/\s+/g, " ");
     const upperText = allText.toUpperCase();
     expect(
@@ -182,6 +259,10 @@ test("Standard, OEM and Master certificates keep long records readable in printe
     expect(allText).toContain("Latest workshop stamp");
     expect(allText).toContain("PRINT-LONG-RECORD");
     expect(allText).toContain("PRINT-LONG-RECORD-END");
+    expect(
+      imagePaintCount,
+      `${certificate.name} evidence images should be present in the PDF`,
+    ).toBeGreaterThanOrEqual(certificate.receipts + certificate.dynoImages);
 
     const startPage = pageTexts.findIndex((text) => text.includes("PRINT-LONG-RECORD"));
     const endPage = pageTexts.findIndex((text) => text.includes("PRINT-LONG-RECORD-END"));
