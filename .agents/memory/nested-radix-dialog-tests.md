@@ -9,6 +9,18 @@ When a Radix child dialog is open, its parent may remain mounted but be hidden f
 
 **How to apply:** Keep normal interaction assertions accessibility-based. For stacking checks, locate the known parent by its dialog heading and compare its rendered z-index with the active child.
 
+When a trigger opens a child dialog immediately, Playwright's `locator.click()` can time out after the parent is hidden even though the click already opened the child. For that transition, scroll the trigger into view, click its measured center with the page mouse, then assert the child dialog state.
+
+**Why:** The trigger's click changes the parent's accessibility visibility during the same action; a timeout can therefore be a test synchronization issue rather than a broken interaction.
+
+**How to apply:** Use the coordinate tap only for this known parent-to-child transition, and keep the following dialog visibility, focus, and stacking assertions.
+
+After a nested dialog closes, its fading overlay can remain at `pointer-events: auto` briefly and intercept a fast re-tap on the parent.
+
+**Why:** The child overlay stays mounted for its exit animation even after its dialog is hidden.
+
+**How to apply:** Before interacting with the parent again, wait for closed fixed inset overlays to unmount.
+
 Safari does not reliably focus a button when it is tapped. Do not assume that
 the active element identifies the opener of a controlled nested dialog unless
 the opener explicitly receives focus.

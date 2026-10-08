@@ -162,6 +162,7 @@ for (const viewport of viewports) {
 
     await proReceipt.getByRole("button", { name: "Close" }).click();
     await expect(proReceipt).toBeHidden();
+    await waitForClosedDialogOverlays(page);
 
     // Manual DIY entry is a separate form with optional proof uploads.
     await selectTier(page, /Basic Driver \(Free\)/);
@@ -172,13 +173,14 @@ for (const viewport of viewports) {
     await expect(manualEntry.getByLabel("Work performed", { exact: true })).toBeEnabled();
     await manualEntry.getByRole("button", { name: "Close" }).click();
     await expect(manualEntry).toBeHidden();
+    await waitForClosedDialogOverlays(page);
 
     // Receipt entry remains camera-first and its locked cost breakdown opens Pro DIY.
     await page.getByRole("button", { name: "Snap Receipt" }).click();
     const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(receipt).toBeVisible();
     const upgradeTrigger = receipt.getByRole("button", { name: /Parts vs labour cost/ });
-    await upgradeTrigger.click();
+    await clickNestedDialogTrigger(page, upgradeTrigger);
     const upgrade = page.getByRole("dialog", { name: /Upgrade to Pro DIY/ });
     await expect(upgrade).toBeVisible();
     const openBackdrops = page.locator('[data-state="open"][class*="fixed"][class*="inset-0"]');
@@ -205,9 +207,10 @@ for (const viewport of viewports) {
     await expect(upgradeTrigger).toBeFocused();
     await checkDialogViewport(page, receipt);
     await expect(openBackdrops).toHaveCount(1);
+    await waitForClosedDialogOverlays(page);
 
     // Escape must dismiss only the active child, not its mounted parent.
-    await upgradeTrigger.click();
+    await clickNestedDialogTrigger(page, upgradeTrigger);
     await expect(upgrade).toBeVisible();
     await checkDialogViewport(page, upgrade);
     await checkCloseFocus(page, upgrade);
@@ -217,6 +220,7 @@ for (const viewport of viewports) {
     await expect(upgradeTrigger).toBeFocused();
     await receipt.getByRole("button", { name: "Close" }).click();
     await expect(receipt).toBeHidden();
+    await waitForClosedDialogOverlays(page);
     await expect(openBackdrops).toHaveCount(0);
 
     // The development fixture supplies the V5C reference server-side.
@@ -236,6 +240,18 @@ for (const viewport of viewports) {
     await expect(vehicleDialog).toBeHidden();
     await expect(openBackdrops).toHaveCount(0);
   });
+}
+
+async function waitForClosedDialogOverlays(page: Page) {
+  await expect(page.locator('[data-state="closed"][class*="fixed"][class*="inset-0"]')).toHaveCount(0);
+}
+
+async function clickNestedDialogTrigger(page: Page, trigger: Locator) {
+  await expect(trigger).toBeVisible();
+  await trigger.scrollIntoViewIfNeeded();
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error("The nested-dialog trigger is not visible.");
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
 async function checkDialogViewport(page: Page, dialog: Locator) {

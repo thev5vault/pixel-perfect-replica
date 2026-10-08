@@ -456,9 +456,9 @@ function PublicLanding() {
   return (
     <main className="min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
       {import.meta.env.DEV && <div className="mx-auto max-w-md px-5"><DevPreviewButton /></div>}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-5 sm:px-8">
         <div className="flex items-center gap-3"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold">V5Vault</span></div>
-        <div className="flex items-center gap-2"><a href="/sign-in" className="rounded-full px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Sign in</a><a href="/sign-up" className="btn-primary px-4 py-2 text-sm">Create account</a></div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2"><a href="/sign-in" className="shrink-0 whitespace-nowrap rounded-full px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 sm:px-4 sm:text-sm">Sign in</a><a href="/sign-up" className="btn-primary shrink-0 whitespace-nowrap px-2 py-2 text-xs sm:px-4 sm:text-sm">Create account</a></div>
       </header>
       <section className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-24 md:grid-cols-[1.1fr_.9fr] md:items-center">
         <div className="absolute -left-40 top-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
