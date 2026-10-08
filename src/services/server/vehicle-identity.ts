@@ -60,6 +60,7 @@ export async function createVehicleByVIN(input: {
 }
 
 export async function stampServiceByVIN(input: {
+  client_submission_id?: string | undefined;
   vrm: string;
   vin: string;
   physically_inspected_vin: true;
@@ -88,6 +89,7 @@ export async function stampServiceByVIN(input: {
   if (!vinMatchesMake(vin,row.data?.make??"")) throw new Error("The VIN manufacturer prefix does not match this vehicle make.");
   const components=input.components??[];
   return createService({
+    client_submission_id: input.client_submission_id,
     vrm: row.vrm,
     vin,
     physically_inspected_vin: true,

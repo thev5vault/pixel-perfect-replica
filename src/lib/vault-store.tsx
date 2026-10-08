@@ -32,6 +32,7 @@ export interface PartLine {
 
 export interface ServiceRecord {
   id: string;
+  client_submission_id?: string | undefined;
   vrm: string;
   vin?: string | undefined;
   physically_inspected_vin?: boolean | undefined;

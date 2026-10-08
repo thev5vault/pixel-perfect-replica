@@ -1,0 +1,44 @@
+# REPLIT AGENT FINAL POLISH & PRODUCTION BUILD PROMPT
+
+Act as a Senior Full-Stack Engineer and UI/UX Accessibility Specialist. Execute a final, comprehensive code polish and production build audit for the V5Vault platform. Ensure all modifications strictly utilize client-side browser execution and zero-cost local mechanisms, fully respecting Replit's free AI and hosted tier constraints without adding paid external API overhead.
+
+---
+
+### CORE OBJECTIVES & DELIVERABLES
+
+#### 1. Zero-Cost Client-Side OCR (`Tesseract.js`)
+- Refactor all receipt and invoice OCR scanning on the `/garage` terminal and service entry forms to use client-side `Tesseract.js`.
+- Execute all text recognition locally inside the user's browser WebAssembly runtime.
+- Do NOT route document scanning through paid third-party OCR APIs or heavy server-side endpoints.
+
+#### 2. Offline Workshop Queueing (`/garage` Terminal)
+- Implement an offline fallback for mechanics using `localStorage` / `IndexedDB` on the `/garage` terminal.
+- When an offline condition is detected, automatically queue the service draft locally.
+- Auto-sync queued records back to the database as soon as network connectivity is restored, displaying a non-intrusive "Synced" status toast.
+
+#### 3. Privacy Warning Banner & PII Protection
+- Add a high-contrast visual warning banner inside all receipt/document upload modals:
+  > **Privacy Notice:** *For your security, physically mask or blur your address and 11-digit V5C reference number before uploading.*
+- Ensure Clerk authentication tokens remain managed in memory by the Clerk SDK and are NEVER written to `localStorage` or exposed in client logs.
+
+#### 4. Touch Target Sizing & Modal UI Centering
+- Enforce a strict minimum **48px × 48px** touch target box for all modal, sheet, and drawer close ('X') buttons (`DialogClose`, `ModalHeader`).
+- Apply an explicit zero-padding reset (`p-0`) to close button containers to eliminate top-left icon drift.
+- Use explicit flex centering (`flex items-center justify-center`) to ensure the inner 'X' icon is perfectly centered horizontally and vertically within its 48px × 48px container.
+- **Scope Rule:** Keep touch target expansions strictly isolated to dialog/modal close controls without altering global `<button>` rules or navigation bars.
+
+#### 5. Auth Hydration & Routing Safety
+- Ensure Clerk auth handoffs target the `/dashboard` route with explicit `forceRedirectUrl` and `fallbackRedirectUrl` parameters.
+- Display a dedicated *"Restoring your session..."* loader screen during auth state hydration to prevent Mobile Safari (WebKit) from looping back to the unauthenticated landing page (`/`).
+
+#### 6. ISO 3779 VIN Sanitization & Immutable Data Locking
+- Maintain strict UK/EU VIN validation: auto-trim, convert to uppercase, restrict to 17 alphanumeric characters, reject invalid characters (`I`, `O`, `Q`), and omit US position-9 check-digit requirements.
+- Ensure all service history entries, workshop stamps, and modification logs remain permanently tied to the vehicle's 17-character VIN in the database, preventing record transfers or decoupling once verified and saved.
+
+---
+
+### UI PRESERVATION & BUILD VALIDATION
+
+- **Viewport Constraints:** Guarantee 0px horizontal scrolling across viewports down to 320px screen widths.
+- **Visual Design:** Retain the current dark-mode aesthetic, typography hierarchy, card padding, and bottom tab bar navigation without introducing structural visual regressions.
+- **Build Execution:** Run `npm run build` and verify that the production bundle builds cleanly on Vite port 5000 with zero type errors, unhandled promise rejections, or port listener collisions.

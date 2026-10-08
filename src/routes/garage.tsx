@@ -1,11 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BadgeCheck, Camera, Check, FileText, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
+import { DocumentPrivacyNotice, Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
-import { readGarageDraft, saveGarageDraft, clearGarageDraft } from "@/lib/garage-draft";
+import {
+  clearGarageDraft,
+  enqueueGarageSubmission,
+  readGarageDraft,
+  readGarageOutbox,
+  removeGarageSubmission,
+  saveGarageDraft,
+} from "@/lib/garage-draft";
 import { validateVIN } from "@/lib/vin";
 import { useAccount } from "@/lib/account-store";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
@@ -17,6 +24,25 @@ const COMPONENTS = [
 ];
 
 type Category = (typeof CATEGORIES)[number];
+type GarageStampPayload = {
+  client_submission_id: string;
+  vrm: string;
+  vin: string;
+  physically_inspected_vin: true;
+  mileage: number;
+  date: string;
+  category: Category;
+  components: string[];
+  notes: string;
+  advisories: string[];
+  partsCost?: number;
+  labourCost?: number;
+  cost?: number;
+  image?: string;
+  invoice_name?: string;
+  invoice_data?: string;
+};
+
 type GarageForm = {
   vrm: string;
   vin: string;
@@ -49,6 +75,8 @@ export const Route = createFileRoute("/garage")({ component: GaragePage });
 function GaragePage() {
   const account = useAccount();
   const user = account?.state?.user;
+  const accountRefreshRef = useRef(account.refresh);
+  const syncingOutboxRef = useRef(false);
   const canStamp = user?.role === "dev_admin" ||
     (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier === "verified_garage");
   const canScanInvoice = Boolean(user && user.subscription_tier !== "free");
@@ -65,6 +93,12 @@ function GaragePage() {
   const [scanMessage, setScanMessage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [queuedCount, setQueuedCount] = useState(0);
+  const [queueStatus, setQueueStatus] = useState("");
+
+  useEffect(() => {
+    accountRefreshRef.current = account.refresh;
+  }, [account.refresh]);
 
   useEffect(() => {
     if (!draftKey) {
@@ -90,6 +124,85 @@ function GaragePage() {
     });
     return () => { active = false; };
   }, [draftKey]);
+
+  useEffect(() => {
+    if (!user || !canStamp) {
+      setQueuedCount(0);
+      setQueueStatus("");
+      return;
+    }
+    let active = true;
+    const syncOutbox = async () => {
+      if (syncingOutboxRef.current) return;
+      syncingOutboxRef.current = true;
+      try {
+        const pending = await readGarageOutbox<GarageStampPayload>(user.id);
+        if (!active) return;
+        setQueuedCount(pending.length);
+        if (!pending.length) {
+          setQueueStatus("");
+          return;
+        }
+        if (!navigator.onLine) {
+          setQueueStatus(`${pending.length} service ${pending.length === 1 ? "record is" : "records are"} queued on this device · not server-signed yet.`);
+          return;
+        }
+
+        setQueueStatus(`Syncing ${pending.length} offline ${pending.length === 1 ? "record" : "records"}…`);
+        let synced = 0;
+        let blockedMessage = "";
+        for (const entry of pending) {
+          if (!active || !navigator.onLine) break;
+          const response = await fetch("/api/garage/stamp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(entry.payload),
+          });
+          const result = await response.json().catch(() => ({})) as { error?: string };
+          if (!response.ok) {
+            blockedMessage = `An offline record remains saved on this device. Sync stopped: ${result.error ?? "the server rejected the record."}`;
+            break;
+          }
+          await removeGarageSubmission(entry.id);
+          synced += 1;
+        }
+
+        const remaining = await readGarageOutbox<GarageStampPayload>(user.id);
+        if (!active) return;
+        setQueuedCount(remaining.length);
+        if (synced) {
+          setQueueStatus(remaining.length
+            ? `${synced} offline ${synced === 1 ? "record synced" : "records synced"} · ${remaining.length} still queued.`
+            : `${synced} offline ${synced === 1 ? "record synced" : "records synced"} to the vehicle passport.`);
+          toast.success(synced === 1 ? "Offline service record synced." : `${synced} offline service records synced.`);
+          void accountRefreshRef.current().catch(() => undefined);
+        } else if (blockedMessage) {
+          setQueueStatus(blockedMessage);
+        } else if (remaining.length) {
+          setQueueStatus(`${remaining.length} service ${remaining.length === 1 ? "record is" : "records are"} queued on this device · waiting to sync.`);
+        } else {
+          setQueueStatus("");
+        }
+      } catch {
+        if (active) setQueueStatus("Offline records remain stored on this device. They will retry when the connection is available.");
+      } finally {
+        syncingOutboxRef.current = false;
+      }
+    };
+    const retryWhenVisible = () => {
+      if (document.visibilityState === "visible") void syncOutbox();
+    };
+    window.addEventListener("online", syncOutbox);
+    window.addEventListener("focus", syncOutbox);
+    document.addEventListener("visibilitychange", retryWhenVisible);
+    void syncOutbox();
+    return () => {
+      active = false;
+      window.removeEventListener("online", syncOutbox);
+      window.removeEventListener("focus", syncOutbox);
+      document.removeEventListener("visibilitychange", retryWhenVisible);
+    };
+  }, [user?.id, canStamp]);
 
   useEffect(() => {
     if (!draftKey || readyDraftKey !== draftKey) return;
@@ -265,47 +378,72 @@ function GaragePage() {
       try { await saveGarageDraft(draftKey, draft); }
       catch { setDraftStatus("Could not save this draft locally. Keep this page open while submitting."); }
     }
-    if (!navigator.onLine) {
-      setDraftStatus("Offline draft saved on this device · no server stamp has been created.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const partsCost = form.partsCost ? Number(form.partsCost) : undefined;
-      const labourCost = form.labourCost ? Number(form.labourCost) : undefined;
-      const totalCost = (partsCost ?? 0) + (labourCost ?? 0);
-      const response = await fetch("/api/garage/stamp", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vrm: registration,
-          vin: form.vin,
-          physically_inspected_vin: form.physicalVinInspected,
-          mileage,
-          date: form.date || today(),
-          category: form.category,
-          components: form.components,
-          notes: form.notes.trim(),
-          advisories: form.advisories.split(/\n+/).map((line) => line.trim()).filter(Boolean),
-          ...(partsCost !== undefined ? { partsCost } : {}),
-          ...(labourCost !== undefined ? { labourCost } : {}),
-          ...(form.partsCost || form.labourCost ? { cost: totalCost } : {}),
-          ...(form.receipt ? { image: form.receipt } : {}),
-          ...(form.invoiceData ? { invoice_data: form.invoiceData, invoice_name: form.invoiceName } : {}),
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "The workshop record could not be saved.");
+    const partsCost = form.partsCost ? Number(form.partsCost) : undefined;
+    const labourCost = form.labourCost ? Number(form.labourCost) : undefined;
+    const totalCost = (partsCost ?? 0) + (labourCost ?? 0);
+    const payload: GarageStampPayload = {
+      client_submission_id: crypto.randomUUID(),
+      vrm: registration,
+      vin: form.vin.trim().toUpperCase(),
+      physically_inspected_vin: true,
+      mileage,
+      date: form.date || today(),
+      category: form.category,
+      components: form.components,
+      notes: form.notes.trim(),
+      advisories: form.advisories.split(/\n+/).map((line) => line.trim()).filter(Boolean),
+      ...(partsCost !== undefined ? { partsCost } : {}),
+      ...(labourCost !== undefined ? { labourCost } : {}),
+      ...(form.partsCost || form.labourCost ? { cost: totalCost } : {}),
+      ...(form.receipt ? { image: form.receipt } : {}),
+      ...(form.invoiceData ? { invoice_data: form.invoiceData, invoice_name: form.invoiceName } : {}),
+    };
+    const queueForSync = async () => {
+      if (!user) throw new Error("Sign in with the workshop account that created this record before queuing it.");
+      await enqueueGarageSubmission({ id: payload.client_submission_id, userId: user.id, payload });
       if (draftKey) await clearGarageDraft(draftKey).catch(() => undefined);
       setForm(emptyForm());
       setDraftStatus("");
+      setQueuedCount((count) => count + 1);
+      setQueueStatus("Service record saved offline · it is not server-signed and will sync when your connection returns.");
+      toast.info("Saved offline. This service record will sync when you reconnect.");
+    };
+    if (!navigator.onLine) {
+      try {
+        await queueForSync();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "The offline record could not be queued.");
+        setDraftStatus("Your editable draft remains saved on this device. No server stamp has been created.");
+      }
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await fetch("/api/garage/stamp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "The workshop record could not be saved.");
+      if (draftKey) await clearGarageDraft(draftKey).catch(() => undefined);
+      setForm(emptyForm());
+      setDraftStatus("");
+      setQueueStatus("");
       setSuccess(`Server-signed service record saved for ${formatVrm(registration)}. The VIN check and stamp status are recorded by the server.`);
       toast.success("VIN-linked service record added to the vehicle passport.");
       void account.refresh().catch(() => undefined);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "The workshop record could not be saved.";
-      setError(message);
-      if (!navigator.onLine || cause instanceof TypeError) {
-        setDraftStatus("Could not reach the server. Your saved draft is not signed; retry when online.");
+      if (cause instanceof TypeError || !navigator.onLine) {
+        try {
+          await queueForSync();
+        } catch (queueError) {
+          setError(`${message} ${queueError instanceof Error ? queueError.message : "Offline storage is unavailable."}`);
+          setDraftStatus("Your editable draft remains saved on this device. No server stamp has been created.");
+        }
+      } else {
+        setError(message);
       }
     } finally {
       setBusy(false);
@@ -365,7 +503,8 @@ function GaragePage() {
         <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className="field" /></Field>
       </div>
       <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-      <div className="grid gap-3 sm:grid-cols-2">
+       <DocumentPrivacyNotice />
+       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><Camera className="h-4 w-4 text-cyan-400" /> Attach receipt photo
             <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
@@ -389,6 +528,7 @@ function GaragePage() {
       </button>}
       {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
       {draftStatus && <p role="status" className="rounded-lg border border-slate-700 bg-slate-950/50 p-3 text-xs text-slate-300">{draftStatus}</p>}
+       {queueStatus && <p role="status" className="rounded-lg border border-cyan-400/40 bg-cyan-950/50 p-3 text-sm text-cyan-50">{queueStatus}</p>}
       {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
       <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
       <button type="submit" disabled={busy || fileBusy} className="btn-primary w-full py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>

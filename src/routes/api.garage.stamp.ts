@@ -3,6 +3,7 @@ import { z } from "zod";
 import { stampServiceByVIN } from "@/services/server/vehicle-identity";
 
 const stampInput = z.object({
+  client_submission_id: z.string().uuid().optional(),
   vrm: z.string().trim().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/),
   vin: z.string().trim().length(17).regex(/^[A-HJ-NPR-Z0-9]{17}$/i),
   physically_inspected_vin: z.literal(true),
