@@ -1,0 +1,38 @@
+Build the final V1 release of V5Vault — an offline-resilient, VIN-anchored digital vehicle history passport platform with a zero-cost modular API structure and tier-gated workshop features.
+
+### 1. DATABASE SCHEMA & ACCOUNT BINDING (Drizzle / PostgreSQL)
+- VEHICLES TABLE: `vin` (Primary Key, 17-char string), `vrm` (string), `v5c_reference` (string, encrypted), `make`, `model`, `colour`, `fuel_type`, `registration_date`, `mot_expiry`, `verification_tier` ('PROVISIONAL', 'WORKSHOP_CHECKED', 'GOV_VERIFIED'), `is_scrapped` (boolean, default false), `created_at`.
+- CLAIMS TABLE: `id`, `user_id`, `vin` (foreign key), `claimed_at`, `status` ('ACTIVE'). Enforce a strict UNIQUE constraint on `vin` to prevent multiple accounts claiming the same chassis.
+- SERVICE RECORDS TABLE: `id`, `vin`, `stamped_by_user_id`, `mileage` (integer), `service_type` (string), `selected_components` (json/array), `work_performed` (text), `advisories` (text), `receipt_url` (string, optional), `stamped_at`.
+
+### 2. MODULAR VEHICLE PROVIDER SERVICE (`lib/vehicleProvider.ts`)
+- Implement a plug-and-play provider function `getVehicleData(vrm)`:
+  - IF `process.env.GOV_API_ENABLED === 'true'` AND `process.env.DVSA_API_KEY` exists: query official DVSA API endpoint (`https://beta.check-mot.service.gov.uk/trade/vehicles/mot-tests?registration=${vrm}`).
+  - ELSE (Fallback Mode): Return hardcoded dev fixtures for "LG57 VYF" (Audi A4 S Line Special Edition 2.0 TFSI, Silver, Petrol, Reg Date: 17 Sept 2007, MOT Expiry: 16 Feb 2027, VIN: WUAZZZ8EX8A800721) or parse standard input.
+- IMPLEMENT ISO 3779 VIN VALIDATION:
+  - Enforce 17 alphanumeric characters (excluding I, O, Q). Validate WMI manufacturer code prefix offline (e.g., WUA/WAU = Audi, WBA/WBS = BMW, WDD/WDC = Mercedes).
+- SANITIZE V5C INPUT: Auto-strip spaces and hyphens from the 11-digit V5C reference. Make `v5c_reference` OPTIONAL in Zod validation if VRM matches dev fixtures ("LG57 VYF", "AB14 CDE", "BUL 200") to avoid regex schema errors.
+- FIRST-CLAIM BINDING: When an authenticated user claims a vehicle, link its VIN directly to their `user_id`. Block subsequent claims by other accounts with: "Vehicle already registered to an active keeper."
+
+### 3. WORKSHOP TERMINAL & LOGGING CONTROLS (`/garage`)
+- Create a fast, touch-optimized mobile interface for mechanics:
+  - INPUTS: Registration number lookup, Odometer mileage, and Physical VIN inspection checkbox ("I physically inspected the chassis VIN").
+  - LOGGING MODE 1 — TOUCH CHIPS: Segmented buttons for Category ["Interim Service", "Full Service", "Major Service", "MOT Test", "Repair"] plus multi-select toggle pills for ["Engine Oil & Filter", "Air Filter", "Cabin Filter", "Fuel Filter", "Spark/Glow Plugs", "Front Brakes", "Rear Brakes", "Brake Fluid", "Coolant", "Gearbox Fluid", "Timing Belt & Water Pump", "12V Battery"].
+  - LOGGING MODE 2 — INVOICE ATTACHMENT & AI SCANNING:
+    - ALL TIERS (Free & Paid) can upload a job card/receipt photo to store as a static proof document in `receipt_url`.
+    - PAID TIERS ONLY (Garage Pro / Unlimited): Add "Magic AI Scan" button that sends uploaded invoice photo to `/api/ai/parse-invoice` to extract mileage, components, and notes, auto-populating form inputs.
+    - FREE TIER: Display lock tag on AI scan button: "Upgrade to Garage Pro to auto-fill forms with AI".
+  - LOGGING MODE 3 — MANUAL FALLBACK: Keep all inputs (mileage, notes, advisories) 100% editable so mechanics can adjust fields before stamping.
+
+### 4. OWNER VAULT & DIGITAL PASSPORT (`/vault` & `/passport`)
+- CLEAN OWNER VIEW: Display active vehicles, current MOT expiry countdown, service history timeline, and attached proof documents.
+- NO CLUTTER: Keep standard owner view free of heavy garage features. Include "Upload Document / Receipt" for owner manual record-keeping.
+- BADGES: Render "Chassis & Workshop Verified" (Amber) or "Government & DVSA Verified" (Green) based on `verification_tier`.
+- SCRAP LOCK: If `is_scrapped === true`, lock the passport into a read-only archive state and reject new service stamps.
+
+### 5. STRIPE INTEGRATION & TIER GATING
+- Wire `/api/stripe/create-checkout-session` using `process.env.STRIPE_SECRET_KEY`.
+- TIERS:
+  - Free Tier (£0): 1 vehicle passport, manual typing, document storage.
+  - Garage Pro (£14.99/mo with 30-day trial): Unlimited VIN stamping, touch chips, and AI Invoice Auto-Fill.
+- Ensure the app falls back cleanly to preview mode if Stripe keys are missing, but executes live Checkout when `STRIPE_SECRET_KEY` is present.
