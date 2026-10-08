@@ -10,7 +10,7 @@ import { V5VaultLogo } from "./V5VaultLogo";
 import { VehicleLookupDialog } from "./VehicleLookupDialog";
 import { UnlockGate } from "./UnlockGate";
 import { toast } from "sonner";
-import { accountHome, isAuthEntry } from "@/lib/auth-routing";
+import { accountHome, isAuthEntry, shouldHoldAuthEntryForHydration } from "@/lib/auth-routing";
 
 const CIVILIAN = [
   { to: "/vehicle", label: "Vehicle", icon: Car }, { to: "/passport", label: "Passport", icon: FileBadge }, { to: "/settings", label: "Settings", icon: Settings },
@@ -55,7 +55,9 @@ export function AppShell({ children }: { children: ReactNode }) {
    }, [signed, account?.authLoaded, account?.state?.user.role, account?.state?.development_role, path, navigate]);
 
   if (path.startsWith("/verify/")) return <>{children}</>;
-   if(account?.authLoaded===false && account.state) return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-400" role="status">Restoring your session…</div>;
+  if (shouldHoldAuthEntryForHydration(path, account?.authLoaded)) {
+    return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-400" role="status">Restoring your session…</div>;
+  }
   if (account?.loading && account.signedIn && !account.state) {
     return <div className="min-h-[100dvh] animate-pulse bg-slate-950" aria-label="Loading account"><div className="mx-auto mt-24 h-28 max-w-xl rounded-2xl bg-slate-800/60" /></div>;
   }

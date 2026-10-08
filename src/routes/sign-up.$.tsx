@@ -5,5 +5,5 @@ import { AuthFrame } from "@/components/vault/AuthFrame";
 export const Route = createFileRoute("/sign-up/$")({ component: SignUpPage });
 
 function SignUpPage() {
-  return <AuthFrame mode="sign-up"><SignUp routing="path" path="/sign-up" signInUrl="/sign-in" /></AuthFrame>;
+  return <AuthFrame mode="sign-up"><SignUp routing="path" path="/sign-up" signInUrl="/sign-in" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard" /></AuthFrame>;
 }

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GarageRouteImport } from './routes/garage'
 import { Route as PassportRouteImport } from './routes/passport'
 import { Route as QueueRouteImport } from './routes/queue'
@@ -51,6 +52,11 @@ const AdminRoute = AdminRouteImport.update({
 const BookingsRoute = BookingsRouteImport.update({
   id: '/bookings',
   path: '/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GarageRoute = GarageRouteImport.update({
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
+  '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/queue': typeof QueueRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
+  '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/queue': typeof QueueRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/bookings': typeof BookingsRoute
+  '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
   '/passport': typeof PassportRoute
   '/queue': typeof QueueRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/bookings'
+    | '/dashboard'
     | '/garage'
     | '/passport'
     | '/queue'
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/bookings'
+    | '/dashboard'
     | '/garage'
     | '/passport'
     | '/queue'
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/bookings'
+    | '/dashboard'
     | '/garage'
     | '/passport'
     | '/queue'
@@ -312,6 +324,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
   BookingsRoute: typeof BookingsRoute
+  DashboardRoute: typeof DashboardRoute
   GarageRoute: typeof GarageRoute
   PassportRoute: typeof PassportRoute
   QueueRoute: typeof QueueRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/bookings'
       fullPath: '/bookings'
       preLoaderRoute: typeof BookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/garage': {
@@ -504,6 +524,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
   BookingsRoute: BookingsRoute,
+  DashboardRoute: DashboardRoute,
   GarageRoute: GarageRoute,
   PassportRoute: PassportRoute,
   QueueRoute: QueueRoute,

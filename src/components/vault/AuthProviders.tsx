@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { ClerkProvider } from "@clerk/react";
+import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
-import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { AccountProvider } from "@/lib/account-store";
 import { SignupRecovery } from "./SignupRecovery";
 
@@ -13,7 +13,8 @@ function BrowserProviders({children}:{children:ReactNode}) {
   const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"]);
   const clerkProxyUrl = import.meta.env["VITE_CLERK_PROXY_URL"];
   return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl}
-    signInForceRedirectUrl="/" signUpForceRedirectUrl="/"
+    signInUrl="/sign-in" signUpUrl="/sign-up"
+    signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard"
     localization={{
       signIn: { start: { title: "Sign in to V5Vault", titleCombined: "Sign in to V5Vault" } },
       signUp: { start: { title: "Create your V5Vault account", titleCombined: "Create your V5Vault account" } },

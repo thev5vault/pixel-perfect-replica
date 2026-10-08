@@ -21,6 +21,12 @@ Treat pending signup metadata as a UI hint only; restore the existing Clerk atte
 
 **How to apply:** Trust provider state for the verification step, distinguish expired attempts from temporary network failure, and never save passwords, codes or tokens in recovery storage.
 
+Keep web session-token handling inside Clerk; do not copy session tokens into localStorage. Send auth completion to a dedicated handoff route that waits for Clerk hydration before role-based navigation.
+
+**Why:** Browser token copies increase XSS exposure and bypass Clerk's session lifecycle; treating cold hydration as signed-out can send verified users back to the marketing page.
+
+**How to apply:** Use Clerk-supported force/fallback redirect props to `/dashboard`, keep `/` available while signed out, and show a retry state if Clerk is signed in but account data is unavailable.
+
 Use appearance style objects when Clerk must override its own component styling.
 
 **Why:** Clerk's unlayered styles overrode Tailwind's layered `hidden` utility, leaving its footer visible and duplicating the external sign-in link despite the appearance class.
