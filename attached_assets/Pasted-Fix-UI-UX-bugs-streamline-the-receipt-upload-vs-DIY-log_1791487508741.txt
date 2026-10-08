@@ -1,0 +1,30 @@
+Fix UI/UX bugs, streamline the receipt upload vs. DIY logging flows, sanitize subscription tiers, and execute full test verification across V5Vault:
+
+1. DIFFERENTIATE "SNAP RECEIPT" VS "ADD A BASIC DIY SERVICE ENTRY" (`client/src/pages/passport.tsx` & form components):
+- "SNAP RECEIPT" FLOW: Should launch a streamlined, camera-first modal focused on document capture.
+  • Primary input: Large camera dropzone / file picker ("Take Photo or Upload Receipt/PDF").
+  • Action: Runs local OCR immediately upon upload to extract date, mileage, and parts, showing an editable preview before attaching to the vehicle timeline.
+- "ADD A BASIC DIY SERVICE ENTRY" FLOW: Should launch a structured manual logging form.
+  • Focuses on manual entries: Service Date, Odometer Mileage, Category selector, Quick Work Touch Chips (Oil & Filter, Brakes, Tyres, Battery, etc.), and Description text.
+  • Document upload is optional at the bottom ("Attach Proof Receipt").
+- Ensure these two actions feel distinct in purpose and UI design without redundant or overlapping form layouts.
+
+2. CLEAN 4-TIER SUBSCRIPTION ARCHITECTURE WITH MONTHLY/YEARLY TOGGLE (`client/src/pages/settings.tsx`, `client/src/components/tier-switcher.tsx`, & Stripe Routes):
+- Maintain strictly 4 active plan options in exact chronological order across the Settings page and Tier Switcher dropdown:
+  1) Basic Driver (Free / £0.00) — 1 active vehicle passport, basic manual logging.
+  2) Pro DIY — £0.99 / month OR £9.99 / year (~16% discount).
+  3) Pro Modder / Collector — £1.49 / month OR £14.99 / year (~16% discount). (REMOVE the duplicate £14.99/year card completely).
+  4) Verified Workshop / Garage Pro — £9.99 / month OR £99.99 / year (~16% discount). Includes 30-day free trial, unlimited VIN stamps, touch chips, local OCR.
+- ADD A CLEAN BILLING TOGGLE SWITCH above the pricing cards: [ Monthly | Yearly (Save ~16%) ]. Toggling this switch dynamically updates the displayed price and billing cycle without creating extra visual columns.
+- STRIPE BACKEND UPDATE: Pass `billingInterval` ('month' or 'year') to `/api/stripe/create-checkout-session` so Stripe loads the correct price ID dynamically.
+
+3. PASSPORT EXPORT MOBILE PADDING & OVERFLOW FIX (`client/src/pages/passport.tsx`):
+- Fix text container clipping on export passport cards (`Standard Passport`, `OEM Provenance Certificate`, `Master Build Sheet`).
+- Add `overflow-x-auto` with smooth horizontal touch-scrolling to all passport data tables (`Service History`, `MOT Log`, `Parts Breakdown`).
+
+4. HEADER BADGE WRAPPING & LOGIN MODAL SPACING:
+- In `client/src/components/vehicle-card.tsx`, wrap status pills (`Keeper link approved`, `Provisional vehicle data`, `V5C`) in a flex container with `flex-wrap gap-1.5` so badges wrap neatly on narrow screens.
+- In `client/src/pages/auth.tsx`, adjust the `Direct GodMode Bypass` button container so it sits cleanly below the login card on mobile devices without overlapping keyboard auto-fill overlays.
+
+5. VERIFICATION & AUTOMATED TESTING:
+- Run `npm run build` and execute the full project test suite (`npm test`). Ensure all 105+ tests pass cleanly and confirm there are zero TypeScript compiler errors or UI crashes before finishing.
