@@ -361,14 +361,58 @@
   }
 
   .passport-document {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none !important;
     padding: 8mm;
     border-radius: 0;
     box-shadow: none;
   }
 
+  .passport-document::before {
+    display: none !important;
+  }
+
   .passport-section,
-  .passport-record-card {
+  .passport-record-card,
+  .passport-part-card,
+  .passport-cost-card,
+  .passport-document header,
+  .passport-document header aside {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .passport-record-section,
+  .passport-service-record {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .passport-service-record > div:first-child {
+    display: block !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .passport-record-card p,
+  .passport-service-description {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .passport-service-description,
+  .passport-record-section > h3,
+  .passport-record-card h4,
+  .passport-part-card h4 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  .passport-part-card,
+  .passport-cost-card {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
   }
 
   .animate-vault-open {

@@ -257,14 +257,14 @@ function Certificate({ cert }: { cert: Cert }) {
             </div>
           </section>
           {history.map((s) => (
-            <section key={s.id} className="passport-section min-w-0 p-4">
+            <section key={s.id} className="passport-section passport-service-record min-w-0 p-4">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-xs text-muted-foreground">
                     {s.category || "Service record"} · {fmtDate(s.date)}
                   </p>
                   <p className="mt-1 break-words text-sm text-muted-foreground">{s.garage} · {fmtMiles(s.mileage)}</p>
-                  <h3 className="mt-2 break-words font-bold hyphens-auto">{s.description}</h3>
+                  <h3 className="passport-service-description mt-2 break-words font-bold hyphens-auto">{s.description}</h3>
                   {s.fluids && <p className="break-words text-xs text-muted-foreground hyphens-auto">Fluids: {s.fluids}</p>}
                 </div>
                 {s.image && <div className="max-w-full self-start"><Thumb src={s.image} alt={`${s.description} receipt`} /></div>}
@@ -273,7 +273,7 @@ function Certificate({ cert }: { cert: Cert }) {
                 <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts Breakdown</h4>
                 <div className="space-y-2">
                   {(s.parts ?? []).map((p, i) => (
-                    <div key={`${p.name}-${i}`} className="grid min-w-0 gap-1 rounded-lg border border-slate-200 bg-white/80 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] sm:items-center">
+                    <div key={`${p.name}-${i}`} className="passport-part-card grid min-w-0 gap-1 rounded-lg border border-slate-200 bg-white/80 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] sm:items-center">
                       <p className="min-w-0 break-words text-sm hyphens-auto">{p.name}</p>
                       <p className="min-w-0 break-all font-mono text-xs">
                         <span className="font-sans text-[10px] font-semibold uppercase tracking-wide text-slate-500">Manufacturer reference · </span>
@@ -283,13 +283,13 @@ function Certificate({ cert }: { cert: Cert }) {
                   ))}
                   {!s.parts?.length && <p className="rounded-lg bg-white/80 p-3 text-sm text-slate-500">No part numbers logged.</p>}
                 </div>
-                <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-3" role="group" aria-label="Itemized costs">
+                <div className="passport-cost-breakdown mt-3 grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-3" role="group" aria-label="Itemized costs">
                   {[
                     ["Parts", s.partsCost ?? 0],
                     ["Labour", s.labourCost ?? 0],
                     ["Total", s.cost ?? 0],
                   ].map(([label, amount]) => (
-                    <div key={label as string} className="min-w-0 rounded-lg border border-slate-200 bg-white/80 p-2">
+                    <div key={label as string} className="passport-cost-card min-w-0 rounded-lg border border-slate-200 bg-white/80 p-2">
                       <p className="break-words text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
                       <p className="break-words font-mono text-sm font-bold">£{(amount as number).toFixed(2)}</p>
                     </div>
@@ -389,7 +389,7 @@ type PassportCardRow = {
 
 function RecordCards({ title, rows, empty }: { title: string; rows: PassportCardRow[]; empty: string }) {
   return (
-    <section className="passport-section min-w-0 p-4">
+    <section className="passport-section passport-record-section min-w-0 p-4">
       <h3 className="mb-2 font-bold">{title}</h3>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>

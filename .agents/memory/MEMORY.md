@@ -10,3 +10,4 @@
 - [Keyboard viewport checks](keyboard-viewport-checks.md) — keyboard regressions need visual-only viewport reduction, not just a smaller page viewport.
 - [Mobile overflow audit signals](mobile-overflow-audit-signals.md) — distinguish decorative absolute overflow from clipped or scrollable user content.
 - [WebKit on Nix](webkit-nix-runtime.md) — system-cache checks and bundled launchers miss Nix paths; readiness requires real page interaction and EGL discovery.
+- [Certificate print watermark](certificate-print-watermark.md) — keep the screen watermark off paged output unless it can repeat safely within each page.
