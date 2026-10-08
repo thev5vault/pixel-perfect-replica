@@ -1,10 +1,4 @@
 const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
-const VIN_WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
-const VIN_CHARACTER_VALUES: Record<string, number> = {
-  A: 1, B: 2, C: 3, D: 4, E: 5, F: 6, G: 7, H: 8,
-  J: 1, K: 2, L: 3, M: 4, N: 5, P: 7, R: 9,
-  S: 2, T: 3, U: 4, V: 5, W: 6, X: 7, Y: 8, Z: 9,
-};
 
 const WMI_MANUFACTURERS: Record<string, string> = {
   WUA: "Audi", WAU: "Audi", TRU: "Audi",
@@ -25,27 +19,7 @@ export function validateVIN(vin: unknown): vin is string {
   if (!VIN_PATTERN.test(value)) return false;
   // The first character must identify a recognized VIN region. Known WMIs
   // below can additionally be checked against the vehicle make.
-  if (!/^[1-9A-HJ-NPR-Z]/.test(value)) return false;
-
-  // ISO 3779 check digits are required for North American VINs. UK and
-  // European VINs use the same 17-character format but do not universally
-  // require a check digit in position 9.
-  return !/^[1-5]/.test(value) || expectedVINCheckDigit(value) === value[8];
-}
-
-export function expectedVINCheckDigit(vin: unknown): string | undefined {
-  if (typeof vin !== "string") return undefined;
-  const value = vin.trim().toUpperCase();
-  if (!VIN_PATTERN.test(value)) return undefined;
-
-  const weightedSum = [...value].reduce((sum, character, index) => {
-    const characterValue = Number.isNaN(Number(character))
-      ? VIN_CHARACTER_VALUES[character]
-      : Number(character);
-    return sum + characterValue * (VIN_WEIGHTS[index] ?? 0);
-  }, 0);
-  const remainder = weightedSum % 11;
-  return remainder === 10 ? "X" : String(remainder);
+  return /^[1-9A-HJ-NPR-Z]/.test(value);
 }
 
 export function vinManufacturer(vin: unknown): string | undefined {
