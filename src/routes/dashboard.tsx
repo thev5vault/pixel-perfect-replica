@@ -20,7 +20,7 @@ function DashboardHandoff() {
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-slate-950 px-5 text-center text-slate-300">
       <p role="status">
-        {account?.authLoaded ? "Opening your dashboard…" : "Restoring your session…"}
+        {account?.authLoaded ? "Opening your V5Vault dashboard…" : "Restoring your V5Vault session…"}
       </p>
     </main>
   );

@@ -16,8 +16,8 @@ function BrowserProviders({children}:{children:ReactNode}) {
     signInUrl="/sign-in" signUpUrl="/sign-up"
     signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard"
     localization={{
-      signIn: { start: { title: "Sign in to V5Vault", titleCombined: "Sign in to V5Vault" } },
-      signUp: { start: { title: "Create your V5Vault account", titleCombined: "Create your V5Vault account" } },
+      signIn: { start: { title: "Sign in to V5Vault", titleCombined: "Sign in to V5Vault", subtitle: "Access your V5Vault vehicle passport." } },
+      signUp: { start: { title: "Create your V5Vault account", titleCombined: "Create your V5Vault account", subtitle: "Keep your vehicle history with V5Vault." } },
     }}
     appearance={{
       theme: darkTheme,

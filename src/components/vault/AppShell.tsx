@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!account && !vault.hydrated) return <div className="min-h-[100dvh] bg-slate-950" />;
   if (account && !signed && isPublic) return <>{children}</>;
   if (account && !signed && !isPublic) {
-    return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">Sign in to your vehicle passport</h1><p className="mt-2 text-sm text-muted-foreground">Your records belong to your account, not this device.</p><a href="/sign-in" className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
+    return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">Sign in to V5Vault</h1><p className="mt-2 text-sm text-muted-foreground">Your vehicle records belong to your account, not this device.</p><a href="/sign-in" className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
   }
   if (signed && isPublic && !isAuthEntry(path)) return <>{children}</>;
   if (signed && isPublic) return <div className="min-h-[100dvh] bg-slate-950" />;

@@ -31,9 +31,9 @@ import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "V5Vault — UK Vehicle History Passport" },
+      { title: "V5Vault — The Vehicle History Passport" },
       { name: "description", content: "A vehicle history passport for UK owners, modders and independent workshops." },
-      { property: "og:title", content: "V5Vault — UK Vehicle History Passport" },
+      { property: "og:title", content: "V5Vault — The Vehicle History Passport" },
       { property: "og:description", content: "A portable record of vehicle history, maintenance and workshop stamps." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

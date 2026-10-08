@@ -82,6 +82,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
+      { title: "V5Vault — The Vehicle History Passport" },
+      { name: "application-name", content: "V5Vault" },
+      { name: "description", content: "A portable, VIN-linked vehicle history passport for keepers, builders, and independent workshops." },
       { name: "viewport", content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" },
       { name: "theme-color", content: "#0F172A" },
       { property: "og:type", content: "website" },
@@ -98,6 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap",
       },
+      { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),

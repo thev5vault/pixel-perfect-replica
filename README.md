@@ -1,24 +1,19 @@
-# Pixel Perfect Replica
+# V5Vault — The Vehicle History Passport
 
-Implement exactly the screenshot and nothing else
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/5d634b7a-71da-4c04-b901-18a981e661a9).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+V5Vault keeps vehicle details, service history, workshop stamps, and exportable passports connected to the vehicle’s VIN.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+```sh
+npm install
+npm run dev
+```
+
+## Checks
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+npx tsc --noEmit
+npm test
+npm run build
+npm run test:browser:all
 ```

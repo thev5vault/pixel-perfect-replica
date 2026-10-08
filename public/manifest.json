@@ -1,0 +1,18 @@
+{
+  "name": "V5Vault",
+  "short_name": "V5Vault",
+  "description": "The Vehicle History Passport",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
