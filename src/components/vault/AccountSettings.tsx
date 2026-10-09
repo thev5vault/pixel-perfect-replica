@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useAccount } from "@/lib/account-store";
 import { accountRolePresentation } from "@/lib/account-role";
-import type { AccountProfileInput } from "@/lib/account-profile";
+import { canEditWorkshopProfile, type AccountProfileInput } from "@/lib/account-profile";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "./ui-bits";
 import { Loader2, Save } from "lucide-react";
@@ -12,7 +12,7 @@ export function AccountSettings() {
   const account = useAccount();
   const user = account?.state?.user;
   const roleView = user ? accountRolePresentation(user) : null;
-  const canEditWorkshopDetails = Boolean(roleView?.isWorkshop && !roleView.isAdmin);
+  const canEditWorkshopDetails = Boolean(user && !roleView?.isAdmin && canEditWorkshopProfile(user));
   const [name, setName] = useState(user?.full_name ?? "");
   const [garageName, setGarageName] = useState(user?.garage_name ?? "");
   const [registration, setRegistration] = useState(user?.garage_registration ?? "");

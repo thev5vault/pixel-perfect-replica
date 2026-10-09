@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
      if (!signed || !account?.state || account.authLoaded===false || !isAuthEntry(path)) return;
      void navigate({ to: accountHome(account.state), replace:true });
-   }, [signed, account?.authLoaded, account?.state?.user.role, account?.state?.development_role, path, navigate]);
+   }, [signed, account?.authLoaded, account?.state, path, navigate]);
 
   if (path.startsWith("/verify/")) return <>{children}</>;
   if (shouldHoldAuthEntryForHydration(path, account?.authLoaded)) {
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
   return (
     <div className="app-viewport flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 animate-vault-open">
-      <header className="sticky top-0 z-30 grid h-14 w-full shrink-0 grid-cols-[20%_60%_20%] items-center border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur-md print:hidden">
+      <header className="sticky top-0 z-30 grid h-14 w-full shrink-0 grid-cols-[20%_60%_20%] items-center border-b border-slate-800 bg-slate-900 px-4 print:hidden">
         <div className="flex min-w-0 items-center justify-start">
           <Link to="/vehicle" className="flex h-11 w-11 shrink-0 items-center justify-center bg-transparent p-0.5 transition-opacity hover:opacity-80" aria-label="V5Vault home">
             <V5VaultLogo className="h-10 w-10" />
@@ -137,10 +137,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button type="button" onClick={()=>void account.signOut()} className="min-h-9 shrink-0 rounded-lg border border-amber-500/30 px-2">Exit preview</button>
       </div>}
       {account?.error && <div role="alert" className="mx-auto mt-3 flex max-w-2xl items-center justify-between rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-2 text-xs text-red-200"><span>{account.error}</span><button className="underline" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div>}
-      <main className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-y-auto overscroll-contain px-4 pb-24 pt-4">
+      <main className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
         {signed && !garage && vehicles.length === 0 && ["/vehicle","/passport","/vault"].includes(path) ? <section className="vault-card mt-5 space-y-4 p-6 text-center"><Car className="mx-auto h-8 w-8 text-primary" /><h1 className="text-xl font-bold">Connect your first vehicle</h1><p className="text-sm text-muted-foreground">Link a vehicle using its registration and 11-digit V5C reference. Development sample approvals are not live DVLA verification.</p><button className="btn-primary w-full" onClick={()=>setConnectOpen(true)}>Connect New Vehicle</button></section> : children}
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-800 bg-slate-900/90 px-4 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-md print:hidden">
+      <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 z-50 mx-auto flex max-w-md items-center justify-between rounded-2xl border border-slate-700/80 bg-slate-900/95 px-2 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transform-gpu print:hidden">
         <div className="flex w-full justify-between">{navItems.map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: true }} className="group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-[9px] font-semibold leading-tight tracking-tight text-muted-foreground transition-colors data-[status=active]:border-cyan-500/30 data-[status=active]:bg-cyan-500/10 data-[status=active]:text-cyan-300 sm:text-[10px]"><Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />{label}</Link>)}</div>
       </nav>
       {account && <VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} />}

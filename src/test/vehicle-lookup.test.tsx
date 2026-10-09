@@ -96,6 +96,40 @@ describe("vehicle lookup data", () => {
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ headers: { "X-API-Key": "test-dvsa-key" } });
   });
 
+  it("keeps usable MOT vehicle details when the separate VES provider is down", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
+    vi.stubEnv("DVLA_VES_API_KEY", "test-ves-key");
+    vi.stubEnv("MOT_HISTORY_API_KEY", "test-mot-key");
+    vi.stubEnv("MOT_HISTORY_CLIENT_ID", "test-client");
+    vi.stubEnv("MOT_HISTORY_CLIENT_SECRET", "test-secret");
+    vi.stubEnv("MOT_HISTORY_TOKEN_URL", "https://login.microsoftonline.com/test/oauth2/v2.0/token");
+    vi.resetModules();
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "test-token", expires_in: 3600 })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        make: "AUDI",
+        model: "A4",
+        primaryColour: "Silver",
+        fuelType: "Petrol",
+        motTests: [],
+      })));
+    vi.stubGlobal("fetch", fetcher);
+    const { lookupRegistration: freshLookup } = await import("@/services/server/dvla");
+
+    const result = await freshLookup("XY01ABC");
+
+    expect(result.vehicle).toMatchObject({
+      make: "AUDI",
+      model: "A4",
+      colour: "Silver",
+      fuelType: "Petrol",
+      source: "official",
+    });
+    expect(result.notice).toContain("DVLA VES is unavailable");
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
   it("obtains an MOT OAuth token and uses the API key on the official history request", async () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("MOT_HISTORY_API_KEY", "test-api-key");

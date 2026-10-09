@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { accountProfileInputSchema } from "@/lib/account-profile";
+import { accountProfileInputSchema, WorkshopProfileAccessError } from "@/lib/account-profile";
 import { updateAccount } from "@/services/server/accounts";
 import { webAuthnRequestContext, WebAuthnError } from "@/services/server/webauthn";
 
@@ -7,6 +7,8 @@ function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Profile could not be saved.";
   const status = error instanceof WebAuthnError
     ? error.status
+    : error instanceof WorkshopProfileAccessError
+      ? 403
     : /sign in to continue/i.test(message)
       ? 401
       : 500;

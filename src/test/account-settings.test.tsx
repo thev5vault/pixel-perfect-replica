@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountSettings } from "@/components/vault/AccountSettings";
 
 const mocks = vi.hoisted(() => ({
-  account: null as any,
+  account: null as object | null,
   saveProfile: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
@@ -78,6 +78,10 @@ describe("account settings tier-driven profile", () => {
     renderSettings(makeUser({
       role: "verified_garage",
       subscription_tier: "verified_garage",
+      subscription_status: "active",
+      status: "approved",
+      garage_verified: true,
+      vat_verified: true,
       garage_name: "Northside Motors",
       garage_registration: "GB123456789",
       workshop_type: "specialist",
@@ -119,6 +123,10 @@ describe("account settings tier-driven profile", () => {
     renderSettings(makeUser({
       role: "verified_garage",
       subscription_tier: "verified_garage",
+      subscription_status: "active",
+      status: "approved",
+      garage_verified: true,
+      vat_verified: true,
     }));
     fireEvent.change(screen.getByLabelText("Display Name"), { target: { value: "Workshop Owner" } });
     fireEvent.change(screen.getByLabelText("Trading/Business Name"), { target: { value: "Northside Motors" } });

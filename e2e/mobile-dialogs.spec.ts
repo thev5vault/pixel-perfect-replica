@@ -208,6 +208,20 @@ async function renderVerificationQr(page: Page) {
   }, qrSvg);
 }
 
+test("browser Back closes the active dialog before leaving its route", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await startSamplePreview(page);
+
+  await page.getByRole("button", { name: /Audi A4/ }).click();
+  await page.getByRole("menuitem", { name: /Connect New Vehicle/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Connect New Vehicle" });
+  await expect(dialog).toBeVisible();
+
+  await page.goBack();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/vehicle$/);
+});
+
 for (const viewport of viewports) {
   test(`modification date and mileage fields fit at ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });

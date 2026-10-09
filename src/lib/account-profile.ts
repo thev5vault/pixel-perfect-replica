@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { UserAccount } from "./account-types";
+import { isWorkshopTrialActive } from "./plans";
 
 const tradeProfileFields = ["garage_name", "garage_registration", "workshop_type"] as const;
 
@@ -34,4 +35,24 @@ export function mergeAccountProfile(user: UserAccount, profile: AccountProfileIn
     ...(profile.garage_registration !== undefined ? { garage_registration: profile.garage_registration } : {}),
     ...(profile.workshop_type !== undefined ? { workshop_type: profile.workshop_type } : {}),
   };
+}
+
+type WorkshopProfileActor = Pick<
+  UserAccount,
+  "role" | "subscription_tier" | "subscription_status" | "trial_expires_at" | "permissions"
+>;
+
+/** Profile writes cannot grant workshop entitlement; only an active paid plan, trial, or admin override may edit trade details. */
+export function canEditWorkshopProfile(user: WorkshopProfileActor, now = Date.now()) {
+  if (user.role === "dev_admin" && user.permissions?.includes("all_access")) return true;
+  if (user.role !== "verified_garage") return false;
+  return (user.subscription_tier === "verified_garage" && user.subscription_status === "active")
+    || isWorkshopTrialActive(user, now);
+}
+
+export class WorkshopProfileAccessError extends Error {
+  constructor() {
+    super("An active Verified Workshop subscription or trial is required to update trade details.");
+    this.name = "WorkshopProfileAccessError";
+  }
 }

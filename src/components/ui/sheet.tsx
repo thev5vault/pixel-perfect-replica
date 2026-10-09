@@ -6,8 +6,34 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useHistoryDismissal } from "@/lib/use-history-dismissal";
 
-const Sheet = SheetPrimitive.Root;
+function Sheet({
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+    },
+    [controlledOpen, onOpenChange],
+  );
+
+  useHistoryDismissal(open, handleOpenChange);
+
+  return (
+    <SheetPrimitive.Root
+      {...props}
+      open={open}
+      onOpenChange={handleOpenChange}
+    />
+  );
+}
 
 const SheetTrigger = SheetPrimitive.Trigger;
 

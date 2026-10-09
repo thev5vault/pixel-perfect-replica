@@ -12,6 +12,7 @@ export type InvoiceOcrProgress = (message: string) => void;
 
 const MAX_PDF_PAGES = 3;
 const MAX_IMAGE_EDGE = 1800;
+export const MAX_INVOICE_FILE_BYTES = 10 * 1024 * 1024;
 
 function toIsoDate(day: number, month: number, year: number): string | undefined {
   const fullYear = year < 100 ? (year < 70 ? 2000 + year : 1900 + year) : year;
@@ -79,8 +80,8 @@ export function parseInvoiceText(
   const foundComponents = knownComponents.filter((component) => lower.includes(component.toLowerCase()));
   if (foundComponents.length) suggestions.components = foundComponents;
 
-  const partsCost = extractMoney(text, /(?:parts(?:\s+(?:cost|total))?|spare parts)\s*(?:total|cost)?\s*[:\-]?\s*(?:GBP|£)?\s*([\d,]+(?:\.\d{1,2})?)/i);
-  const labourCost = extractMoney(text, /(?:labou?r(?:\s+(?:cost|total))?|work charges)\s*(?:total|cost)?\s*[:\-]?\s*(?:GBP|£)?\s*([\d,]+(?:\.\d{1,2})?)/i);
+  const partsCost = extractMoney(text, /(?:parts(?:\s+(?:cost|total))?|spare parts)\s*(?:total|cost)?\s*[:-]?\s*(?:GBP|£)?\s*([\d,]+(?:\.\d{1,2})?)/i);
+  const labourCost = extractMoney(text, /(?:labou?r(?:\s+(?:cost|total))?|work charges)\s*(?:total|cost)?\s*[:-]?\s*(?:GBP|£)?\s*([\d,]+(?:\.\d{1,2})?)/i);
   if (partsCost) suggestions.partsCost = partsCost;
   if (labourCost) suggestions.labourCost = labourCost;
 
@@ -88,7 +89,7 @@ export function parseInvoiceText(
   const workLines = text.split("\n")
     .map((line) => line.trim().replace(/\s+/g, " "))
     .filter((line) => line.length >= 5 && line.length <= 160 && !excluded.test(line))
-    .filter((line) => !/^(?:parts?|spare parts|labou?r|work charges)\s*(?:cost|total)?\s*[:\-]?\s*(?:GBP|£)?\s*[\d,.]+$/i.test(line))
+    .filter((line) => !/^(?:parts?|spare parts|labou?r|work charges)\s*(?:cost|total)?\s*[:-]?\s*(?:GBP|£)?\s*[\d,.]+$/i.test(line))
     .filter((line) => /\b(replac|fit|inspect|oil|filter|brake|tyre|tire|battery|coolant|suspension|repair|flush|diagnos|labou?r)\b/i.test(line));
   if (workLines.length) suggestions.notes = [...new Set(workLines)].slice(0, 8).join("\n").slice(0, 1600);
 
@@ -202,6 +203,9 @@ async function scanPdf(blob: Blob, onProgress?: InvoiceOcrProgress): Promise<{ t
 }
 
 export async function readInvoiceText(blob: Blob, onProgress?: InvoiceOcrProgress) {
+  if (blob.size > MAX_INVOICE_FILE_BYTES) {
+    throw new Error("Invoice files must be 10 MB or smaller to scan locally.");
+  }
   if (blob.type === "application/pdf") return scanPdf(blob, onProgress);
   onProgress?.("Preparing image for local OCR…");
   const canvas = await imageCanvas(blob);

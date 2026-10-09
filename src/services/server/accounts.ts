@@ -11,7 +11,7 @@ import { getPasskeySessionUserId } from "./webauthn";
 import { hasClerkSessionCredential } from "./auth-transport";
 import type { AccountState, UserAccount, AdminState, AdminUser, AdminVehicleEdit, WorkshopReview } from "@/lib/account-types";
 import { applyAdminPolicy } from "./admin-policy";
-import type { AccountProfileInput } from "@/lib/account-profile";
+import { canEditWorkshopProfile, WorkshopProfileAccessError, type AccountProfileInput } from "@/lib/account-profile";
 import type { Modification, Role, ServiceRecord, Vehicle } from "@/lib/vault-store";
 import { samples, lookupRegistration } from "./dvla";
 import { mayStamp, sampleApproval, signStamp, checkStamp, referenceAction } from "./verification";
@@ -194,6 +194,7 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
     await pool.query("UPDATE user_accounts SET full_name=$1 WHERE id=$2", [input.full_name, user.id]);
     return {ok:true};
   }
+  if (!canEditWorkshopProfile(user)) throw new WorkshopProfileAccessError();
   const garageName = input.garage_name ?? user.garage_name;
   const garageRegistration = input.garage_registration ?? user.garage_registration;
   const workshopType = input.workshop_type ?? user.workshop_type ?? "garage";

@@ -143,7 +143,7 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
     }
     return lookupMockRegistration(vrm);
   }
-  const [ves, mot] = await Promise.all([
+  const [vesResult, motResult] = await Promise.allSettled([
     vesKey ? jsonRequest<VesData>("https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles", {
       method: "POST", headers: { "Content-Type": "application/json", "x-api-key": vesKey },
       body: JSON.stringify({ registrationNumber: vrm }),
@@ -154,6 +154,22 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
       "MOT History",
     )) : Promise.resolve({} as MotData),
   ]);
+  const ves = vesResult.status === "fulfilled" ? vesResult.value : {};
+  const mot = motResult.status === "fulfilled" ? motResult.value : {};
+  const failedProviders = [
+    vesKey && vesResult.status === "rejected" ? "DVLA VES" : undefined,
+    hasMot && motResult.status === "rejected" ? "DVSA MOT" : undefined,
+  ].filter((provider): provider is string => Boolean(provider));
+  const configuredProviders = [vesKey ? "DVLA VES" : undefined, hasMot ? "DVSA MOT" : undefined].filter(Boolean);
+  const successfulProviders = configuredProviders.filter((provider) => !failedProviders.includes(provider!));
+  if (successfulProviders.length === 0) {
+    const failures = [
+      vesKey && vesResult.status === "rejected" ? vesResult.reason : undefined,
+      hasMot && motResult.status === "rejected" ? motResult.reason : undefined,
+    ].filter(Boolean);
+    if (failures.length === 1 && failures[0] instanceof Error) throw failures[0];
+    throw new Error(`${configuredProviders.join(" and ")} lookups are temporarily unavailable. Please try again later or enter vehicle details manually.`);
+  }
   let vehicle = parseVehicleData(vrm, ves, mot);
   if (mot.vin && validateVIN(normalizeVIN(mot.vin))) vehicle.vin = normalizeVIN(mot.vin);
   if (vehicle.vin && !vinMatchesMake(vehicle.vin, vehicle.make)) {
@@ -181,7 +197,12 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
     };
     await persistSuppliedVehicle(vehicle);
   }
-  return { vehicle, notice: hasMot && vesKey ? "Vehicle and MOT history loaded from official APIs." : "Vehicle loaded. Some fields are unavailable because only one official API is configured." };
+  const notice = failedProviders.length
+    ? `Vehicle details loaded from ${successfulProviders.join(" and ")}. ${failedProviders.join(" and ")} is unavailable; review any missing details manually.`
+    : hasMot && vesKey
+      ? "Vehicle and MOT history loaded from official APIs."
+      : "Vehicle loaded. Some fields are unavailable because only one official API is configured.";
+  return { vehicle, notice };
 }
 
 async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehicle; notice: string }> {

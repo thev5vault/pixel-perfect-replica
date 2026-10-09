@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { parseInvoiceText } from "@/services/invoice-ocr";
+import { MAX_INVOICE_FILE_BYTES, parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 
 const categories = ["Servicing", "Brakes", "Tyres"] as const;
 const components = ["Engine oil", "Oil filter", "Brake pads", "Tyres"] as const;
 
 describe("local invoice text suggestions", () => {
+  it("rejects an oversized upload before opening a local OCR worker", async () => {
+    const oversized = new Blob([new Uint8Array(MAX_INVOICE_FILE_BYTES + 1)], { type: "application/pdf" });
+    await expect(readInvoiceText(oversized)).rejects.toThrow("10 MB or smaller");
+  });
+
   it("extracts explicit UK date, mileage, category, parts and labour without calculating totals", () => {
     const result = parseInvoiceText(
       [
