@@ -31,7 +31,7 @@ export async function createVehicleByVIN(input: {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const collision = (await client.query("SELECT id,vin,is_sample FROM vehicles WHERE vrm=$1 FOR UPDATE", [vrm])).rows[0];
+    const collision = (await client.query("SELECT id,vin,is_sample,owner_user_id FROM vehicles WHERE vrm=$1 FOR UPDATE", [vrm])).rows[0];
     if (collision?.vin && collision.vin !== vin) throw new Error("That registration is already linked to a different VIN.");
     const existing = (await client.query("SELECT * FROM vehicles WHERE vin=$1 FOR UPDATE", [vin])).rows[0];
     if (existing?.is_sample) throw new Error("Development sample vehicles are read-only.");
@@ -39,18 +39,26 @@ export async function createVehicleByVIN(input: {
     if (existing?.owner_user_id && existing.owner_user_id !== user.id && user.role !== "dev_admin") {
       throw new Error("This VIN is already linked to another keeper.");
     }
+    if (existing && existing.vrm !== vrm) {
+      throw new Error("Use Update Logbook / Plate Details to change this vehicle's registration.");
+    }
     const data: Vehicle = {
       vrm, vin, make: input.make.trim(), model: input.model.trim(),
       year: input.year, odometer: input.odometer, motExpiry: input.motExpiry,
       v5cDate: "", motStatus: "Unknown",
     };
-    await client.query(`INSERT INTO vehicles(id,vin,vrm,data,status,is_sample)
-      VALUES($1,$2,$3,$4,'pending',false)
-      ON CONFLICT(vin) DO UPDATE SET vrm=EXCLUDED.vrm,data=EXCLUDED.data,
-        status=CASE WHEN vehicles.owner_user_id IS NULL THEN 'pending' ELSE vehicles.status END`,
-    [existing?.id ?? randomUUID(), vin, vrm, JSON.stringify(data)]);
+    if (existing) {
+      await client.query("UPDATE vehicles SET data=$1 WHERE vin=$2", [JSON.stringify(data), vin]);
+    } else {
+      await client.query(`INSERT INTO vehicles(id,vin,vrm,data,status,is_sample,verification_state)
+        VALUES($1,$2,$3,$4,'pending',false,'PENDING_VERIFICATION')`,
+      [randomUUID(), vin, vrm, JSON.stringify(data)]);
+    }
+    await client.query(`INSERT INTO vehicle_registrations(vin,vrm,verification_state)
+      VALUES($1,$2,'PENDING_VERIFICATION') ON CONFLICT(vin) DO NOTHING`, [vin, vrm]);
     await client.query("COMMIT");
-    return { vehicle: data, status: "pending" as const, message: "Vehicle saved by VIN. V5C keeper verification is still required." };
+    return { vehicle: data, status: "pending" as const, verification_state: existing?.verification_state ?? "PENDING_VERIFICATION" as const,
+      message: "Vehicle saved by VIN. V5C keeper verification is still required." };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -82,8 +90,9 @@ export async function stampServiceByVIN(input: {
   const vin = normalizeVIN(input.vin);
   if (!validateVIN(vin)) throw new Error("VIN must contain 17 characters and exclude I, O and Q.");
   if (input.physically_inspected_vin !== true) throw new Error("Confirm that you physically inspected and matched the vehicle VIN.");
-  const row = (await pool.query("SELECT vin,vrm,data,is_scrapped FROM vehicles WHERE vin=$1", [vin])).rows[0];
+  const row = (await pool.query("SELECT vin,vrm,data,is_scrapped,verification_state FROM vehicles WHERE vin=$1", [vin])).rows[0];
   if (!row) throw new Error("No vehicle passport exists for that VIN.");
+  if (row.verification_state !== "VERIFIED") throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
   if (row.vrm !== vrm) throw new Error("The registration does not match the selected VIN.");
   if (row.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only and new service stamps are blocked.");
   if (!vinMatchesMake(vin,row.data?.make??"")) throw new Error("The VIN manufacturer prefix does not match this vehicle make.");

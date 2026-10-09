@@ -135,7 +135,8 @@ export async function accountState():Promise<AccountState> {
     development_role:user.role==="dev_admin"?(user.dev_role??"superadmin"):development?user.dev_role:null,
     vehicles:records.rows.map(r=>({...((r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin")?r.archive_snapshot.vehicle:r.data),
       vrm:r.vrm,vin:r.vin,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,public_enabled:r.public_enabled,
-       keeper_changed_at:r.keeper_changed_at,verification_tier:r.verification_tier??"provisional",is_scrapped:Boolean(r.is_scrapped),
+       keeper_changed_at:r.keeper_changed_at,verification_tier:r.verification_tier??"provisional",
+       verification_state:r.verification_state??"PENDING_VERIFICATION",is_scrapped:Boolean(r.is_scrapped),
        access:r.archive_snapshot&&r.owner_user_id!==user.id&&user.role!=="dev_admin"?"archived":r.owner_user_id===user.id&&!activeIds.has(r.id)?"plan_locked":"active"})),
     services:history, mods:["pro_modder","god_mode"].includes(user.subscription_tier)?mods.rows.filter(visible).map(r=>({...r.data,frozen_at:r.frozen_at})):[],
     notifications:notifications.rows,bookings:bookings.rows };
@@ -187,6 +188,7 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   if(!row) throw new Error(`No vehicle passport found for ${vrm}.`);
   if(row.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only and new service records are blocked.");
    const admin=user.role==="dev_admin", workshop=admin||canUseWorkshopFeatures(user);
+   if(workshop && row.verification_state!=="VERIFIED" && !(development && row.is_sample)) throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
    if(workshop && !admin && !mayStamp({role:user.role,verified:user.garage_verified,status:user.status,garageSample:user.is_sample,vehicleSample:row.is_sample,development})) throw new Error("An approved VAT-verified workshop with an active Workshop subscription or trial is required to sign records.");
   if(!workshop && row.owner_user_id!==user.id) throw new Error("Only the owner can add a DIY record.");
   if(workshop && input.physically_inspected_vin !== true) throw new Error("A workshop must physically inspect and match the VIN before stamping.");

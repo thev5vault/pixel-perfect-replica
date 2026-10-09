@@ -116,6 +116,7 @@ export interface Vehicle {
   taxDueDate?: string | undefined;
   public_enabled?: boolean;
   keeper_changed_at?: string | null;
+  verification_state?: "PENDING_VERIFICATION" | "VERIFIED" | "RE_VERIFICATION_REQUIRED";
   access?: "active" | "archived" | "plan_locked";
   verification_tier?: "provisional" | "workshop_checked" | "government_data";
   is_scrapped?: boolean;

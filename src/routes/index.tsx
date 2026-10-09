@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,8 @@ import { DevPreviewButton } from "@/components/vault/DevPreviewButton";
 import { VehicleDataTools } from "@/components/vault/VehicleDataTools";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
+import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicleRegistrationDialog";
+import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -52,6 +54,12 @@ export function Dashboard() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [diyOpen, setDiyOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [verificationState, setVerificationState] = useState(vehicle.verification_state ?? "PENDING_VERIFICATION");
+  useEffect(() => {
+    setVerificationState(vehicle.verification_state ?? "PENDING_VERIFICATION");
+  }, [vehicle.vin, vehicle.verification_state]);
+  const registrationVerified = hasVerifiedVehicleRegistration(verificationState);
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
 
   const history = useMemo(
@@ -120,6 +128,14 @@ export function Dashboard() {
         </div>
       </section>
 
+      {!registrationVerified && <section role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/20 p-4">
+        <p className="font-semibold text-amber-100">Vehicle logbook verification required</p>
+        <p className="mt-2 text-sm leading-relaxed text-amber-100/80">{REVERIFICATION_NOTICE}</p>
+        {vehicle.is_sample
+          ? <p className="mt-3 text-xs text-amber-100/70">This is development sample data and cannot be verified as a live vehicle.</p>
+          : <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin} className="btn-ghost mt-3 min-h-11 w-full border-amber-200/20 text-amber-50 disabled:opacity-50">Update Logbook / Plate Details</button>}
+      </section>}
+
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <HealthCard
           icon={<Wrench className="h-5 w-5" />}
@@ -183,6 +199,16 @@ export function Dashboard() {
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
       <SnapReceiptDialog open={receiptOpen} onOpenChange={setReceiptOpen} />
       <BasicDiyServiceDialog open={diyOpen} onOpenChange={setDiyOpen} />
+      <UpdateVehicleRegistrationDialog
+        open={registrationOpen}
+        onOpenChange={setRegistrationOpen}
+        vin={vehicle.vin ?? ""}
+        currentVrm={vehicle.vrm}
+        onSubmitted={(state, message) => {
+          setVerificationState(state);
+          toast.success("Re-verification submitted", { description: message });
+        }}
+      />
     </div>
   );
 }

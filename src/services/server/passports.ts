@@ -28,8 +28,9 @@ async function snapshot(vrm: string, parts: boolean): Promise<PublicPassport> {
   return passportData(vehicle, records, mods.rows.map(m => ({ ...m.data, frozen_at: m.frozen_at })) as Modification[], requestOrigin(), row.is_sample, parts);
 }
 export async function ownerSnapshot(vrm: string, user: UserAccount) {
-  const row = (await pool.query("SELECT id,owner_user_id FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
+  const row = (await pool.query("SELECT id,owner_user_id,verification_state FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
   if (!row || (row.owner_user_id !== user.id && user.role !== "dev_admin")) throw new Error("Only the current keeper can export or share this passport.");
+  if (row.verification_state !== "VERIFIED") throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
   return snapshot(vrm, true);
 }
 export async function publicPassport(inputVrm: string, sample = false): Promise<PublicPassport> {
@@ -40,7 +41,7 @@ export async function publicPassport(inputVrm: string, sample = false): Promise<
     return { ...passportData(samples[vrm]!, fixture.services.filter(s=>s.vrm===vrm), fixture.mods.filter(m=>m.vrm===vrm), requestOrigin(), true), published: true };
   }
   const row = (await pool.query("SELECT v.*,u.subscription_tier FROM vehicles v LEFT JOIN user_accounts u ON u.id=v.owner_user_id WHERE v.vrm=$1", [vrm])).rows[0];
-  if (!row || row.is_sample || row.status !== "approved") throw new Error("This vehicle has no shared public passport.");
+  if (!row || row.is_sample || row.status !== "approved" || row.verification_state !== "VERIFIED") throw new Error("This vehicle has no shared, verified public passport.");
   if (!row.public_enabled) {
     // Authenticated keeper preview is allowed; a guest receives no private data.
     const user = await currentUser();
@@ -57,12 +58,24 @@ export async function publicPassport(inputVrm: string, sample = false): Promise<
 }
 export async function publish(inputVrm: string, enabled: boolean) {
   const user = await currentUser(), vrm = inputVrm.toUpperCase().replace(/\s/g, "");
-  const updated = await pool.query("UPDATE vehicles SET public_enabled=$1 WHERE vrm=$2 AND (owner_user_id=$3 OR $4) RETURNING id", [enabled, vrm, user.id, user.role === "dev_admin"]);
+  const identity = (await pool.query("SELECT owner_user_id,verification_state FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
+  if (!identity || (identity.owner_user_id !== user.id && user.role !== "dev_admin")) {
+    throw new Error("Only the current keeper can control buyer sharing.");
+  }
+  if (identity.verification_state !== "VERIFIED") {
+    throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
+  }
+  const updated = await pool.query("UPDATE vehicles SET public_enabled=$1 WHERE vrm=$2 AND verification_state='VERIFIED' AND (owner_user_id=$3 OR $4) RETURNING id", [enabled, vrm, user.id, user.role === "dev_admin"]);
   if (!updated.rowCount) throw new Error("Only the current keeper can control buyer sharing.");
   return { enabled, message: enabled ? "Read-only buyer passport enabled. Keeper details and raw receipts remain private." : "Buyer passport disabled." };
 }
 export async function salesPdf(inputVrm: string) {
   const user = await currentUser(), vrm = inputVrm.toUpperCase().replace(/\s/g, "");
+  const vehicle = (await pool.query("SELECT owner_user_id,verification_state FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
+  if (!vehicle || vehicle.verification_state !== "VERIFIED" ||
+    (vehicle.owner_user_id !== user.id && user.role !== "dev_admin")) {
+    throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
+  }
   let data: PublicPassport;
   if (user.role === "dev_admin") data = await ownerSnapshot(vrm, user);
   else {

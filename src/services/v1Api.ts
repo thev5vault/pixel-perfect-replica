@@ -31,3 +31,20 @@ export const reviewOwnershipClaim = createServerFn({ method: "POST" })
   .handler(async ({ data }) => (await import("./server/ownership")).reviewClaim(data));
 export const refreshOfficialVehicle = createServerFn({ method: "POST" }).validator(z.object({ vrm }))
   .handler(async ({ data }) => (await import("./server/ownership")).refreshVehicle(data.vrm));
+export const submitVehicleReverification = createServerFn({ method: "POST" })
+  .validator(z.object({
+    vin: z.string().trim().length(17).regex(/^[A-HJ-NPR-Z0-9]{17}$/i).transform(value => value.toUpperCase()),
+    vrm: vrm.transform(value => value.toUpperCase().replace(/\s/g, "")),
+    reference: z.string().trim().regex(/^\d{11}$/),
+  }))
+  .handler(async ({ data }) => (await import("./server/vehicle-verification")).submitVehicleReverification(data));
+export const getPendingVehicleVerifications = createServerFn({ method: "GET" })
+  .handler(async () => (await import("./server/vehicle-verification")).pendingVehicleVerifications());
+export const reviewVehicleVerification = createServerFn({ method: "POST" })
+  .validator(z.object({
+    id: z.string().uuid(),
+    status: z.enum(["approved", "rejected"]),
+    reviewed_evidence: z.boolean(),
+    reason: z.string().trim().min(10).max(1000),
+  }))
+  .handler(async ({ data }) => (await import("./server/vehicle-verification")).reviewVehicleVerification(data));

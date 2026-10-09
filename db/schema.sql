@@ -397,3 +397,224 @@ END $$;
 DROP TRIGGER IF EXISTS immutable_modification_vehicle_binding ON modifications;
 CREATE TRIGGER immutable_modification_vehicle_binding BEFORE INSERT OR UPDATE ON modifications
   FOR EACH ROW EXECUTE FUNCTION protect_modification_vehicle_binding();
+
+-- Current keeper registration is mutable; service, receipt, MOT and build history
+-- retain an explicit FK to the immutable vehicle VIN.
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS verification_state TEXT NOT NULL DEFAULT 'PENDING_VERIFICATION';
+DO $$ BEGIN
+  ALTER TABLE vehicles ADD CONSTRAINT vehicles_verification_state_check
+    CHECK (verification_state IN ('PENDING_VERIFICATION','VERIFIED','RE_VERIFICATION_REQUIRED'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Only claims reviewed by an administrator count as verified. Development and
+-- sample approvals remain pending because they are not live V5C evidence.
+UPDATE vehicles v SET verification_state='VERIFIED'
+WHERE v.owner_user_id IS NOT NULL AND v.status='approved' AND NOT v.is_sample
+  AND EXISTS (SELECT 1 FROM ownership_claims c WHERE c.vehicle_id=v.id
+    AND c.status='approved' AND c.reviewed_by IS NOT NULL);
+
+CREATE TABLE IF NOT EXISTS vehicle_registrations (
+  vin TEXT PRIMARY KEY REFERENCES vehicles(vin) ON UPDATE RESTRICT,
+  vrm TEXT NOT NULL UNIQUE,
+  v5c_reference_hash TEXT,
+  verification_state TEXT NOT NULL DEFAULT 'PENDING_VERIFICATION'
+    CHECK (verification_state IN ('PENDING_VERIFICATION','VERIFIED','RE_VERIFICATION_REQUIRED')),
+  last_verified_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO vehicle_registrations(vin,vrm,v5c_reference_hash,verification_state,last_verified_at)
+SELECT v.vin,v.vrm,v.v5c_reference_hash,v.verification_state,
+  CASE WHEN v.verification_state='VERIFIED' THEN now() ELSE NULL END
+FROM vehicles v
+ON CONFLICT(vin) DO UPDATE SET
+  vrm=EXCLUDED.vrm,
+  v5c_reference_hash=COALESCE(EXCLUDED.v5c_reference_hash,vehicle_registrations.v5c_reference_hash),
+  verification_state=EXCLUDED.verification_state,
+  last_verified_at=COALESCE(EXCLUDED.last_verified_at,vehicle_registrations.last_verified_at),
+  updated_at=now();
+
+CREATE TABLE IF NOT EXISTS vehicle_verification_requests (
+  id TEXT PRIMARY KEY,
+  vin TEXT NOT NULL REFERENCES vehicles(vin) ON UPDATE RESTRICT,
+  user_id TEXT NOT NULL REFERENCES user_accounts(id),
+  requested_vrm TEXT NOT NULL,
+  v5c_reference_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  review_reason TEXT,
+  reviewed_by TEXT REFERENCES user_accounts(id),
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS vehicle_verification_one_pending_idx
+  ON vehicle_verification_requests(vin) WHERE status='pending';
+CREATE INDEX IF NOT EXISTS vehicle_verification_review_idx
+  ON vehicle_verification_requests(status,created_at);
+
+-- Give every durable child record its own VIN FK rather than relying only on
+-- a mutable registration or an indirect vehicle_id relationship.
+-- Temporarily remove immutable-history triggers so only the new VIN columns
+-- can be backfilled; the original payload and keeper history remain unchanged.
+DROP TRIGGER IF EXISTS immutable_modification_history ON modifications;
+DROP TRIGGER IF EXISTS immutable_keeper_history ON vehicle_transfers;
+ALTER TABLE modifications ADD COLUMN IF NOT EXISTS vin TEXT;
+UPDATE modifications m SET vin=v.vin FROM vehicles v WHERE m.vehicle_id=v.id AND m.vin IS NULL;
+ALTER TABLE modifications ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE modifications ADD CONSTRAINT modifications_vin_fkey
+    FOREIGN KEY(vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE service_attachments ADD COLUMN IF NOT EXISTS vin TEXT;
+UPDATE service_attachments a SET vin=s.vin FROM service_records s
+  WHERE a.service_record_id=s.id AND a.vin IS NULL;
+ALTER TABLE service_attachments ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE service_attachments ADD CONSTRAINT service_attachments_vin_fkey
+    FOREIGN KEY(vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE vehicle_reference_uses ADD COLUMN IF NOT EXISTS vin TEXT;
+UPDATE vehicle_reference_uses u SET vin=v.vin FROM vehicles v
+  WHERE u.vehicle_id=v.id AND u.vin IS NULL;
+ALTER TABLE vehicle_reference_uses ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE vehicle_reference_uses ADD CONSTRAINT vehicle_reference_uses_vin_fkey
+    FOREIGN KEY(vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE vehicle_transfers ADD COLUMN IF NOT EXISTS vin TEXT;
+UPDATE vehicle_transfers t SET vin=v.vin FROM vehicles v
+  WHERE t.vehicle_id=v.id AND t.vin IS NULL;
+ALTER TABLE vehicle_transfers ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE vehicle_transfers ADD CONSTRAINT vehicle_transfers_vin_fkey
+    FOREIGN KEY(vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE sales_pack_orders ADD COLUMN IF NOT EXISTS vin TEXT;
+UPDATE sales_pack_orders o SET vin=v.vin FROM vehicles v
+  WHERE o.vehicle_id=v.id AND o.vin IS NULL;
+ALTER TABLE sales_pack_orders ALTER COLUMN vin SET NOT NULL;
+DO $$ BEGIN
+  ALTER TABLE sales_pack_orders ADD CONSTRAINT sales_pack_orders_vin_fkey
+    FOREIGN KEY(vin) REFERENCES vehicles(vin) ON UPDATE RESTRICT;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS mot_records (
+  id TEXT PRIMARY KEY,
+  vin TEXT NOT NULL REFERENCES vehicles(vin) ON UPDATE RESTRICT,
+  record_hash TEXT NOT NULL,
+  data JSONB NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(vin,record_hash)
+);
+INSERT INTO mot_records(id,vin,record_hash,data)
+SELECT md5(v.vin || ':' || md5(mot.data::text)),v.vin,md5(mot.data::text),mot.data
+FROM vehicles v
+CROSS JOIN LATERAL jsonb_array_elements(
+  CASE WHEN jsonb_typeof(v.data->'motHistory')='array' THEN v.data->'motHistory' ELSE '[]'::jsonb END
+) AS mot(data)
+ON CONFLICT(vin,record_hash) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION capture_vehicle_mot_records() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO mot_records(id,vin,record_hash,data)
+  SELECT md5(NEW.vin || ':' || md5(mot.data::text)),NEW.vin,md5(mot.data::text),mot.data
+  FROM jsonb_array_elements(
+    CASE WHEN jsonb_typeof(NEW.data->'motHistory')='array' THEN NEW.data->'motHistory' ELSE '[]'::jsonb END
+  ) AS mot(data)
+  ON CONFLICT(vin,record_hash) DO NOTHING;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS capture_vehicle_mot_records ON vehicles;
+CREATE TRIGGER capture_vehicle_mot_records AFTER INSERT OR UPDATE OF data ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION capture_vehicle_mot_records();
+
+CREATE OR REPLACE FUNCTION populate_vehicle_child_vin() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE canonical_vin TEXT;
+BEGIN
+  SELECT vin INTO canonical_vin FROM vehicles WHERE id=NEW.vehicle_id;
+  IF canonical_vin IS NULL THEN RAISE EXCEPTION 'The VIN-anchored vehicle does not exist'; END IF;
+  IF NEW.vin IS NOT NULL AND NEW.vin IS DISTINCT FROM canonical_vin THEN
+    RAISE EXCEPTION 'The record VIN does not match its vehicle';
+  END IF;
+  NEW.vin := canonical_vin;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS populate_modification_vin ON modifications;
+CREATE TRIGGER populate_modification_vin BEFORE INSERT OR UPDATE OF vehicle_id,vin ON modifications
+  FOR EACH ROW EXECUTE FUNCTION populate_vehicle_child_vin();
+DROP TRIGGER IF EXISTS populate_reference_use_vin ON vehicle_reference_uses;
+CREATE TRIGGER populate_reference_use_vin BEFORE INSERT OR UPDATE OF vehicle_id,vin ON vehicle_reference_uses
+  FOR EACH ROW EXECUTE FUNCTION populate_vehicle_child_vin();
+DROP TRIGGER IF EXISTS populate_vehicle_transfer_vin ON vehicle_transfers;
+CREATE TRIGGER populate_vehicle_transfer_vin BEFORE INSERT OR UPDATE OF vehicle_id,vin ON vehicle_transfers
+  FOR EACH ROW EXECUTE FUNCTION populate_vehicle_child_vin();
+DROP TRIGGER IF EXISTS populate_sales_pack_vin ON sales_pack_orders;
+CREATE TRIGGER populate_sales_pack_vin BEFORE INSERT OR UPDATE OF vehicle_id,vin ON sales_pack_orders
+  FOR EACH ROW EXECUTE FUNCTION populate_vehicle_child_vin();
+
+CREATE OR REPLACE FUNCTION populate_service_attachment_vin() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE canonical_vin TEXT;
+BEGIN
+  SELECT vin INTO canonical_vin FROM service_records WHERE id=NEW.service_record_id;
+  IF canonical_vin IS NULL THEN RAISE EXCEPTION 'The VIN-anchored service record does not exist'; END IF;
+  IF NEW.vin IS NOT NULL AND NEW.vin IS DISTINCT FROM canonical_vin THEN
+    RAISE EXCEPTION 'The attachment VIN does not match its service record';
+  END IF;
+  NEW.vin := canonical_vin;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS populate_service_attachment_vin ON service_attachments;
+CREATE TRIGGER populate_service_attachment_vin BEFORE INSERT OR UPDATE OF service_record_id,vin ON service_attachments
+  FOR EACH ROW EXECUTE FUNCTION populate_service_attachment_vin();
+
+CREATE TRIGGER immutable_modification_history BEFORE UPDATE OR DELETE ON modifications
+  FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
+CREATE TRIGGER immutable_keeper_history BEFORE UPDATE OR DELETE ON vehicle_transfers
+  FOR EACH ROW EXECUTE FUNCTION protect_vault_history();
+
+CREATE OR REPLACE FUNCTION guard_vehicle_registration_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.vrm IS DISTINCT FROM OLD.vrm
+     AND current_setting('v5vault.allow_registration_update',true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'Use the V5C re-verification flow to change a vehicle registration';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS guard_vehicle_registration_change ON vehicles;
+CREATE TRIGGER guard_vehicle_registration_change BEFORE UPDATE OF vrm ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION guard_vehicle_registration_change();
+
+CREATE OR REPLACE FUNCTION guard_verified_vehicle_state() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.verification_state='VERIFIED'
+     AND current_setting('v5vault.allow_verification_update',true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'Vehicle verification requires reviewed V5C evidence';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS require_reviewed_vehicle_verification_insert ON vehicles;
+CREATE TRIGGER require_reviewed_vehicle_verification_insert BEFORE INSERT ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION guard_verified_vehicle_state();
+DROP TRIGGER IF EXISTS require_reviewed_vehicle_verification_update ON vehicles;
+CREATE TRIGGER require_reviewed_vehicle_verification_update BEFORE UPDATE OF verification_state ON vehicles
+  FOR EACH ROW EXECUTE FUNCTION guard_verified_vehicle_state();
+DROP TRIGGER IF EXISTS require_reviewed_registration_verification_insert ON vehicle_registrations;
+CREATE TRIGGER require_reviewed_registration_verification_insert BEFORE INSERT ON vehicle_registrations
+  FOR EACH ROW EXECUTE FUNCTION guard_verified_vehicle_state();
+DROP TRIGGER IF EXISTS require_reviewed_registration_verification_update ON vehicle_registrations;
+CREATE TRIGGER require_reviewed_registration_verification_update BEFORE UPDATE OF verification_state ON vehicle_registrations
+  FOR EACH ROW EXECUTE FUNCTION guard_verified_vehicle_state();
+
+CREATE OR REPLACE FUNCTION guard_vehicle_registration_record_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.vrm IS DISTINCT FROM OLD.vrm
+     AND current_setting('v5vault.allow_registration_update',true) IS DISTINCT FROM 'on' THEN
+    RAISE EXCEPTION 'Use the V5C re-verification flow to change a vehicle registration';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS guard_vehicle_registration_record_change ON vehicle_registrations;
+CREATE TRIGGER guard_vehicle_registration_record_change BEFORE UPDATE OF vrm ON vehicle_registrations
+  FOR EACH ROW EXECUTE FUNCTION guard_vehicle_registration_record_change();

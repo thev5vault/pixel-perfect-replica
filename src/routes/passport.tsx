@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { SharePassportModal } from "@/components/vault/SharePassportModal";
+import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 
 export const Route = createFileRoute("/passport")({
   head: () => ({
@@ -51,6 +52,7 @@ function PassportPage() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [shareOpen,setShareOpen]=useState(false);
   const {vehicle:activeVehicle}=useVault();
+  const registrationVerified=hasVerifiedVehicleRegistration(activeVehicle.verification_state);
 
   if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
     return <div className="vault-card p-6"><p className="font-mono text-[10px] uppercase tracking-widest text-primary">Your passport</p><h1 className="mt-2 text-2xl font-bold">Connect a vehicle to build its export.</h1><p className="mt-2 text-sm text-muted-foreground">Link a vehicle with your V5C logbook reference before creating a passport.</p><button onClick={() => setConnectOpen(true)} className="btn-primary mt-5">Connect New Vehicle</button><VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} /></div>;
@@ -68,7 +70,8 @@ function PassportPage() {
   return (
     <div className="space-y-5">
       <div className="print:hidden"><PageHeader title="Export Passport" subtitle="Resale certificates that document your vehicle history." /></div>
-      <button className="btn-primary w-full print:hidden" onClick={()=>setShareOpen(true)}><FileBadge className="h-4 w-4"/>Sales pack & shareable buyer passport</button>
+      {!registrationVerified&&<div role="alert" className="rounded-xl border border-amber-400/30 bg-amber-950/20 p-4 text-sm leading-relaxed text-amber-100">{REVERIFICATION_NOTICE}<p className="mt-2 text-xs text-amber-100/70">Your timeline remains available, but public sharing and certified sales-pack exports stay locked until verification is complete.</p></div>}
+      <button className="btn-primary w-full print:hidden" onClick={()=>setShareOpen(true)} disabled={!registrationVerified}><FileBadge className="h-4 w-4"/>{registrationVerified?"Sales pack & shareable buyer passport":"Re-verification required to share or export"}</button>
       <SharePassportModal open={shareOpen} onOpenChange={setShareOpen} vrm={activeVehicle.vrm}/>
       <div className="space-y-3 print:hidden">
         {CERTS.map((c) => {

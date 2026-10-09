@@ -64,7 +64,7 @@ describe("vehicle ownership lock", () => {
     expect(result).toMatchObject({ status: "approved", is_sample: false });
     expect(mocks.txQuery).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE vehicles SET owner_user_id=$1"),
-      ["new-keeper", expect.stringMatching(/^v2\./), vehicle.vin],
+      ["new-keeper", expect.stringMatching(/^v2\./), vehicle.vin, "PENDING_VERIFICATION"],
     );
   });
 });

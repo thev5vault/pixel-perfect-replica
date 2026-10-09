@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { createFileRoute } from "@tanstack/react-router";
 import { InvestorMetricsPanel } from "@/components/vault/InvestorMetricsPanel";
 import { OwnershipClaimsPanel } from "@/components/vault/OwnershipClaimsPanel";
+import { VehicleVerificationRequestsPanel } from "@/components/vault/VehicleVerificationRequestsPanel";
 import {
   AlertCircle,
   BadgeCheck,
@@ -248,6 +249,7 @@ function AdminPage() {
       {actionNotice && <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{actionNotice}</p>}
       <InvestorMetricsPanel/>
       <OwnershipClaimsPanel/>
+      <VehicleVerificationRequestsPanel/>
 
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Directory totals">
         <Summary icon={<Users className="h-5 w-5" />} label="Registered users" value={adminData ? users.length : null} />

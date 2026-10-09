@@ -15,7 +15,7 @@ const normalize = normalizeRegistration;
 export function referenceDigest(vrm: string, reference: string, secret: string) {
   return `v2.${createHmac("sha256", secret).update(JSON.stringify([vrm, reference])).digest("hex")}`;
 }
-async function transfer(db: PoolClient, row: { id:string;vin:string;owner_user_id:string|null;is_sample:boolean;data:Vehicle }, keeper: UserAccount, hash: string, vin: string | undefined) {
+async function transfer(db: PoolClient, row: { id:string;vin:string;vrm:string;owner_user_id:string|null;is_sample:boolean;data:Vehicle }, keeper: UserAccount, hash: string, vin: string | undefined, verified: boolean) {
   if (row.owner_user_id && row.owner_user_id !== keeper.id) {
     throw new Error("Vehicle already registered to an active keeper.");
   }
@@ -25,13 +25,22 @@ async function transfer(db: PoolClient, row: { id:string;vin:string;owner_user_i
   if (Number(count.rows[0]?.count ?? 0) >= vehicleLimit(keeper)) throw new Error("The keeper's plan has no free vehicle slot. Free includes one vehicle; Collector includes three.");
   const used = await db.query("INSERT INTO vehicle_reference_uses(vehicle_id,reference_hash) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING vehicle_id", [row.id, hash]);
   if (!used.rowCount) throw new Error("This V5C reference has already been used.");
+  const verificationState = verified && !row.is_sample ? "VERIFIED" : "PENDING_VERIFICATION";
+  if (verificationState === "VERIFIED") {
+    await db.query("SELECT set_config('v5vault.allow_verification_update','on',true)");
+  }
   const bound = await db.query(`UPDATE vehicles SET owner_user_id=$1,v5c_reference_hash=$2,status='approved',
-    keeper_changed_at=now(),public_enabled=false WHERE vin=$3 AND owner_user_id IS NULL RETURNING vin`,
-  [keeper.id, hash, row.vin]);
+    verification_state=$4,keeper_changed_at=now(),public_enabled=false WHERE vin=$3 AND owner_user_id IS NULL RETURNING vin`,
+  [keeper.id, hash, row.vin, verificationState]);
   if (!bound.rowCount) {
     const current = (await db.query("SELECT owner_user_id FROM vehicles WHERE vin=$1 FOR UPDATE", [row.vin])).rows[0];
     if (current?.owner_user_id !== keeper.id) throw new Error("Vehicle already registered to an active keeper.");
   }
+  await db.query(`INSERT INTO vehicle_registrations(vin,vrm,v5c_reference_hash,verification_state,last_verified_at)
+    VALUES($1,$2,$3,$4,CASE WHEN $4='VERIFIED' THEN now() ELSE NULL END)
+    ON CONFLICT(vin) DO UPDATE SET vrm=EXCLUDED.vrm,v5c_reference_hash=EXCLUDED.v5c_reference_hash,
+      verification_state=EXCLUDED.verification_state,last_verified_at=EXCLUDED.last_verified_at,updated_at=now()`,
+  [row.vin,row.vrm,hash,verificationState]);
 }
 export async function claim(input: { vrm: string; reference?: string | undefined; vin?: string | undefined }) {
   const user = await currentUser(), vrm = normalize(input.vrm);
@@ -89,6 +98,9 @@ export async function claim(input: { vrm: string; reference?: string | undefined
     const sample = row.is_sample && process.env["NODE_ENV"] !== "production";
     if (row.is_sample && !sample) throw new Error("Development sample ownership is unavailable in production.");
     if (!sample && !user.email_verified) throw new Error("Verify your account email before binding a vehicle.");
+    await db.query(`INSERT INTO vehicle_registrations(vin,vrm,v5c_reference_hash,verification_state)
+      VALUES($1,$2,NULL,$3) ON CONFLICT(vin) DO NOTHING`,
+    [row.vin,row.vrm,row.verification_state ?? "PENDING_VERIFICATION"]);
     const vin = input.vin ? normalizeVIN(input.vin) : row.vin;
     if (!validateVIN(vin)) throw new Error("Enter the 17-character VIN/chassis number from your V5C for keeper review.");
     if (row.vin && vin && row.vin !== vin) throw new Error("The VIN does not match this vehicle's saved identity.");
@@ -105,7 +117,7 @@ export async function claim(input: { vrm: string; reference?: string | undefined
     if (pending.rowCount) return { status: "pending" as const, is_sample: false, message: "Your keeper claim is already waiting for document review." };
     const instant = sample || firstAccount;
     await db.query("INSERT INTO ownership_claims(id,vehicle_id,user_id,reference_hash,vin,status,is_sample) VALUES($1,$2,$3,$4,$5,$6,$7)", [randomUUID(), row.id, user.id, hash, vin, instant ? "approved" : "pending", Boolean(sample)]);
-    if (instant) await transfer(db, row, user, hash, vin);
+    if (instant) await transfer(db, row, user, hash, vin, false);
     else await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)", [randomUUID(), user.id, `Your keeper claim for ${vrm} is pending supporting-document review. Ownership has not changed.`]);
     return { status: instant ? "approved" as const : "pending" as const, is_sample: Boolean(sample),
       message: sample
@@ -134,7 +146,7 @@ export async function reviewClaim(input: { id: string; status: "approved" | "rej
       if (!validateVIN(claim.vin)) throw new Error("A valid 17-character VIN is required. Ask the keeper to resubmit their claim.");
       const target = (await db.query("SELECT * FROM user_accounts WHERE id=$1", [claim.user_id])).rows[0];
       const tier = await paidTier(target);
-      await transfer(db, vehicle, { ...target, subscription_tier: tier.tier, role: target.id === admin.id ? "dev_admin" : target.role }, claim.reference_hash, claim.vin);
+       await transfer(db, vehicle, { ...target, subscription_tier: tier.tier, role: target.id === admin.id ? "dev_admin" : target.role }, claim.reference_hash, claim.vin, !claim.is_sample && !vehicle.is_sample);
     }
     await db.query("UPDATE ownership_claims SET status=$1,review_reason=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$4", [input.status, input.reason, admin.id, input.id]);
     await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)", [randomUUID(), claim.user_id, `Your keeper claim for ${claim.vehicle_id} was ${input.status}. ${input.reason}`]);
