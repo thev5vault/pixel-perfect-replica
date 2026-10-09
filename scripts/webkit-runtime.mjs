@@ -24,13 +24,17 @@ export function webkitLaunchOptions() {
       plugins = p.lib.makeSearchPath "lib/gstreamer-1.0" (with p; [
         gst_all_1.gst-plugins-base gst_all_1.gst-plugins-bad gst_all_1.gst-libav
       ]);
+      gioModules = p.lib.makeSearchPath "lib/gio/modules" (with p; [ glib-networking ]);
       eglVendor = "\${p.mesa}/share/glvnd/egl_vendor.d/50_mesa.json";
       dri = "\${p.mesa}/lib/dri";
     }
   `;
-  const runtime = JSON.parse(execFileSync("nix-instantiate", [
-    "--eval", "--strict", "--json", "-E", expression,
-  ], { encoding: "utf8", timeout: 60_000 }));
+  const runtime = JSON.parse(
+    execFileSync("nix-instantiate", ["--eval", "--strict", "--json", "-E", expression], {
+      encoding: "utf8",
+      timeout: 60_000,
+    }),
+  );
 
   return {
     executablePath: resolve(root, "scripts/launch-webkit.sh"),
@@ -39,6 +43,9 @@ export function webkitLaunchOptions() {
       PW_WEBKIT_BROWSER_DIR: dirname(webkit.executablePath()),
       LD_LIBRARY_PATH: [runtime.libraries, process.env.LD_LIBRARY_PATH].filter(Boolean).join(":"),
       GST_PLUGIN_SYSTEM_PATH_1_0: runtime.plugins,
+      GIO_EXTRA_MODULES: [runtime.gioModules, process.env.GIO_EXTRA_MODULES]
+        .filter(Boolean)
+        .join(":"),
       __EGL_VENDOR_LIBRARY_FILENAMES: runtime.eglVendor,
       LIBGL_DRIVERS_PATH: runtime.dri,
       LIBGL_ALWAYS_SOFTWARE: "1",

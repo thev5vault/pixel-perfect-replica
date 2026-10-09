@@ -3,13 +3,15 @@ import { defineConfig, devices } from "@playwright/test";
 import { webkitLaunchOptions } from "./scripts/webkit-runtime.mjs";
 
 const localChromium = "/repl/tools/bin/chromium";
+const baseURL = process.env["PLAYWRIGHT_BASE_URL"] ?? "http://127.0.0.1:5000";
+const usesHttpsPreview = baseURL.startsWith("https://");
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:5000",
+    baseURL,
     headless: true,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
@@ -34,10 +36,14 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5000 --strictPort",
-    url: "http://127.0.0.1:5000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 90_000,
-  },
+  ...(usesHttpsPreview
+    ? {}
+    : {
+        webServer: {
+          command: "npm run dev -- --host 127.0.0.1 --port 5000 --strictPort",
+          url: "http://127.0.0.1:5000",
+          reuseExistingServer: !process.env.CI,
+          timeout: 90_000,
+        },
+      }),
 });

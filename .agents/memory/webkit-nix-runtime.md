@@ -16,4 +16,7 @@ and Mesa software rendering in this environment.
 project-owned launcher, check actual dependency resolution, and verify page/input
 interaction during setup. Keep explicit EGL discovery when changing native
 packages. Treat the default download-time cache warning separately from the
-readiness check's exit status; do not suppress host checks globally.
+readiness check's exit status; do not suppress host checks globally. For HTTPS,
+include `glib-networking` in the declared Nix packages and expose its GIO module
+directory through `GIO_EXTRA_MODULES`; otherwise GLib can report that TLS is
+unavailable even when CA certificates are present.

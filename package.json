@@ -14,6 +14,7 @@
     "browser:setup": "node scripts/setup-browsers.mjs",
     "test:browser": "playwright test --project=chromium",
     "test:browser:webkit": "playwright test --project=iphone-webkit",
+    "test:browser:auth-preview": "node scripts/test-auth-preview.mjs",
     "test:browser:all": "playwright test",
     "test:watch": "vitest"
   },
