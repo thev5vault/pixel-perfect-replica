@@ -26,14 +26,14 @@ export function UpgradeDialog({
   const account = useAccount();
   const v1=useV1();
   const [busy, setBusy] = useState(false);
+  const testCheckout = Boolean(account?.preview || account?.state?.user.role === "dev_admin");
   async function chooseTier() {
     const plan = tier.toLowerCase().includes("modder") ? "pro_monthly" : tier.toLowerCase().includes("garage") || tier.toLowerCase().includes("workshop") ? "workshop_monthly" : "diy_monthly";
     setBusy(true);
     try {
       const result=await v1.checkout(plan);
       if(result.url) {window.location.assign(result.url);return;}
-      toast.success(result.message);
-      onOpenChange(false);
+      toast.info(result.message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Development role could not be changed");
     } finally { setBusy(false); }
@@ -46,7 +46,7 @@ export function UpgradeDialog({
             <LockKeyhole className="h-5 w-5 text-primary" /> Upgrade to {tier}
           </DialogTitle>
         <DialogDescription>{description ?? `Ad-free, ${price}. Cancel anytime.`}</DialogDescription>
-        {account?.preview && <p className="mx-4 mt-3 text-xs text-amber-100">Sample plan preview. No payment will be taken.</p>}
+        {account?.preview && <p className="mx-4 mt-3 text-xs text-amber-100">Sample account data is unchanged. Stripe testing requires a signed-in SuperAdmin and a test-mode Stripe account; no live charges are allowed.</p>}
         </ModalHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-6">
         <ul className="space-y-2 text-sm">
@@ -63,7 +63,7 @@ export function UpgradeDialog({
           onClick={() => void chooseTier()}
           disabled={busy}
         >
-          {busy?"Opening checkout…":account?.preview?`Preview ${tier}`:`Continue to Stripe · ${price}`}
+          {busy?"Opening checkout…":testCheckout?`Continue to Stripe test checkout · ${price}`:`Continue to Stripe · ${price}`}
         </button>
         </footer>
       </DialogContent>

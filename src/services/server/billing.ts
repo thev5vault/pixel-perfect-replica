@@ -6,6 +6,7 @@ import { PLAN_DEFINITIONS, PLAN_KEYS, planForBillingInterval } from "@/lib/plans
 import { pool, inTransaction } from "./db";
 import { currentUser } from "./accounts";
 import { initializeStripe, stripeClient, stripeSync, stripeTestMode } from "./stripe-client";
+import { assertCheckoutAccess } from "./checkout-access";
 
 export function requestOrigin() {
   const request = getRequest(), url = new URL(request.url);
@@ -73,17 +74,19 @@ function resolvePlan(plan: PlanKey, billingInterval?: BillingInterval): PlanKey 
   return resolved;
 }
 
-export async function checkout(input: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined }): Promise<CheckoutResult> {
+export async function checkout(input: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined; testCheckout?: boolean | undefined }): Promise<CheckoutResult> {
   const user = await currentUser();
   if (!user.email_verified) throw new Error("Verify your account email before checkout.");
-  if(user.role==="dev_admin")throw new Error("God Mode already includes all features. Use role previews; no subscription is required.");
+  if(input.testCheckout && user.role!=="dev_admin") throw new Error("A verified SuperAdmin account is required for Stripe test checkout.");
   const selectedPlan = resolvePlan(input.plan, input.billingInterval);
   if(user.tier_override==="pro_modder_lifetime" && ["pro_monthly","pro_yearly"].includes(selectedPlan)) {
     throw new Error("Your Pro Modder / Collector access is already included for life.");
   }
   return inTransaction(async db=>{
   await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`billing:${user.id}`]);
-  const prices = await catalog(), price = prices.prices.find(p => p.key === selectedPlan);
+  const prices = await catalog();
+  assertCheckoutAccess(user.role,input.testCheckout===true,prices.test_mode);
+  const price = prices.prices.find(p => p.key === selectedPlan);
   if (prices.preview) return { url: null, preview: true, message: "Preview mode only. Stripe is unavailable, so no checkout, payment or subscription access was created." };
   if (!price) throw new Error("This Stripe price is not configured yet.");
   const stripe = await stripeClient(), customerId = await customer(user), origin = requestOrigin();

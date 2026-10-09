@@ -36,11 +36,8 @@ export function useV1() {
         interval: PLAN_DEFINITIONS[key].interval, price_id: `sample_${key}`,
       })) } : api.getBillingCatalog(),
       checkout: async (plan: PlanKey, vrm?: string, billingInterval?: BillingInterval) => {
-        if (preview) {
-          if (plan !== "sales_pack") await account?.switchRole(plan.startsWith("workshop_") ? "Garage" : plan.startsWith("diy_") ? "DIY" : "Pro");
-          return { url: null, preview: true, message: "Sample plan preview opened. No payment was taken." };
-        }
-        return api.startCheckout({ data: { plan, vrm, billingInterval } });
+        const testCheckout = preview || account?.state?.user.role === "dev_admin";
+        return api.startCheckout({ data: { plan, vrm, billingInterval, testCheckout } });
       },
       confirmCheckout: async (session_id: string) => {
         if (preview) return { fulfilled: false, message: "Sample previews do not create Stripe purchases." };

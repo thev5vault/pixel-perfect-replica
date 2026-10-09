@@ -1,11 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { BillingInterval, CheckoutResult, PlanKey } from "@/lib/v1-types";
 const vrm = z.string().trim().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
 const plan = z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]);
 const billingInterval = z.enum(["month", "year"]);
 export const getBillingCatalog = createServerFn({ method: "GET" }).handler(async () => (await import("./server/billing")).catalog());
-export const startCheckout = createServerFn({ method: "POST" }).validator(z.object({ plan, vrm: vrm.optional(), billingInterval: billingInterval.optional() }))
-  .handler(async ({ data }) => (await import("./server/billing")).checkout(data));
+export async function startCheckout({ data }: { data: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined; testCheckout?: boolean | undefined } }): Promise<CheckoutResult> {
+  const response = await fetch("/api/create-checkout-session", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  const result = await response.json() as CheckoutResult & { error?: string };
+  if (!response.ok) throw new Error(result.error ?? "Checkout could not be started.");
+  return result;
+}
 export const confirmCheckout = createServerFn({ method: "POST" }).validator(z.object({ session_id: z.string().startsWith("cs_").max(150) }))
   .handler(async ({ data }) => (await import("./server/billing")).confirm(data.session_id));
 export const openBillingPortal = createServerFn({ method: "POST" }).handler(async () => (await import("./server/billing")).portal());

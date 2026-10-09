@@ -3,6 +3,7 @@ import { useAccount } from "@/lib/account-store";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "./ui-bits";
 import { Loader2, Save } from "lucide-react";
+import { PasskeySettings } from "./PasskeySettings";
 
 export function AccountSettings() {
   const account = useAccount();
@@ -32,6 +33,7 @@ export function AccountSettings() {
        {garageName&&registration&&<p className="text-xs text-muted-foreground">Workshop application: {user?.status}. New or changed workshop details require administrator review before live stamping.</p>}
        {garageName&&registration&&account.state.user.subscription_status==="trialing"&&account.state.user.trial_expires_at&&<p className="text-xs text-cyan-300">Your no-card Workshop trial ends {new Date(account.state.user.trial_expires_at).toLocaleDateString("en-GB")}.</p>}
     </form>
+     <PasskeySettings/>
      <section className="vault-card p-5"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current plan</p><h2 className="mt-1 text-lg font-bold">{account.state.user.tier_override === "pro_modder_lifetime" ? "Pro Modder / Collector · Lifetime" : account.state.user.subscription_tier.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}</h2><p className="mt-1 text-xs text-muted-foreground">{account.state.user.tier_override === "pro_modder_lifetime" ? "£0.00/mo · lifetime access granted by a V5Vault administrator." : account.preview?"Sample tier preview only. No payment is taken.":"Paid access is checked against Stripe; changing a profile does not activate a subscription."}</p></div><Pill tone="primary">{account.state.user.tier_override === "pro_modder_lifetime" ? "Lifetime" : account.preview?"Preview":account.state.user.subscription_tier === "free" ? "Free" : "Active"}</Pill></div><p className="mt-4 text-xs text-muted-foreground">Use Plans &amp; access below for checkout and billing management. Workshop stamping also requires approval and VAT verification.</p></section>
     {account.error && <p role="alert" className="text-sm text-red-300">{account.error}</p>}
   </div>;
