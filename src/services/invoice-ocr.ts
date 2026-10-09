@@ -127,6 +127,11 @@ async function imageCanvas(blob: Blob): Promise<HTMLCanvasElement> {
 async function createOcrWorker(onProgress?: InvoiceOcrProgress) {
   const { createWorker } = await import("tesseract.js");
   return createWorker("eng", undefined, {
+    workerPath: "/ocr/worker.min.js",
+    corePath: "/ocr/tesseract-core-lstm.wasm.js",
+    langPath: "/ocr/lang",
+    workerBlobURL: false,
+    gzip: true,
     logger: (event) => {
       if (event.status === "recognizing text") {
         onProgress?.(`Reading document locally… ${Math.round(event.progress * 100)}%`);

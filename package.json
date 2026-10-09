@@ -4,7 +4,9 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/prepare-ocr-assets.mjs",
     "dev": "vite dev --host 0.0.0.0 --port 5000 --strictPort",
+    "prebuild": "node scripts/prepare-ocr-assets.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
@@ -61,6 +63,7 @@
     "@tanstack/react-router": "1.170.41",
     "@tanstack/react-start": "1.168.60",
     "@tanstack/router-plugin": "1.168.42",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/pg": "^8.23.1",

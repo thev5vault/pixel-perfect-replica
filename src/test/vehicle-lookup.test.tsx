@@ -9,7 +9,7 @@ describe("vehicle lookup data", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv("GOV_API_ENABLED", "false");
-    for (const key of ["DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
+    for (const key of ["DVSA_API_KEY", "DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
     localStorage.clear();
   });
 
@@ -57,6 +57,43 @@ describe("vehicle lookup data", () => {
     expect(await lookupRegistration("AB14CDE")).toMatchObject({ vehicle: { source: "official", make: "AUDI", motHistory: [] } });
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ method: "POST", body: '{"registrationNumber":"AB14CDE"}' });
     await expect(lookupRegistration("AB14CDE")).rejects.toThrow("DVLA VES lookup failed (503)");
+  });
+
+  it("uses DVSA MOT vehicle fields directly when DVLA VES is unavailable", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
+    vi.stubEnv("DVSA_API_KEY", "test-dvsa-key");
+    vi.stubEnv("DVLA_VES_API_KEY", "unavailable-ves-test-key");
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+      make: "AUDI",
+      model: "A4",
+      manufactureDate: "2007-09-17",
+      fuelType: "Petrol",
+      primaryColour: "Silver",
+      vin: "WAUZZZ8K9EA000001",
+      motTests: [{
+        completedDate: "2025-02-17T00:00:00.000Z",
+        testResult: "PASSED",
+        expiryDate: "2026-02-16",
+        odometerValue: "86420",
+        odometerUnit: "MI",
+        odometerResultType: "READ",
+      }],
+    })));
+    vi.stubGlobal("fetch", fetcher);
+
+    const result = await lookupRegistration("AB14 CDE");
+
+    expect(result.vehicle).toMatchObject({
+      make: "AUDI",
+      model: "A4",
+      colour: "Silver",
+      fuelType: "Petrol",
+      odometer: 86420,
+      source: "official",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(String(fetcher.mock.calls[0]?.[0])).toContain("/history.mot.api.gov.uk/");
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ headers: { "X-API-Key": "test-dvsa-key" } });
   });
 
   it("obtains an MOT OAuth token and uses the API key on the official history request", async () => {
