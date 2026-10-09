@@ -25,6 +25,40 @@ ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified BOOLEAN NOT NULL
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified_at TIMESTAMPTZ;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'inactive' CHECK (subscription_status IN ('inactive','trialing','active','past_due','canceled','expired'));
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS webauthn_user_handle TEXT UNIQUE;
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+  credential_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
+  user_handle TEXT NOT NULL,
+  public_key BYTEA NOT NULL,
+  counter BIGINT NOT NULL DEFAULT 0 CHECK (counter >= 0),
+  transports TEXT[] NOT NULL DEFAULT '{}',
+  device_type TEXT NOT NULL CHECK (device_type IN ('singleDevice','multiDevice')),
+  backed_up BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS webauthn_credentials_user_idx ON webauthn_credentials(user_id);
+CREATE TABLE IF NOT EXISTS webauthn_challenges (
+  id UUID PRIMARY KEY,
+  flow TEXT NOT NULL CHECK (flow IN ('registration','authentication')),
+  user_id TEXT REFERENCES user_accounts(id) ON DELETE CASCADE,
+  challenge TEXT NOT NULL,
+  origin TEXT NOT NULL,
+  rp_id TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS webauthn_challenges_expiry_idx ON webauthn_challenges(expires_at);
+CREATE TABLE IF NOT EXISTS webauthn_sessions (
+  token_hash TEXT PRIMARY KEY CHECK (token_hash ~ '^[a-f0-9]{64}$'),
+  user_id TEXT NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS webauthn_sessions_user_idx ON webauthn_sessions(user_id, expires_at);
 CREATE TABLE IF NOT EXISTS tier_overrides (
   user_id TEXT PRIMARY KEY REFERENCES user_accounts(id) ON DELETE CASCADE,
   tier_override TEXT NOT NULL CHECK (tier_override = 'pro_modder_lifetime'),

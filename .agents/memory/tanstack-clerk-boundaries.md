@@ -21,11 +21,11 @@ Treat pending signup metadata as a UI hint only; restore the existing Clerk atte
 
 **How to apply:** Trust provider state for the verification step, distinguish expired attempts from temporary network failure, and never save passwords, codes or tokens in recovery storage.
 
-Keep web session-token handling inside Clerk; do not copy session tokens into localStorage. Send auth completion to a dedicated handoff route that waits for Clerk hydration before role-based navigation.
+Keep Clerk tokens inside Clerk; do not copy them into localStorage. A separate native WebAuthn flow must use a server-verified, hashed database session carried only by an HttpOnly SameSite cookie. Check that session before Clerk, and skip Clerk entirely when a request has no Clerk session credential.
 
-**Why:** Browser token copies increase XSS exposure and bypass Clerk's session lifecycle; treating cold hydration as signed-out can send verified users back to the marketing page.
+**Why:** Browser token copies increase XSS exposure and bypass Clerk's session lifecycle. Requiring Clerk to resolve a V5Vault passkey session defeats provider independence, while calling Clerk on an anonymous request can stall mobile sign-in hydration.
 
-**How to apply:** Use Clerk-supported force/fallback redirect props to `/dashboard`, keep `/` available while signed out, and show a retry state if Clerk is signed in but account data is unavailable.
+**How to apply:** Use Clerk-supported force/fallback redirect props to `/dashboard`, keep `/` available while signed out, and show a retry state if Clerk is signed in but account data is unavailable. Keep native WebAuthn challenges one-time and sessions server-side; never persist bearer/session tokens in browser storage.
 
 Use appearance style objects when Clerk must override its own component styling.
 

@@ -1,21 +1,22 @@
-import { useState } from "react";
-import { useReverification, useUser } from "@clerk/react";
-import { isReverificationCancelledError } from "@clerk/react/errors";
+import { useEffect, useState } from "react";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount } from "@/lib/account-store";
+import { getRegisteredPasskeyCount, registerPasskey } from "@/services/passkeyClient";
 
 export function PasskeySettings() {
   const account = useAccount();
-  const { isLoaded, user } = useUser();
   const [busy, setBusy] = useState(false);
-  const createPasskeyWithReverification = useReverification(async () => {
-    if (!user) throw new Error("Sign in before adding a passkey.");
-    return user.createPasskey();
-  });
+  const [count, setCount] = useState<number | null>(null);
 
-  if (!isLoaded || !user || account?.preview) return null;
-  const clerkUser = user;
+  useEffect(() => {
+    if (!account?.signedIn || !account.state || account.preview) return;
+    let active = true;
+    void getRegisteredPasskeyCount()
+      .then((passkeyCount) => { if (active) setCount(passkeyCount); })
+      .catch(() => { if (active) setCount(null); });
+    return () => { active = false; };
+  }, [account?.signedIn, account?.state?.user.id, account?.preview]);
 
   async function addPasskey() {
     if (!window.isSecureContext || typeof window.PublicKeyCredential === "undefined" || typeof navigator.credentials?.create !== "function") {
@@ -28,11 +29,11 @@ export function PasskeySettings() {
     }
     setBusy(true);
     try {
-      await createPasskeyWithReverification();
-      await clerkUser.reload();
-      toast.success("Passkey added. Use Face ID / Touch ID to sign in on this device.");
+      const nextCount = await registerPasskey();
+      setCount(nextCount);
+      toast.success("Passkey added. Use Face ID / Touch ID to sign in.");
     } catch (error) {
-      if (isReverificationCancelledError(error)) {
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
         toast.info("Passkey registration was cancelled. No passkey was added.");
         return;
       }
@@ -42,17 +43,17 @@ export function PasskeySettings() {
     }
   }
 
-  const count = clerkUser.passkeys.length;
+  if (!account?.signedIn || !account.state || account.preview) return null;
   return (
     <section className="vault-card space-y-3 p-5" aria-labelledby="passkey-settings-title">
       <div>
         <h2 id="passkey-settings-title" className="text-base font-semibold">Face ID / Passkey</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Register Face ID, Touch ID, or another device authenticator for secure sign-in. Passkeys are managed securely by Clerk.
+          Add a device passkey for Face ID, Touch ID, or another compatible authenticator. V5Vault verifies passkeys on its own server.
         </p>
       </div>
       <p className="text-xs text-slate-400" aria-live="polite">
-        {count === 0 ? "No passkeys registered." : `${count} passkey${count === 1 ? "" : "s"} registered.`}
+        {count === null ? "Passkey status is unavailable right now." : count === 0 ? "No passkeys registered." : `${count} passkey${count === 1 ? "" : "s"} registered.`}
       </p>
       <button type="button" disabled={busy} onClick={() => void addPasskey()} className="btn-ghost w-full">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fingerprint className="h-4 w-4" />}

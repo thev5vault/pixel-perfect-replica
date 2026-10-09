@@ -2,38 +2,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
 import { PasskeySignInButton } from "@/components/vault/PasskeySignInButton";
 import { PasskeySettings } from "@/components/vault/PasskeySettings";
+import { PasskeyClientError } from "@/services/passkeyClient";
 
 const mocks = vi.hoisted(() => ({
   authenticateWithPasskey: vi.fn(),
-  setActive: vi.fn(),
-  createPasskey: vi.fn(),
-  reload: vi.fn(),
+  registerPasskey: vi.fn(),
+  getRegisteredPasskeyCount: vi.fn(),
   toastError: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
-  useReverification: vi.fn((operation: (...args: unknown[]) => unknown) => operation),
+  onAuthenticated: vi.fn(),
+  PasskeyClientError: class extends Error {
+    code?: string;
+    constructor(message: string, code?: string) { super(message); this.name = "PasskeyClientError"; this.code = code; }
+  },
 }));
 
-vi.mock("@clerk/react", () => ({
-  useReverification: (operation: (...args: unknown[]) => unknown) => mocks.useReverification(operation),
-  useClerk: () => ({
-    loaded: true,
-    client: {
-      signIn: { authenticateWithPasskey: mocks.authenticateWithPasskey },
-    },
-    setActive: mocks.setActive,
-  }),
-  useUser: () => ({
-    isLoaded: true,
-    user: {
-      passkeys: [],
-      createPasskey: mocks.createPasskey,
-      reload: mocks.reload,
-    },
-  }),
+vi.mock("@/services/passkeyClient", () => ({
+  authenticateWithPasskey: mocks.authenticateWithPasskey,
+  registerPasskey: mocks.registerPasskey,
+  getRegisteredPasskeyCount: mocks.getRegisteredPasskeyCount,
+  PasskeyClientError: mocks.PasskeyClientError,
 }));
 vi.mock("@/lib/account-store", () => ({
-  useAccount: () => ({ preview: false, state: { user: { email_verified: true } } }),
+  useAccount: () => ({
+    preview: false, signedIn: true,
+    state: { user: { id: "owner", email_verified: true } },
+  }),
 }));
 vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, info: mocks.toastInfo, success: mocks.toastSuccess },
@@ -48,29 +43,24 @@ function enableWebAuthn() {
   });
 }
 
-describe("Clerk passkey flows", () => {
+describe("native WebAuthn passkey flows", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     enableWebAuthn();
     mocks.authenticateWithPasskey.mockResolvedValue({ status: "complete", createdSessionId: "sess_test" });
-    mocks.setActive.mockResolvedValue(undefined);
-    mocks.createPasskey.mockResolvedValue({});
-    mocks.reload.mockResolvedValue(undefined);
+    mocks.registerPasskey.mockResolvedValue(1);
+    mocks.getRegisteredPasskeyCount.mockResolvedValue(0);
   });
   afterEach(() => cleanup());
 
-  it("authenticates with a discoverable WebAuthn passkey and activates the Clerk session", async () => {
-    render(<PasskeySignInButton />);
+  it("runs the native passkey flow without creating a Clerk passkey session", async () => {
+    render(<PasskeySignInButton onAuthenticated={mocks.onAuthenticated} />);
     const button = screen.getByRole("button", { name: "Sign in with Face ID or Touch ID" });
     expect(button.textContent).not.toMatch(/simulation/i);
     fireEvent.click(button);
 
-    await waitFor(() => expect(mocks.setActive).toHaveBeenCalled());
-    expect(mocks.authenticateWithPasskey).toHaveBeenCalledWith({ flow: "discoverable" });
-    expect(mocks.setActive).toHaveBeenCalledWith(expect.objectContaining({
-      session: "sess_test",
-      navigate: expect.any(Function),
-    }));
+    await waitFor(() => expect(mocks.authenticateWithPasskey).toHaveBeenCalledTimes(1));
+    expect(mocks.onAuthenticated).toHaveBeenCalledTimes(1);
   });
 
   it("reports passkey sign-in when the browser does not support WebAuthn", () => {
@@ -82,7 +72,7 @@ describe("Clerk passkey flows", () => {
   });
 
   it("shows the account-settings hint when no passkey is available", async () => {
-    mocks.authenticateWithPasskey.mockRejectedValue(new DOMException("No credentials found.", "NotAllowedError"));
+    mocks.authenticateWithPasskey.mockRejectedValue(new PasskeyClientError("No credentials are registered.", "NO_PASSKEYS_REGISTERED"));
     render(<PasskeySignInButton />);
     fireEvent.click(screen.getByRole("button", { name: "Sign in with Face ID or Touch ID" }));
     await waitFor(() => expect(mocks.toastInfo).toHaveBeenCalledWith(
@@ -90,12 +80,10 @@ describe("Clerk passkey flows", () => {
     ));
   });
 
-  it("enrolls a passkey from account settings using Clerk's user resource", async () => {
+  it("registers a passkey from account settings through V5Vault's verified backend", async () => {
     render(<PasskeySettings />);
     fireEvent.click(screen.getByRole("button", { name: "Register Face ID / Add Passkey" }));
-    await waitFor(() => expect(mocks.createPasskey).toHaveBeenCalled());
-    expect(mocks.useReverification).toHaveBeenCalledWith(expect.any(Function));
-    expect(mocks.reload).toHaveBeenCalled();
-    expect(mocks.toastSuccess).toHaveBeenCalledWith("Passkey added. Use Face ID / Touch ID to sign in on this device.");
+    await waitFor(() => expect(mocks.registerPasskey).toHaveBeenCalledTimes(1));
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("Passkey added. Use Face ID / Touch ID to sign in.");
   });
 });

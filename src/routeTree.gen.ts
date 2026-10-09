@@ -29,6 +29,12 @@ import { Route as VerifyRecordIdRouteImport } from './routes/verify.$recordId'
 import { Route as ApiAiParseInvoiceRouteImport } from './routes/api.ai.parse-invoice'
 import { Route as ApiGarageLookupRouteImport } from './routes/api.garage.lookup'
 import { Route as ApiGarageStampRouteImport } from './routes/api.garage.stamp'
+import { Route as ApiPasskeysAuthenticationOptionsRouteImport } from './routes/api.passkeys.authentication-options'
+import { Route as ApiPasskeysAuthenticationVerifyRouteImport } from './routes/api.passkeys.authentication-verify'
+import { Route as ApiPasskeysCountRouteImport } from './routes/api.passkeys.count'
+import { Route as ApiPasskeysRegistrationOptionsRouteImport } from './routes/api.passkeys.registration-options'
+import { Route as ApiPasskeysRegistrationVerifyRouteImport } from './routes/api.passkeys.registration-verify'
+import { Route as ApiPasskeysSignoutRouteImport } from './routes/api.passkeys.signout'
 import { Route as ApiStripeCreateCheckoutSessionRouteImport } from './routes/api.stripe.create-checkout-session'
 import { Route as ApiStripeCreateWorkshopSessionRouteImport } from './routes/api.stripe.create-workshop-session'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
@@ -136,6 +142,40 @@ const ApiGarageStampRoute = ApiGarageStampRouteImport.update({
   path: '/api/garage/stamp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPasskeysAuthenticationOptionsRoute =
+  ApiPasskeysAuthenticationOptionsRouteImport.update({
+    id: '/api/passkeys/authentication-options',
+    path: '/api/passkeys/authentication-options',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPasskeysAuthenticationVerifyRoute =
+  ApiPasskeysAuthenticationVerifyRouteImport.update({
+    id: '/api/passkeys/authentication-verify',
+    path: '/api/passkeys/authentication-verify',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPasskeysCountRoute = ApiPasskeysCountRouteImport.update({
+  id: '/api/passkeys/count',
+  path: '/api/passkeys/count',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPasskeysRegistrationOptionsRoute =
+  ApiPasskeysRegistrationOptionsRouteImport.update({
+    id: '/api/passkeys/registration-options',
+    path: '/api/passkeys/registration-options',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPasskeysRegistrationVerifyRoute =
+  ApiPasskeysRegistrationVerifyRouteImport.update({
+    id: '/api/passkeys/registration-verify',
+    path: '/api/passkeys/registration-verify',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPasskeysSignoutRoute = ApiPasskeysSignoutRouteImport.update({
+  id: '/api/passkeys/signout',
+  path: '/api/passkeys/signout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeCreateCheckoutSessionRoute =
   ApiStripeCreateCheckoutSessionRouteImport.update({
     id: '/api/stripe/create-checkout-session',
@@ -187,6 +227,12 @@ export interface FileRoutesByFullPath {
   '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/passkeys/authentication-options': typeof ApiPasskeysAuthenticationOptionsRoute
+  '/api/passkeys/authentication-verify': typeof ApiPasskeysAuthenticationVerifyRoute
+  '/api/passkeys/count': typeof ApiPasskeysCountRoute
+  '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
+  '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
+  '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
@@ -214,6 +260,12 @@ export interface FileRoutesByTo {
   '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/passkeys/authentication-options': typeof ApiPasskeysAuthenticationOptionsRoute
+  '/api/passkeys/authentication-verify': typeof ApiPasskeysAuthenticationVerifyRoute
+  '/api/passkeys/count': typeof ApiPasskeysCountRoute
+  '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
+  '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
+  '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
@@ -242,6 +294,12 @@ export interface FileRoutesById {
   '/api/ai/parse-invoice': typeof ApiAiParseInvoiceRoute
   '/api/garage/lookup': typeof ApiGarageLookupRoute
   '/api/garage/stamp': typeof ApiGarageStampRoute
+  '/api/passkeys/authentication-options': typeof ApiPasskeysAuthenticationOptionsRoute
+  '/api/passkeys/authentication-verify': typeof ApiPasskeysAuthenticationVerifyRoute
+  '/api/passkeys/count': typeof ApiPasskeysCountRoute
+  '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
+  '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
+  '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
@@ -271,6 +329,12 @@ export interface FileRouteTypes {
     | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/passkeys/authentication-options'
+    | '/api/passkeys/authentication-verify'
+    | '/api/passkeys/count'
+    | '/api/passkeys/registration-options'
+    | '/api/passkeys/registration-verify'
+    | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
@@ -298,6 +362,12 @@ export interface FileRouteTypes {
     | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/passkeys/authentication-options'
+    | '/api/passkeys/authentication-verify'
+    | '/api/passkeys/count'
+    | '/api/passkeys/registration-options'
+    | '/api/passkeys/registration-verify'
+    | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
@@ -325,6 +395,12 @@ export interface FileRouteTypes {
     | '/api/ai/parse-invoice'
     | '/api/garage/lookup'
     | '/api/garage/stamp'
+    | '/api/passkeys/authentication-options'
+    | '/api/passkeys/authentication-verify'
+    | '/api/passkeys/count'
+    | '/api/passkeys/registration-options'
+    | '/api/passkeys/registration-verify'
+    | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/vault/create'
@@ -353,6 +429,12 @@ export interface RootRouteChildren {
   ApiAiParseInvoiceRoute: typeof ApiAiParseInvoiceRoute
   ApiGarageLookupRoute: typeof ApiGarageLookupRoute
   ApiGarageStampRoute: typeof ApiGarageStampRoute
+  ApiPasskeysAuthenticationOptionsRoute: typeof ApiPasskeysAuthenticationOptionsRoute
+  ApiPasskeysAuthenticationVerifyRoute: typeof ApiPasskeysAuthenticationVerifyRoute
+  ApiPasskeysCountRoute: typeof ApiPasskeysCountRoute
+  ApiPasskeysRegistrationOptionsRoute: typeof ApiPasskeysRegistrationOptionsRoute
+  ApiPasskeysRegistrationVerifyRoute: typeof ApiPasskeysRegistrationVerifyRoute
+  ApiPasskeysSignoutRoute: typeof ApiPasskeysSignoutRoute
   ApiStripeCreateCheckoutSessionRoute: typeof ApiStripeCreateCheckoutSessionRoute
   ApiStripeCreateWorkshopSessionRoute: typeof ApiStripeCreateWorkshopSessionRoute
   ApiVaultCreateRoute: typeof ApiVaultCreateRoute
@@ -502,6 +584,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGarageStampRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/passkeys/authentication-options': {
+      id: '/api/passkeys/authentication-options'
+      path: '/api/passkeys/authentication-options'
+      fullPath: '/api/passkeys/authentication-options'
+      preLoaderRoute: typeof ApiPasskeysAuthenticationOptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkeys/authentication-verify': {
+      id: '/api/passkeys/authentication-verify'
+      path: '/api/passkeys/authentication-verify'
+      fullPath: '/api/passkeys/authentication-verify'
+      preLoaderRoute: typeof ApiPasskeysAuthenticationVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkeys/count': {
+      id: '/api/passkeys/count'
+      path: '/api/passkeys/count'
+      fullPath: '/api/passkeys/count'
+      preLoaderRoute: typeof ApiPasskeysCountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkeys/registration-options': {
+      id: '/api/passkeys/registration-options'
+      path: '/api/passkeys/registration-options'
+      fullPath: '/api/passkeys/registration-options'
+      preLoaderRoute: typeof ApiPasskeysRegistrationOptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkeys/registration-verify': {
+      id: '/api/passkeys/registration-verify'
+      path: '/api/passkeys/registration-verify'
+      fullPath: '/api/passkeys/registration-verify'
+      preLoaderRoute: typeof ApiPasskeysRegistrationVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkeys/signout': {
+      id: '/api/passkeys/signout'
+      path: '/api/passkeys/signout'
+      fullPath: '/api/passkeys/signout'
+      preLoaderRoute: typeof ApiPasskeysSignoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/create-checkout-session': {
       id: '/api/stripe/create-checkout-session'
       path: '/api/stripe/create-checkout-session'
@@ -561,6 +685,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiParseInvoiceRoute: ApiAiParseInvoiceRoute,
   ApiGarageLookupRoute: ApiGarageLookupRoute,
   ApiGarageStampRoute: ApiGarageStampRoute,
+  ApiPasskeysAuthenticationOptionsRoute: ApiPasskeysAuthenticationOptionsRoute,
+  ApiPasskeysAuthenticationVerifyRoute: ApiPasskeysAuthenticationVerifyRoute,
+  ApiPasskeysCountRoute: ApiPasskeysCountRoute,
+  ApiPasskeysRegistrationOptionsRoute: ApiPasskeysRegistrationOptionsRoute,
+  ApiPasskeysRegistrationVerifyRoute: ApiPasskeysRegistrationVerifyRoute,
+  ApiPasskeysSignoutRoute: ApiPasskeysSignoutRoute,
   ApiStripeCreateCheckoutSessionRoute: ApiStripeCreateCheckoutSessionRoute,
   ApiStripeCreateWorkshopSessionRoute: ApiStripeCreateWorkshopSessionRoute,
   ApiVaultCreateRoute: ApiVaultCreateRoute,

@@ -1,28 +1,11 @@
 import { useState } from "react";
-import { useClerk } from "@clerk/react";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
+import { authenticateWithPasskey, PasskeyClientError } from "@/services/passkeyClient";
 
 const NO_PASSKEY_MESSAGE = "No Face ID linked yet. Please sign in and register Face ID in Account Settings.";
 
-function isMissingPasskey(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "NotAllowedError") return true;
-  if (!error || typeof error !== "object") return false;
-
-  const clerkErrors = (error as { errors?: unknown }).errors;
-  if (!Array.isArray(clerkErrors)) return false;
-  return clerkErrors.some((item) => {
-    if (!item || typeof item !== "object") return false;
-    const entry = item as { code?: unknown; message?: unknown; longMessage?: unknown };
-    const code = String(entry.code ?? "");
-    const message = `${String(entry.message ?? "")} ${String(entry.longMessage ?? "")}`;
-    return (/passkey/i.test(code) && /(not_found|not_present|missing|no_credentials)/i.test(code))
-      || /no (?:registered )?passkeys?|passkey (?:was )?not found|no face id linked/i.test(message);
-  });
-}
-
-export function PasskeySignInButton() {
-  const clerk = useClerk();
+export function PasskeySignInButton({ onAuthenticated }: { onAuthenticated?: () => void }) {
   const [busy, setBusy] = useState(false);
 
   async function signInWithPasskey() {
@@ -30,34 +13,21 @@ export function PasskeySignInButton() {
       toast.error("Passkeys require a compatible browser and a secure connection.");
       return;
     }
-    if (!clerk.loaded || !clerk.client) {
-      toast.error("Authentication is still loading. Try again in a moment.");
-      return;
-    }
     setBusy(true);
     try {
-      const attempt = await clerk.client.signIn.authenticateWithPasskey({ flow: "discoverable" });
-      if (attempt.status !== "complete" || !attempt.createdSessionId) {
-        toast.error("Another verification step is required. Continue with the sign-in form.");
-        return;
-      }
-      await clerk.setActive({
-        session: attempt.createdSessionId,
-        navigate: async ({ decorateUrl }) => {
-          window.location.assign(decorateUrl("/dashboard"));
-        },
-      });
+      await authenticateWithPasskey();
+      if (onAuthenticated) onAuthenticated();
+      else window.location.assign("/dashboard");
     } catch (error) {
-      if (isMissingPasskey(error)) {
+      if (error instanceof PasskeyClientError && error.code === "NO_PASSKEYS_REGISTERED") {
         toast.info(NO_PASSKEY_MESSAGE);
         return;
       }
-      const message = error instanceof Error ? error.message : "Passkey sign-in could not be completed.";
-      if (/passkey does not match one of the allowed values for parameter strategy/i.test(message)) {
-        toast.error("Passkey sign-in is unavailable for this Clerk account. Sign in with email, then register Face ID in Account Settings.");
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        toast.info(NO_PASSKEY_MESSAGE);
         return;
       }
-      toast.error(message);
+      toast.error(error instanceof Error ? error.message : "Passkey sign-in could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -67,7 +37,7 @@ export function PasskeySignInButton() {
     <button
       type="button"
       onClick={() => void signInWithPasskey()}
-      disabled={busy || !clerk.loaded}
+      disabled={busy}
       className="btn-ghost mt-4 w-full"
       aria-label="Sign in with Face ID or Touch ID"
     >

@@ -62,6 +62,30 @@
   textarea, select { font-size: 16px !important; }
 }
 
+/* Keep Clerk's password-visibility control centered without changing other buttons. */
+.cl-formFieldInputWrapper {
+  position: relative;
+}
+.cl-formFieldInput[type="password"],
+.cl-formFieldInput[autocomplete="current-password"],
+.cl-formFieldInput[autocomplete="new-password"] {
+  padding-right: 3rem !important;
+}
+.cl-formFieldInputShowPasswordButton {
+  pointer-events: auto !important;
+  position: absolute !important;
+  right: 0.75rem !important;
+  top: 50% !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  transform: translateY(-50%) !important;
+}
+
 @media (max-width: 640px) and (pointer: coarse) {
   button,
   [role="button"],

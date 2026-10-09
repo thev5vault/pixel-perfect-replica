@@ -7,6 +7,8 @@ import { createClerkClient } from "@clerk/backend";
 import { vinMatchesMake } from "@/lib/vin";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { getRequest } from "@tanstack/react-start/server";
+import { getPasskeySessionUserId } from "./webauthn";
+import { hasClerkSessionCredential } from "./auth-transport";
 import type { AccountState, UserAccount, AdminState, AdminUser, AdminVehicleEdit, WorkshopReview } from "@/lib/account-types";
 import { applyAdminPolicy } from "./admin-policy";
 import type { Modification, Role, ServiceRecord, Vehicle } from "@/lib/vault-store";
@@ -28,22 +30,42 @@ export function signingSecret() {
   if (!secret) throw new Error("Workshop signing is not configured.");
   return secret;
 }
-export async function currentUser(): Promise<UserAccount & {dev_role:Role|null; password_hash:string|null}> {
-  const request = getRequest();
+export async function currentUser(authRequest?:Request): Promise<UserAccount & {dev_role:Role|null; password_hash:string|null}> {
+  const request = authRequest ?? getRequest();
   const host = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || new URL(request.url).hostname;
   // TanStack has already consumed POST bodies by the time a serverFn runs.
   // Clerk only needs headers/cookies here; give it a fresh bodyless auth request.
-  const authRequest = new Request(request.url,{method:"GET",headers:request.headers});
-  const session = await clerk.authenticateRequest(authRequest,{publishableKey:publishableKeyFromHost(host,process.env["CLERK_PUBLISHABLE_KEY"])});
-  const id = session.toAuth()?.userId;
+  const clerkRequest = new Request(request.url,{method:"GET",headers:request.headers});
+  const passkeyUserId = await getPasskeySessionUserId(request);
+  let id: string | undefined = passkeyUserId;
+  let primaryEmail: { emailAddress:string; verification:{status:string}|null } | undefined;
+  let emailVerified = false;
+  if (!id && hasClerkSessionCredential(request)) {
+    try {
+      const session = await clerk.authenticateRequest(clerkRequest,{publishableKey:publishableKeyFromHost(host,process.env["CLERK_PUBLISHABLE_KEY"])});
+      id = session.toAuth()?.userId ?? undefined;
+    } catch {
+      // A first-party passkey session is checked before Clerk and remains usable if Clerk is unavailable.
+    }
+  }
   if (!id) throw new Error("Sign in to continue.");
-  const identity = await clerk.users.getUser(id);
-   const primaryEmail = identity.emailAddresses.find(e=>e.id===identity.primaryEmailAddressId);
-   const email = primaryEmail?.emailAddress;
-  if (!email) throw new Error("An email address is required.");
-  await pool.query(`INSERT INTO user_accounts(id,email,full_name) VALUES($1,$2,$3)
-    ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email`,[id,email,[identity.firstName,identity.lastName].filter(Boolean).join(" ") || email.split("@")[0]]);
-   const profile = (await pool.query("SELECT * FROM user_accounts WHERE id=$1",[id])).rows[0];
+  if (!passkeyUserId) {
+    const identity = await clerk.users.getUser(id);
+    primaryEmail = identity.emailAddresses.find(e=>e.id===identity.primaryEmailAddressId);
+    const email = primaryEmail?.emailAddress;
+    if (!email) throw new Error("An email address is required.");
+    emailVerified = primaryEmail?.verification?.status==="verified";
+    await pool.query(`INSERT INTO user_accounts(id,email,full_name,email_verified) VALUES($1,$2,$3,$4)
+      ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email,full_name=EXCLUDED.full_name,email_verified=EXCLUDED.email_verified`,
+    [id,email,[identity.firstName,identity.lastName].filter(Boolean).join(" ") || email.split("@")[0],emailVerified]);
+  } else {
+    // Native passkey sessions are first-party and must not depend on a Clerk API round-trip.
+    const local = (await pool.query("SELECT id FROM user_accounts WHERE id=$1",[id])).rows[0];
+    if (!local) throw new Error("Sign in to continue.");
+  }
+  const profile = (await pool.query("SELECT * FROM user_accounts WHERE id=$1",[id])).rows[0];
+  if (!profile) throw new Error("Account could not be loaded.");
+  emailVerified = primaryEmail ? primaryEmail.verification?.status==="verified" : profile.email_verified === true;
    const [billing, overrideResult] = await Promise.all([
      paidTier(profile),
      pool.query("SELECT tier_override FROM tier_overrides WHERE user_id=$1",[id]),
@@ -62,7 +84,7 @@ export async function currentUser(): Promise<UserAccount & {dev_role:Role|null; 
      subscription_tier:tier,
      workshop_access_active:workshopAccessActive,
      billing_unavailable:billing.unavailable,
-     email_verified:primaryEmail?.verification?.status==="verified",
+      email_verified:emailVerified,
    }, primaryEmail);
 }
 async function seedDevelopmentSamples() {

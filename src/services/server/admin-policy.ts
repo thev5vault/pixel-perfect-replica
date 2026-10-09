@@ -1,14 +1,17 @@
 import { ADMIN_PERMISSIONS, type UserAccount } from "@/lib/account-types";
 
-// This allowlist is evaluated ONLY after authenticating a real Clerk session
-// and fetching its primary address from Clerk's server SDK.
+// Clerk-backed sessions use Clerk's live primary email. Native passkey sessions
+// use the verification state captured from that same Clerk identity at sign-in.
 const OWNER_EMAIL = "kieranroe23@hotmail.co.uk";
 export function applyAdminPolicy<T extends UserAccount>(profile: T, primaryEmail?: {
   emailAddress: string;
   verification: { status: string } | null;
 }): T {
-  if (primaryEmail?.verification?.status !== "verified" ||
-      primaryEmail.emailAddress.trim().toLowerCase() !== OWNER_EMAIL) {
+  const email = primaryEmail?.emailAddress ?? profile.email;
+  const verified = primaryEmail
+    ? primaryEmail.verification?.status === "verified"
+    : profile.email_verified === true;
+  if (!verified || email.trim().toLowerCase() !== OWNER_EMAIL) {
     return { ...profile, role:profile.role==="dev_admin"?"civilian":profile.role,
       subscription_tier:profile.subscription_tier==="god_mode"?"free":profile.subscription_tier, permissions: [] };
   }

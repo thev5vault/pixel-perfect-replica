@@ -1,7 +1,7 @@
 - [Vehicle lookup scope](vehicle-lookup-scope.md) — sample onboarding is allowed, but must be labelled and never replace a failed official lookup.
 - [Dev workflow and watcher limits](dev-workflow-port-conflicts.md) — stop stale Vite processes and exclude large generated caches when the inotify limit is reached.
 - [Sample approval scope](sample-approval-scope.md) — instantly approve development sample transfers/stamps; status flags allow later review and never establish live verification.
-- [TanStack and Clerk boundaries](tanstack-clerk-boundaries.md) — consumed POST bodies need header-only auth requests; strict SDK theme typings need care.
+- [TanStack and Clerk boundaries](tanstack-clerk-boundaries.md) — consumed POST bodies need header-only auth requests; native passkey sessions stay server-backed and independent of Clerk.
 - [Admin access boundaries](admin-access-boundaries.md) — verified real access and fixture-only shortcuts stay separate; tier previews never change administrator privileges.
 - [Official logo asset](official-logo-asset.md) — use the uploaded PNG exactly; do not reconstruct the shield with SVG paths.
 - [Stripe connector authentication](stripe-connector-authentication.md) — use the attached connector's managed authentication, not extracted or manually substituted keys.

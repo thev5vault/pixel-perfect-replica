@@ -6,6 +6,7 @@ import { useSampleAccount } from "./use-sample-account";
 import { clearPendingSignup } from "./signup-recovery";
 import type { Role, ServiceInput, Modification } from "./vault-store";
 import * as api from "@/services/accountApi";
+import { endPasskeySession } from "@/services/passkeyClient";
 
 export interface AccountContext {
   state: AccountState | null;
@@ -49,34 +50,77 @@ export function AccountProvider({children}:{children:ReactNode}) {
   const [state,setState] = useState<AccountState|null>(null);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState<string|null>(null);
+  const [nativeSession,setNativeSession] = useState(false);
+  const [nativeSessionChecked,setNativeSessionChecked] = useState(false);
   const activeIdentity = useRef(user?.id);
-  if (isLoaded) activeIdentity.current = user?.id;
+  if (isLoaded && isSignedIn && user?.id) activeIdentity.current = user.id;
+  const loadErrorMessage = (value:unknown) => {
+    const message=value instanceof Error?value.message:"";
+    return /load failed|failed to fetch|networkerror|network request failed/i.test(message)
+      ? "Your account couldn't be loaded. Check your connection and try again."
+      : message || "Your account details could not be loaded.";
+  };
   const refresh = useCallback(async () => {
-    const identity=user?.id;
-    if(!isSignedIn || !identity) return;
+    const identity=isSignedIn?user?.id:nativeSession?activeIdentity.current:undefined;
+    if(!isSignedIn&&!nativeSession) return;
     try {
       const result=await api.getAccountState();
-      if(result.user.id!==identity) throw new Error("Account identity mismatch. Sign in again.");
-      if(activeIdentity.current===identity) {setState(result);setError(null);}
+      if(identity && result.user.id!==identity) throw new Error("Account identity mismatch. Sign in again.");
+      activeIdentity.current=result.user.id;
+      setState(result);setError(null);setNativeSession(!isSignedIn);
     }
-    catch(e) {if(activeIdentity.current===identity) setError(e instanceof Error?e.message:"Account could not be loaded.");throw e;}
-    finally {if(activeIdentity.current===identity) setLoading(false);}
-  },[isSignedIn,user?.id]);
+    catch(e) {setError(loadErrorMessage(e));throw e;}
+    finally {setLoading(false);}
+  },[isSignedIn,user?.id,nativeSession]);
   useEffect(()=>{
     let active=true;
     if(preview) return;
     if(!isLoaded) {setLoading(true);return;}
-    if(!isSignedIn) {setState(null);setLoading(false);setError(null);return;}
-    setState(previous=>previous?.user.id===user?.id?previous:null);
+    if(isSignedIn && user?.id) {
+      setNativeSession(false);
+      setNativeSessionChecked(true);
+      activeIdentity.current=user.id;
+      setState(previous=>previous?.user.id===user.id?previous:null);
+      setLoading(true);
+      void refresh().catch(()=>{if(active) setLoading(false);});
+      const interval=setInterval(()=>{void refresh().catch(()=>{});},30000);
+      return ()=>{active=false;clearInterval(interval);};
+    }
+    if(nativeSession) {
+      setNativeSessionChecked(true);
+      const interval=setInterval(()=>{void refresh().catch(()=>{});},30000);
+      return ()=>{active=false;clearInterval(interval);};
+    }
+    activeIdentity.current=undefined;
+    setNativeSessionChecked(false);
+    setState(null);
+    setError(null);
     setLoading(true);
-    void refresh().catch(()=>{if(active) setLoading(false);});
-    const interval=setInterval(()=>{void refresh().catch(()=>{});},30000);
-    return ()=>{active=false;clearInterval(interval);};
-  },[user?.id,isLoaded,isSignedIn,refresh,preview]);
+    void api.getAccountState().then(result=>{
+      if(!active) return;
+      activeIdentity.current=result.user.id;
+      setState(result);
+      setNativeSession(true);
+    }).catch((e)=>{
+      if(!active) return;
+      activeIdentity.current=undefined;
+      setState(null);
+      if (/sign in to continue|unauthorized|\b401\b/i.test(e instanceof Error?e.message:String(e))) {
+        setNativeSession(false);
+        setError(null);
+      } else {
+        setNativeSession(true);
+        setError(loadErrorMessage(e));
+      }
+    }).finally(()=>{
+      if(active) {setNativeSessionChecked(true);setLoading(false);}
+    });
+    return ()=>{active=false;};
+  },[user?.id,isLoaded,isSignedIn,refresh,preview,nativeSession]);
   const value = useMemo<AccountContext>(()=>({
     state:state?.user.id===activeIdentity.current?state:null,
-    loading:!isLoaded||loading,error,signedIn:Boolean(isSignedIn||(!isLoaded&&state)),
-    authLoaded:isLoaded,preview:false,startPreview,refresh,
+    loading:!isLoaded||loading,error,signedIn:Boolean(isSignedIn||nativeSession||(!isLoaded&&state)),
+    authLoaded:Boolean(isLoaded&&(isSignedIn||nativeSessionChecked)),preview:false,startPreview,refresh,
     getAdminState:async()=>api.getAdminState(),
     reviewWorkshop:async(input)=>{await api.reviewWorkshop({data:input});await refresh();},
     editVehicle:async(input)=>{await api.editAdminVehicle({data:input});await refresh();},
@@ -92,8 +136,15 @@ export function AccountProvider({children}:{children:ReactNode}) {
     markRead:async()=>{await api.markNotificationsRead();await refresh();},
     book:async(vrm,date,notes)=>{await api.createBooking({data:{vrm,date,notes}});await refresh();},
     updateBooking:async(id,status)=>{await api.updateBooking({data:{id,status}});await refresh();},
-    signOut:async()=>{setLoading(true);await clerk.signOut({redirectUrl:"/"});setState(null);},
-  }),[state,loading,isLoaded,isSignedIn,error,refresh,clerk,startPreview]);
+    signOut:async()=>{
+      setLoading(true);
+      try { await endPasskeySession(); }
+      catch (e) { setLoading(false); throw e; }
+      setNativeSession(false);setNativeSessionChecked(true);activeIdentity.current=undefined;setState(null);setError(null);
+      if(isSignedIn) await clerk.signOut({redirectUrl:"/"});
+      else {setLoading(false);window.location.assign("/");}
+    },
+  }),[state,loading,isLoaded,isSignedIn,nativeSession,nativeSessionChecked,error,refresh,clerk,startPreview]);
   return <Context.Provider value={preview&&import.meta.env.DEV?sample:value}>{children}</Context.Provider>;
 }
 export function useAccount() {return useContext(Context);}

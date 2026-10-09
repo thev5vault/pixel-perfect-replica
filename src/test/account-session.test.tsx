@@ -19,12 +19,13 @@ beforeEach(()=>{
   setPreviewEnabled(false);
   sessionStorage.clear();
   mocks.auth={isLoaded:true,isSignedIn:false,user:null};
-  mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"owner"}});
+  mocks.getState.mockRejectedValue(new Error("Sign in to continue."));
 });
 afterEach(()=>{cleanup();setPreviewEnabled(false);vi.unstubAllEnvs();});
 describe("Session continuity and isolated developer preview",()=>{
   it("retains an authenticated profile during Clerk's temporary reload instead of returning to landing",async()=>{
     mocks.auth={isLoaded:true,isSignedIn:true,user:{id:"owner"}};
+    mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"owner"}});
     const {result,rerender}=renderHook(useAccount,{wrapper});
     await waitFor(()=>expect(result.current?.state?.user.id).toBe("owner"));
     mocks.auth={isLoaded:false,isSignedIn:false,user:null};
@@ -39,9 +40,12 @@ describe("Session continuity and isolated developer preview",()=>{
   });
   it("clears profile data on a confirmed sign-out",async()=>{
     mocks.auth={isLoaded:true,isSignedIn:true,user:{id:"owner"}};
+    mocks.getState.mockResolvedValueOnce({...sampleAccount(),user:{...sampleAccount().user,id:"owner"}});
     const {result,rerender}=renderHook(useAccount,{wrapper});
     await waitFor(()=>expect(result.current?.state).not.toBeNull());
-    mocks.auth={isLoaded:true,isSignedIn:false,user:null};rerender();
+    mocks.auth={isLoaded:true,isSignedIn:false,user:null};
+    mocks.getState.mockRejectedValueOnce(new Error("Sign in to continue."));
+    rerender();
     await waitFor(()=>expect(result.current?.state).toBeNull());
     expect(result.current?.signedIn).toBe(false);
   });
@@ -53,8 +57,24 @@ describe("Session continuity and isolated developer preview",()=>{
     expect(result.current?.signedIn).toBe(true);
     expect(result.current?.loading).toBe(false);
   });
+  it("hydrates a valid native passkey session when Clerk is signed out",async()=>{
+    mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"passkey-owner"}});
+    const {result}=renderHook(useAccount,{wrapper});
+    await waitFor(()=>expect(result.current?.state?.user.id).toBe("passkey-owner"));
+    expect(result.current?.signedIn).toBe(true);
+    expect(result.current?.authLoaded).toBe(true);
+  });
+  it("shows a friendly retry state rather than bouncing to the landing page on a network error",async()=>{
+    mocks.getState.mockRejectedValue(new TypeError("Load failed"));
+    const {result}=renderHook(useAccount,{wrapper});
+    await waitFor(()=>expect(result.current?.error).toBe("Your account couldn't be loaded. Check your connection and try again."));
+    expect(result.current?.signedIn).toBe(true);
+    expect(result.current?.state).toBeNull();
+  });
   it("enters sample God Mode in one click and performs approvals, edits and stamps without real APIs",async()=>{
     const {result}=renderHook(useAccount,{wrapper});
+    await waitFor(()=>expect(mocks.getState).toHaveBeenCalledTimes(1));
+    mocks.getState.mockClear();
     act(()=>result.current?.startPreview?.());
     expect(result.current?.preview).toBe(true);
     expect(result.current?.state?.user.role).toBe("dev_admin");
@@ -72,7 +92,8 @@ describe("Session continuity and isolated developer preview",()=>{
     await act(async()=>{await result.current?.addService({vrm:"AB14CDE",date:"2026-10-07",mileage:90000,category:"Servicing",description:"Preview job",items:["Oil filter"],garage:"Sample Workshop"});});
     expect(result.current?.state?.services.at(-1)?.is_sample).toBe(true);
     expect(result.current?.state?.services.at(-1)?.stamp_signature).toBeNull();
-    for(const mock of [mocks.getState,mocks.role,mocks.admin,mocks.review,mocks.edit,mocks.signOut]) expect(mock).not.toHaveBeenCalled();
+    expect(mocks.getState).not.toHaveBeenCalled();
+    for(const mock of [mocks.role,mocks.admin,mocks.review,mocks.edit,mocks.signOut]) expect(mock).not.toHaveBeenCalled();
   });
   it("restores sample access after reload without needing a Clerk session",()=>{
     setPreviewEnabled(true);

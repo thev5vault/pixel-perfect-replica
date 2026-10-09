@@ -10,7 +10,7 @@ const mocks=vi.hoisted(()=>({
 vi.mock("pg",()=>({Pool:class {query=mocks.query;connect=mocks.connect;}}));
 vi.mock("@clerk/backend",()=>({createClerkClient:()=>({authenticateRequest:mocks.authenticate,users:{getUser:mocks.getUser}})}));
 vi.mock("@clerk/shared/keys",()=>({publishableKeyFromHost:()=>"unit-test-publishable-key"}));
-vi.mock("@tanstack/react-start/server",()=>({getRequest:()=>new Request("https://unit-test.example/api/account",{method:"POST"})}));
+vi.mock("@tanstack/react-start/server",()=>({getRequest:()=>new Request("https://unit-test.example/api/account",{method:"POST",headers:{cookie:"__session=unit-test-session"}})}));
 import { adminState, reviewWorkshop, editAdminVehicle, grantTierOverride, revokeTierOverride, extendWorkshopTrial, developmentRole, createService, verifyStamp } from "@/services/server/accounts";
 
 const ownerEmail="kieranroe23@hotmail.co.uk";
