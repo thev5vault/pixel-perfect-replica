@@ -27,6 +27,7 @@ ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT 
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS webauthn_user_handle TEXT UNIQUE;
+ALTER TABLE user_accounts ALTER COLUMN email DROP NOT NULL;
 CREATE TABLE IF NOT EXISTS webauthn_credentials (
   credential_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
@@ -232,7 +233,19 @@ CREATE TABLE IF NOT EXISTS reminder_deliveries (
 CREATE OR REPLACE FUNCTION protect_vault_history() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_TABLE_NAME='vehicle_transfers' THEN
+    IF current_setting('v5vault.account_anonymization',true)='on'
+      AND (to_jsonb(NEW)-'previous_keeper_id'-'new_keeper_id'-'approved_by'-'history_snapshot')
+        IS NOT DISTINCT FROM
+          (to_jsonb(OLD)-'previous_keeper_id'-'new_keeper_id'-'approved_by'-'history_snapshot') THEN
+      RETURN NEW;
+    END IF;
     RAISE EXCEPTION 'Keeper transfer history is immutable';
+  END IF;
+  IF TG_TABLE_NAME='service_records' AND current_setting('v5vault.account_anonymization',true)='on'
+    AND (to_jsonb(NEW)-'created_by_user_id'-'stamped_by_garage_id'-'stamped_by_user_id'-'stamp_signature'-'data')
+      IS NOT DISTINCT FROM
+        (to_jsonb(OLD)-'created_by_user_id'-'stamped_by_garage_id'-'stamped_by_user_id'-'stamp_signature'-'data') THEN
+    RETURN NEW;
   END IF;
   IF TG_OP='DELETE' THEN
     RAISE EXCEPTION 'Vehicle history cannot be deleted';
@@ -253,6 +266,9 @@ CREATE TRIGGER immutable_service_history BEFORE UPDATE OR DELETE ON service_reco
 CREATE OR REPLACE FUNCTION prevent_active_keeper_overwrite() RETURNS trigger AS $$
 BEGIN
   IF OLD.owner_user_id IS NOT NULL AND NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id THEN
+    IF current_setting('v5vault.account_anonymization',true)='on' AND NEW.owner_user_id IS NULL THEN
+      RETURN NEW;
+    END IF;
     RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Vehicle already registered to an active keeper.';
   END IF;
   RETURN NEW;

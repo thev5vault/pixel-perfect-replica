@@ -21,6 +21,7 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => (
     <a href="/settings#plans-access">{children}</a>
   ),
+  useNavigate: () => async () => undefined,
 }));
 
 function makeUser(overrides: Partial<UserAccount> = {}): UserAccount {

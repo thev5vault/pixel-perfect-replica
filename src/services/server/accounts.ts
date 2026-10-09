@@ -376,7 +376,8 @@ export async function adminState():Promise<AdminState> {
     pool.query(`SELECT u.id,u.email,u.full_name,u.role,u.subscription_tier,u.status,u.is_sample,
       u.garage_name,u.garage_registration,u.garage_verified,u.vat_verified,u.created_at,u.workshop_type,
       u.subscription_status,u.trial_expires_at,o.tier_override
-      FROM user_accounts u LEFT JOIN tier_overrides o ON o.user_id=u.id ORDER BY u.created_at DESC`),
+      FROM user_accounts u LEFT JOIN tier_overrides o ON o.user_id=u.id
+      WHERE u.email IS NOT NULL ORDER BY u.created_at DESC`),
     pool.query("SELECT id,vin,vrm,data,owner_user_id,status,is_sample,verification_tier,is_scrapped FROM vehicles ORDER BY vrm"),
   ]);
   const users:AdminUser[] = profiles.rows.map(u=>u.id===admin.id?{...u,role:admin.role,subscription_tier:admin.subscription_tier}:u);

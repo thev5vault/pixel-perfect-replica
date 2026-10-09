@@ -161,12 +161,12 @@ export async function refreshVehicle(inputVrm: string) {
   const lookup = await lookupRegistration(vrm);
   if (lookup.vehicle.source !== "official") throw new Error("Official DVLA/DVSA access is not configured. No sample data has replaced this vehicle.");
   // Preserve the MOT readings frozen at keeper transfers.
-  const frozen = (await pool.query("SELECT history_snapshot FROM vehicle_transfers WHERE vehicle_id=$1 ORDER BY transferred_at", [row.id])).rows
-    .flatMap(t => t.history_snapshot.mot_history ?? []);
-  const history = new Map<string, unknown>((lookup.vehicle.motHistory ?? []).map(m => [m.date, m]));
+  const frozen: Array<{ date: string }> = (await pool.query("SELECT history_snapshot FROM vehicle_transfers WHERE vehicle_id=$1 ORDER BY transferred_at", [row.id])).rows
+    .flatMap(t => (t.history_snapshot.mot_history ?? []) as Array<{ date: string }>);
+  const history = new Map<string, { date: string }>((lookup.vehicle.motHistory ?? []).map(m => [m.date, m]));
   for (const reading of frozen) history.set(reading.date, reading);
   if (lookup.vehicle.vin && validateVIN(lookup.vehicle.vin) && normalizeVIN(lookup.vehicle.vin) !== row.vin) throw new Error("Official lookup VIN differs from the vehicle's saved identity. Manual review is required.");
-  const data = { ...row.data, ...lookup.vehicle, vrm:row.vrm, vin:row.vin, motHistory: [...history.values()].sort((a: any, b: any) => a.date.localeCompare(b.date)) };
+  const data = { ...row.data, ...lookup.vehicle, vrm:row.vrm, vin:row.vin, motHistory: [...history.values()].sort((a, b) => a.date.localeCompare(b.date)) };
   await pool.query(`UPDATE vehicles SET data=$1,verification_tier=CASE WHEN $2='government_data'
     THEN 'government_data' ELSE verification_tier END WHERE id=$3`, [JSON.stringify(data),lookup.vehicle.verification_tier??"provisional",row.id]);
   return { ok: true, message: "Official vehicle details refreshed. Frozen pre-transfer MOT readings were preserved." };

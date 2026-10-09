@@ -21,7 +21,7 @@
 
 import type { IncomingHttpHeaders } from 'http';
 import type { RequestHandler } from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { request as httpsRequest } from 'node:https';
 
 const CLERK_FAPI = 'https://frontend-api.clerk.dev';
 export const CLERK_PROXY_PATH = '/api/__clerk';
@@ -63,84 +63,60 @@ export function clerkProxyMiddleware(): RequestHandler {
     return (_req, _res, next) => next();
   }
 
-  return createProxyMiddleware({
-    target: CLERK_FAPI,
-    changeOrigin: true,
-    // Take over the response so it can be re-sent with a Content-Length (see
-    // proxyRes); the deployment edge rejects chunked proxied responses.
-    selfHandleResponse: true,
-    pathRewrite: (path: string) =>
-      path.replace(new RegExp(`^${CLERK_PROXY_PATH}`), ''),
-    on: {
-      proxyReq: (proxyReq, req) => {
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const host = getClerkProxyHost(req) || '';
-        const proxyUrl = `${protocol}://${host}${CLERK_PROXY_PATH}`;
+  const target = new URL(CLERK_FAPI);
+  return (req, res, next) => {
+    const originalUrl = req.originalUrl || req.url || '/';
+    const path = originalUrl.startsWith(CLERK_PROXY_PATH)
+      ? originalUrl.slice(CLERK_PROXY_PATH.length) || '/'
+      : req.url || '/';
+    const headers = { ...req.headers };
+    delete headers.host;
+    delete headers.connection;
+    delete headers['proxy-connection'];
+    headers.host = target.host;
+    const protocolHeader = req.headers['x-forwarded-proto'];
+    const protocol = (Array.isArray(protocolHeader) ? protocolHeader[0] : protocolHeader)?.split(',')[0]?.trim() || 'https';
+    const host = getClerkProxyHost(req) || '';
+    headers['Clerk-Proxy-Url'] = `${protocol}://${host}${CLERK_PROXY_PATH}`;
+    headers['Clerk-Secret-Key'] = secretKey;
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const clientIp = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(',')[0]?.trim()
+      || req.socket.remoteAddress;
+    if (clientIp) headers['X-Forwarded-For'] = clientIp;
 
-        proxyReq.setHeader('Clerk-Proxy-Url', proxyUrl);
-        proxyReq.setHeader('Clerk-Secret-Key', secretKey);
-
-        const xff = req.headers['x-forwarded-for'];
-        const clientIp =
-          (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim() ||
-          req.socket?.remoteAddress ||
-          '';
-        if (clientIp) {
-          proxyReq.setHeader('X-Forwarded-For', clientIp);
-        }
-      },
-      // Clerk's dynamic Frontend API responses (/v1/environment, /v1/client,
-      // JWKS, ...) arrive without a Content-Length, so relaying them would use
-      // Transfer-Encoding: chunked — which the deployment edge (Cloud Run)
-      // rejects, turning the app's 200 into a 500. Buffer only those so they can
-      // be re-sent with a Content-Length; the body is forwarded untouched so
-      // Content-Encoding is preserved. Length-known responses (e.g. /npm/*
-      // assets) and body-less responses stream through without buffering.
-      proxyRes: (proxyRes, req, res) => {
-        const headers = { ...proxyRes.headers };
-        // Transfer-Encoding/Connection are hop-by-hop (RFC 7230 §6.1).
-        delete headers['transfer-encoding'];
-        delete headers['connection'];
-        delete headers['keep-alive'];
-
-        const status = proxyRes.statusCode ?? 502;
-        // Content-Length is forbidden on 1xx/204; HEAD/304 may keep theirs.
-        if (status < 200 || status === 204) {
-          delete headers['content-length'];
-        }
-
-        const bodyless =
-          req.method === 'HEAD' ||
-          status < 200 ||
-          status === 204 ||
-          status === 304;
-        if (headers['content-length'] !== undefined || bodyless) {
-          res.writeHead(status, headers);
-          // Headers are already sent, so abort the response if the upstream
-          // stream errors mid-pipe (e.g. ECONNRESET) rather than leaving an
-          // unhandled 'error' or a hung client.
-          proxyRes.on('error', () => res.destroy());
-          proxyRes.pipe(res);
-          return;
-        }
-
-        const chunks: Buffer[] = [];
-        proxyRes.on('data', (chunk: Buffer) => chunks.push(chunk));
-        proxyRes.on('end', () => {
-          const body = Buffer.concat(chunks);
-          headers['content-length'] = String(body.length);
-          res.writeHead(status, headers);
-          res.end(body);
-        });
-        proxyRes.on('error', () => {
-          if (!res.headersSent) {
-            // Set a length so the empty 502 isn't sent chunked (which the
-            // deployment edge would reject just like the original response).
-            res.writeHead(502, { 'content-length': '0' });
-          }
-          res.end();
-        });
-      },
-    },
-  }) as RequestHandler;
+    const upstream = httpsRequest(target, { method: req.method, path, headers }, (upstreamResponse) => {
+      const responseHeaders = { ...upstreamResponse.headers };
+      delete responseHeaders['transfer-encoding'];
+      delete responseHeaders.connection;
+      delete responseHeaders['keep-alive'];
+      const status = upstreamResponse.statusCode ?? 502;
+      if (status < 200 || status === 204) delete responseHeaders['content-length'];
+      const bodyless = req.method === 'HEAD' || status < 200 || status === 204 || status === 304;
+      if (responseHeaders['content-length'] !== undefined || bodyless) {
+        res.writeHead(status, responseHeaders);
+        upstreamResponse.on('error', () => res.destroy());
+        upstreamResponse.pipe(res);
+        return;
+      }
+      const chunks: Buffer[] = [];
+      upstreamResponse.on('data', (chunk: Buffer) => chunks.push(chunk));
+      upstreamResponse.on('end', () => {
+        const body = Buffer.concat(chunks);
+        responseHeaders['content-length'] = String(body.length);
+        res.writeHead(status, responseHeaders);
+        res.end(body);
+      });
+      upstreamResponse.on('error', () => {
+        if (!res.headersSent) res.writeHead(502, { 'content-length': '0' });
+        res.end();
+      });
+    });
+    upstream.on('error', () => {
+      if (!res.headersSent) res.writeHead(502, { 'content-length': '0' });
+      res.end();
+    });
+    req.on('aborted', () => upstream.destroy());
+    res.on('close', () => { if (!res.writableEnded) upstream.destroy(); });
+    req.pipe(upstream);
+  };
 }

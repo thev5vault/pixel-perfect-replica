@@ -42,13 +42,13 @@ describe("vehicle lookup data", () => {
     });
   });
 
-  it("fails explicitly for incomplete API credentials", async () => {
+  it("switches to manual entry for incomplete API credentials", async () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("MOT_HISTORY_CLIENT_ID", "example-test-id");
-    await expect(lookupRegistration("BUL200")).rejects.toThrow("configuration is incomplete");
+    await expect(lookupRegistration("BUL200")).rejects.toThrow("DVSA Live Sync pending activation — manual service entry active");
   });
 
-  it("posts normalized registration to VES and does not silently fall back on provider failure", async () => {
+  it("posts normalized registration to VES and switches to manual entry on provider failure", async () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("DVLA_VES_API_KEY", "test-key");
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ make: "AUDI", fuelType: "DIESEL", yearOfManufacture: 2014 })))
@@ -56,7 +56,7 @@ describe("vehicle lookup data", () => {
     vi.stubGlobal("fetch", fetcher);
     expect(await lookupRegistration("AB14CDE")).toMatchObject({ vehicle: { source: "official", make: "AUDI", motHistory: [] } });
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ method: "POST", body: '{"registrationNumber":"AB14CDE"}' });
-    await expect(lookupRegistration("AB14CDE")).rejects.toThrow("DVLA VES lookup failed (503)");
+    await expect(lookupRegistration("AB14CDE")).rejects.toThrow("DVSA Live Sync pending activation — manual service entry active");
   });
 
   it("uses DVSA MOT vehicle fields directly when DVLA VES is unavailable", async () => {

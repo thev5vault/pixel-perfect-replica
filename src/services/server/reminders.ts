@@ -5,15 +5,17 @@ import { currentUser, requireGarage, verifiedPhoneForUser } from "./accounts";
 import { pool } from "./db";
 import { requestOrigin } from "./billing";
 const sdk = () => new ReplitConnectors();
+type Sender = { verified: boolean; from_email: string };
+type SmsNumber = { capabilities?: { sms?: boolean }; phone_number: string };
 
 async function channels() {
   let emailFrom = "", smsFrom = "", accountSid = "";
   try {
     const response = await sdk().proxy("sendgrid", "/v3/verified_senders", { method: "GET" });
     if (response.ok) {
-      const data = await response.json(), senders = (data.results ?? []).filter((s: any) => s.verified);
-      emailFrom = process.env["REMINDER_FROM_EMAIL"] ?? (senders.length === 1 ? senders[0].from_email : "");
-      if (!senders.some((s: any) => s.from_email === emailFrom)) emailFrom = "";
+      const data = await response.json() as { results?: Sender[] }, senders = (data.results ?? []).filter((s) => s.verified);
+      emailFrom = process.env["REMINDER_FROM_EMAIL"] ?? (senders.length === 1 ? senders[0]?.from_email ?? "" : "");
+      if (!senders.some((s) => s.from_email === emailFrom)) emailFrom = "";
     }
   } catch { /* Unconfigured providers are explicitly unavailable, never a fake send. */ }
   try {
@@ -22,9 +24,9 @@ async function channels() {
       accountSid = (await accounts.json()).accounts?.[0]?.sid ?? "";
       if (accountSid) {
         const response = await sdk().proxy("twilio", `/2010-04-01/Accounts/${accountSid}/IncomingPhoneNumbers.json`, { method: "GET" });
-        const phones = response.ok ? (await response.json()).incoming_phone_numbers?.filter((p: any) => p.capabilities?.sms) ?? [] : [];
-        smsFrom = process.env["REMINDER_FROM_PHONE"] ?? (phones.length === 1 ? phones[0].phone_number : "");
-        if (!phones.some((p: any) => p.phone_number === smsFrom)) smsFrom = "";
+        const phones = response.ok ? ((await response.json() as { incoming_phone_numbers?: SmsNumber[] }).incoming_phone_numbers?.filter((p) => p.capabilities?.sms) ?? []) : [];
+        smsFrom = process.env["REMINDER_FROM_PHONE"] ?? (phones.length === 1 ? phones[0]?.phone_number ?? "" : "");
+        if (!phones.some((p) => p.phone_number === smsFrom)) smsFrom = "";
       }
     }
   } catch { /* SMS must remain disabled until a connected sending number is available. */ }

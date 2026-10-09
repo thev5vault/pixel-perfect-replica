@@ -116,7 +116,7 @@ async function persistSuppliedVehicle(vehicle: Vehicle) {
 export function lookupMockRegistration(input: string) {
   const vrm = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const vehicle = suppliedVehicleRecords[vrm] ?? samples[vrm];
-  if (!vehicle) throw new Error("Live lookup is not configured. Sample lookup is available for AB14 CDE and BUL 200; LG57 VYF has a separate supplied record.");
+  if (!vehicle) throw new Error("Live lookup is not configured. Sample lookup is available for AB14 CDE and BUL 200; LG57 VYF has a separate supplied record. DVSA Live Sync pending activation — manual service entry active");
   return {
     vehicle: { ...vehicle, verification_tier: "provisional" as const },
     notice: vehicle.source === "user-provided"
@@ -130,7 +130,7 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
   const motKeys = ["MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"];
   const hasMot = motKeys.every((key) => !!process.env[key]);
   if (motKeys.some((key) => !!process.env[key]) && !hasMot) {
-    throw new Error("MOT API configuration is incomplete. Set all four MOT credentials in Replit Secrets.");
+    throw new Error("MOT API configuration is incomplete. DVSA Live Sync pending activation — manual service entry active");
   }
   if (!vesKey && !hasMot) {
     const supplied = suppliedVehicleRecords[normalizeRegistration(vrm)];
@@ -168,7 +168,7 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
       hasMot && motResult.status === "rejected" ? motResult.reason : undefined,
     ].filter(Boolean);
     if (failures.length === 1 && failures[0] instanceof Error) throw failures[0];
-    throw new Error(`${configuredProviders.join(" and ")} lookups are temporarily unavailable. Please try again later or enter vehicle details manually.`);
+    throw new Error("DVSA Live Sync pending activation — manual service entry active");
   }
   let vehicle = parseVehicleData(vrm, ves, mot);
   if (mot.vin && validateVIN(normalizeVIN(mot.vin))) vehicle.vin = normalizeVIN(mot.vin);
@@ -255,12 +255,24 @@ export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehic
   }
 
   const dvsaKey = process.env["DVSA_API_KEY"];
-  if (dvsaKey) return lookupDvsa(vrm, dvsaKey);
+  if (dvsaKey) {
+    try {
+      return await lookupDvsa(vrm, dvsaKey);
+    } catch (error) {
+      if (error instanceof Error && /VIN manufacturer prefix|VIN differs from/i.test(error.message)) throw error;
+      throw new Error(`${error instanceof Error ? error.message : "DVSA lookup failed."} DVSA Live Sync pending activation — manual service entry active`);
+    }
+  }
   const legacyConfigured = Boolean(process.env["DVLA_VES_API_KEY"] ||
     process.env["MOT_HISTORY_API_KEY"] || process.env["MOT_HISTORY_CLIENT_ID"] ||
     process.env["MOT_HISTORY_CLIENT_SECRET"] || process.env["MOT_HISTORY_TOKEN_URL"]);
-  if (!legacyConfigured) throw new Error("Government lookups are enabled, but no DVSA_API_KEY or complete DVLA/MOT API configuration is available.");
-  return lookupLegacyGovernmentRegistration(vrm);
+  if (!legacyConfigured) throw new Error("Government lookup configuration is incomplete. DVSA Live Sync pending activation — manual service entry active");
+  try {
+    return await lookupLegacyGovernmentRegistration(vrm);
+  } catch (error) {
+    if (error instanceof Error && /VIN manufacturer prefix|VIN differs from/i.test(error.message)) throw error;
+    throw new Error(`${error instanceof Error ? error.message : "Government lookup failed."} DVSA Live Sync pending activation — manual service entry active`);
+  }
 }
 
 export const lookupRegistration = getVehicleData;

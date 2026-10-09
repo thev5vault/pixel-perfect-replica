@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { VaultProvider } from "@/lib/vault-store";
 import { AppShell } from "@/components/vault/AppShell";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
@@ -131,6 +132,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    const message = sessionStorage.getItem("v5vault.account-deleted-toast");
+    if (!message) return;
+    sessionStorage.removeItem("v5vault.account-deleted-toast");
+    toast.success(message);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

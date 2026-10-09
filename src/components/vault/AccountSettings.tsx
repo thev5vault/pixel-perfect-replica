@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useAccount } from "@/lib/account-store";
 import { accountRolePresentation } from "@/lib/account-role";
 import { canEditWorkshopProfile, type AccountProfileInput } from "@/lib/account-profile";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "./ui-bits";
-import { Loader2, Save } from "lucide-react";
+import { AlertTriangle, Loader2, Save, ShieldCheck } from "lucide-react";
 import { PasskeySettings } from "./PasskeySettings";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+
+const DELETE_CONFIRMATION = "DELETE MY ACCOUNT";
 
 export function AccountSettings() {
   const account = useAccount();
+  const navigate = useNavigate();
   const user = account?.state?.user;
   const roleView = user ? accountRolePresentation(user) : null;
   const canEditWorkshopDetails = Boolean(user && !roleView?.isAdmin && canEditWorkshopProfile(user));
@@ -18,6 +22,9 @@ export function AccountSettings() {
   const [registration, setRegistration] = useState(user?.garage_registration ?? "");
   const [workshopType, setWorkshopType] = useState<"garage"|"specialist">(user?.workshop_type??"garage");
   const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleting, setDeleting] = useState(false);
   useEffect(() => { setName(user?.full_name ?? ""); setGarageName(user?.garage_name ?? ""); setRegistration(user?.garage_registration ?? "");setWorkshopType(user?.workshop_type??"garage"); }, [user?.id, user?.full_name, user?.garage_name, user?.garage_registration,user?.workshop_type,user?.subscription_tier,user?.role]);
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +39,30 @@ export function AccountSettings() {
     try { await account.saveProfile(profile); toast.success("Profile saved"); }
     catch (error) { toast.error(error instanceof Error ? error.message : "Profile could not be saved"); }
     finally { setBusy(false); }
+  }
+  async function deleteAccountPermanently() {
+    if (deleteText !== DELETE_CONFIRMATION) return;
+    setDeleting(true);
+    try {
+      const response = await fetch("/api/user/account", {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: deleteText }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Account deletion could not be completed.");
+      const message = "Account deleted. Vehicle service history has been anonymized and locked to the VIN for future owners.";
+      sessionStorage.setItem("v5vault.account-deleted-toast", message);
+      toast.success(message);
+      setDeleteOpen(false);
+      try { await account?.signOut(); } catch { /* Clerk deletion already revoked its sessions. */ }
+      await navigate({ to: "/" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Account deletion could not be completed.");
+    } finally {
+      setDeleting(false);
+    }
   }
   if (!account?.state) return <div className="vault-card p-5"><p className="text-sm text-muted-foreground">Account details are not available.</p></div>;
   const currentRole = roleView ?? accountRolePresentation(account.state.user);
@@ -76,6 +107,36 @@ export function AccountSettings() {
       Want to stamp digital service logs? Upgrade to Verified Workshop (£9.99/mo)
     </Link>}
      <PasskeySettings/>
+    <section className="vault-card space-y-3 p-5" aria-label="Privacy and data management">
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" />
+        <div className="min-w-0">
+          <h2 className="font-semibold">Privacy &amp; Data Management</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Download a copy of your account and vehicle history, or permanently remove your account.</p>
+        </div>
+      </div>
+      <a href="/api/user/export" className="btn-secondary flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold">
+        Download My Data
+      </a>
+      <button type="button" onClick={() => { setDeleteText(""); setDeleteOpen(true); }} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-950/30 px-4 text-sm font-semibold text-red-200 hover:bg-red-950/60">
+        <AlertTriangle className="h-4 w-4" /> Delete Account &amp; Data
+      </button>
+    </section>
+    <Dialog open={deleteOpen} onOpenChange={(open) => { if (!deleting) setDeleteOpen(open); }}>
+      <DialogContent className="space-y-4 rounded-2xl border border-red-500/30 bg-slate-950 p-5">
+        <DialogTitle className="text-lg font-bold text-red-100">Permanently delete your account?</DialogTitle>
+        <DialogDescription className="text-sm leading-relaxed text-slate-300">
+          Your sign-in details, profile and billing link will be removed. Vehicle, service, modification and receipt history will remain attached to its VIN with keeper identity anonymized. This cannot be undone.
+        </DialogDescription>
+        <Field label={`Type ${DELETE_CONFIRMATION} to continue`}>
+          <input value={deleteText} onChange={(event) => setDeleteText(event.target.value)} autoComplete="off" className="field text-base" disabled={deleting} />
+        </Field>
+        <button type="button" disabled={deleting || deleteText !== DELETE_CONFIRMATION} onClick={() => void deleteAccountPermanently()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Confirm Permanent Deletion
+        </button>
+      </DialogContent>
+    </Dialog>
     {account.error && <p role="alert" className="text-sm text-red-300">{account.error}</p>}
   </div>;
 }

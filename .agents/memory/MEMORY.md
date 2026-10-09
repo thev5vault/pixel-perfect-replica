@@ -15,3 +15,4 @@
 - [Certificate print watermark](certificate-print-watermark.md) — keep the screen watermark off paged output unless it can repeat safely within each page.
 - [Offline submission idempotency](offline-submission-idempotency.md) — reuse a client UUID as the existing record ID so retries remain safe without adding a migration-only column.
 - [Account profile refresh races](account-profile-refresh-races.md) — merge successfully saved fields after async refreshes so stale account data cannot overwrite them.
+- [VIN history after account deletion](vin-history-after-account-deletion.md) — remove keeper identity without deleting VIN-linked service, modification, or receipt history.
