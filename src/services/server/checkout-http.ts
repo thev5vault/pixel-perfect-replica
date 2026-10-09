@@ -5,6 +5,7 @@ const checkoutInput = z.object({
   plan: z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]),
   vrm: z.string().trim().max(12).optional(),
   billingInterval: z.enum(["month", "year"]).optional(),
+  returnUrl: z.string().trim().max(2048).optional(),
 });
 
 export async function handleCheckoutPost(request: Request) {

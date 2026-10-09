@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useUser } from "@clerk/react";
+import { useReverification, useUser } from "@clerk/react";
+import { isReverificationCancelledError } from "@clerk/react/errors";
 import { Fingerprint, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount } from "@/lib/account-store";
@@ -8,6 +9,10 @@ export function PasskeySettings() {
   const account = useAccount();
   const { isLoaded, user } = useUser();
   const [busy, setBusy] = useState(false);
+  const createPasskeyWithReverification = useReverification(async () => {
+    if (!user) throw new Error("Sign in before adding a passkey.");
+    return user.createPasskey();
+  });
 
   if (!isLoaded || !user || account?.preview) return null;
   const clerkUser = user;
@@ -23,10 +28,14 @@ export function PasskeySettings() {
     }
     setBusy(true);
     try {
-      await clerkUser.createPasskey();
+      await createPasskeyWithReverification();
       await clerkUser.reload();
       toast.success("Passkey added. Use Face ID / Touch ID to sign in on this device.");
     } catch (error) {
+      if (isReverificationCancelledError(error)) {
+        toast.info("Passkey registration was cancelled. No passkey was added.");
+        return;
+      }
       toast.error(error instanceof Error ? error.message : "Passkey could not be added.");
     } finally {
       setBusy(false);

@@ -11,9 +11,11 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
+  useReverification: vi.fn((operation: (...args: unknown[]) => unknown) => operation),
 }));
 
 vi.mock("@clerk/react", () => ({
+  useReverification: (operation: (...args: unknown[]) => unknown) => mocks.useReverification(operation),
   useClerk: () => ({
     loaded: true,
     client: {
@@ -92,6 +94,7 @@ describe("Clerk passkey flows", () => {
     render(<PasskeySettings />);
     fireEvent.click(screen.getByRole("button", { name: "Register Face ID / Add Passkey" }));
     await waitFor(() => expect(mocks.createPasskey).toHaveBeenCalled());
+    expect(mocks.useReverification).toHaveBeenCalledWith(expect.any(Function));
     expect(mocks.reload).toHaveBeenCalled();
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Passkey added. Use Face ID / Touch ID to sign in on this device.");
   });

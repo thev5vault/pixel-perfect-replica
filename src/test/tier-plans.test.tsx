@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { PLAN_DEFINITIONS, PLAN_KEYS } from "@/lib/plans";
 import { TierPlans } from "@/components/vault/TierPlans";
 
@@ -47,5 +47,19 @@ describe("subscription plan cards", () => {
 
     fireEvent.click(within(modder).getByRole("button", { name: "Choose plan" }));
     expect(mockV1.checkout).toHaveBeenCalledWith("pro_yearly", undefined, "year");
+  });
+
+  it("enables both configured Verified Workshop billing periods without a missing-price warning", async () => {
+    render(<TierPlans />);
+    const workshop = (await screen.findByRole("heading", { name: "Verified Workshop / Garage Pro" })).closest("article")!;
+    expect(await within(workshop).findByRole("button", { name: "Choose plan" })).toBeEnabled();
+    expect(workshop).not.toHaveTextContent("Stripe price not configured yet");
+
+    fireEvent.click(within(workshop).getByRole("button", { name: "Choose plan" }));
+    await waitFor(() => expect(mockV1.checkout).toHaveBeenCalledWith("workshop_monthly", undefined, "month"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Yearly (Save ~16%)" }));
+    fireEvent.click(within(workshop).getByRole("button", { name: "Choose plan" }));
+    await waitFor(() => expect(mockV1.checkout).toHaveBeenCalledWith("workshop_yearly", undefined, "year"));
   });
 });

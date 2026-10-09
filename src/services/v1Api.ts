@@ -5,12 +5,15 @@ const vrm = z.string().trim().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
 const plan = z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]);
 const billingInterval = z.enum(["month", "year"]);
 export const getBillingCatalog = createServerFn({ method: "GET" }).handler(async () => (await import("./server/billing")).catalog());
-export async function startCheckout({ data }: { data: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined } }): Promise<CheckoutResult> {
+export async function startCheckout({ data }: { data: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined; returnUrl?: string | undefined } }): Promise<CheckoutResult> {
+  const returnUrl = data.returnUrl ?? (typeof window === "undefined"
+    ? undefined
+    : `${window.location.pathname}${window.location.search}${window.location.hash}`);
   const response = await fetch("/api/create-checkout-session", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, returnUrl }),
   });
   const result = await response.json() as CheckoutResult & { error?: string };
   if (!response.ok) throw new Error(result.error ?? "Checkout could not be started.");

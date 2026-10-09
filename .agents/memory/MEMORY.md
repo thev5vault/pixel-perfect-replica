@@ -5,7 +5,7 @@
 - [Admin access boundaries](admin-access-boundaries.md) — verified real access and fixture-only shortcuts stay separate; tier previews never change administrator privileges.
 - [Official logo asset](official-logo-asset.md) — use the uploaded PNG exactly; do not reconstruct the shield with SVG paths.
 - [Stripe connector authentication](stripe-connector-authentication.md) — use the attached connector's managed authentication, not extracted or manually substituted keys.
-- [Stripe Checkout account binding](stripe-checkout-account-binding.md) — preserve V5Vault account and entitlement fields when applying Checkout UI settings.
+- [Stripe Checkout account binding](stripe-checkout-account-binding.md) — preserve account and entitlement fields; return buyers to their initiating route.
 - [Development JSX transforms](development-jsx-transforms.md) — production builds can pass while dev tagging breaks spaced self-closing JSX.
 - [Nested Radix dialog browser tests](nested-radix-dialog-tests.md) — nested dialogs can hide their mounted parent from accessibility queries while stacking.
 - [Keyboard viewport checks](keyboard-viewport-checks.md) — keyboard regressions need visual-only viewport reduction, not just a smaller page viewport.

@@ -3,9 +3,20 @@ import { getRequest } from "@tanstack/react-start/server";
 import type { UserAccount, SubscriptionTier } from "@/lib/account-types";
 import type { BillingCatalog, BillingInterval, CheckoutResult, PlanKey } from "@/lib/v1-types";
 import { PLAN_DEFINITIONS, PLAN_KEYS, planForBillingInterval } from "@/lib/plans";
+import { buildCheckoutCancelUrl, buildCheckoutSuccessUrl, resolveCheckoutReturnUrl } from "@/lib/checkout-return";
 import { pool, inTransaction } from "./db";
 import { currentUser } from "./accounts";
 import { initializeStripe, stripeClient, stripeSync, stripeTestMode } from "./stripe-client";
+
+const PRICE_ID_ENV: Record<PlanKey, string> = {
+  sales_pack: "STRIPE_PRICE_CERTIFIED_PACK",
+  diy_monthly: "STRIPE_PRICE_PRO_DIY_MONTHLY",
+  diy_yearly: "STRIPE_PRICE_PRO_DIY_YEARLY",
+  pro_monthly: "STRIPE_PRICE_PRO_MODDER_MONTHLY",
+  pro_yearly: "STRIPE_PRICE_PRO_MODDER_YEARLY",
+  workshop_monthly: "STRIPE_PRICE_WORKSHOP_MONTHLY",
+  workshop_yearly: "STRIPE_PRICE_WORKSHOP_YEARLY",
+};
 
 export function requestOrigin() {
   const request = getRequest(), url = new URL(request.url);
@@ -20,18 +31,43 @@ export async function catalog(): Promise<BillingCatalog> {
   try {
     await initializeStripe();
     const testMode=await stripeTestMode();
+    const stripe = await stripeClient();
+    const configuredIds = new Map<PlanKey, string>();
+    for (const key of PLAN_KEYS) {
+      const priceId = process.env[PRICE_ID_ENV[key]]?.trim();
+      if (priceId) configuredIds.set(key, priceId);
+    }
+    const configuredPrices = new Map<PlanKey, BillingCatalog["prices"][number]>();
+    await Promise.all([...configuredIds].map(async ([key, priceId]) => {
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        const definition = PLAN_DEFINITIONS[key];
+        const rawInterval = price.recurring?.interval ?? null;
+        if (rawInterval !== null && rawInterval !== "month" && rawInterval !== "year") return;
+        if (!price.active || price.livemode !== !testMode || price.currency !== "gbp"
+          || Number(price.unit_amount) !== definition.amount || rawInterval !== definition.interval) return;
+        const interval = rawInterval as "month" | "year" | null;
+        configuredPrices.set(key, {
+          key, name: definition.name, amount_pence: Number(price.unit_amount), currency: "gbp",
+          interval, price_id: price.id,
+        });
+      } catch {
+        // An explicitly configured but invalid ID must not silently select a different Stripe price.
+      }
+    }));
     const results = await pool.query("SELECT id,lookup_key,unit_amount,currency,recurring FROM stripe.prices WHERE active=true AND livemode=$2 AND lookup_key=ANY($1::text[])", [PLAN_KEYS.map(key => `v5vault_v1_${key}`),!testMode]);
-    const prices = results.rows.flatMap((price) => {
+    for (const price of results.rows) {
       const key = String(price.lookup_key).replace("v5vault_v1_", "") as PlanKey;
+      if (configuredIds.has(key)) continue;
       const definition = PLAN_DEFINITIONS[key];
       const interval = price.recurring?.interval ?? null;
-      if (!definition || price.currency !== "gbp" || Number(price.unit_amount) !== definition.amount || interval !== definition.interval) return [];
-      return [{
+      if (!definition || price.currency !== "gbp" || Number(price.unit_amount) !== definition.amount || interval !== definition.interval) continue;
+      configuredPrices.set(key, {
         key, name: definition.name, amount_pence: Number(price.unit_amount), currency: "gbp" as const,
         interval, price_id: String(price.id),
-      }];
-    });
-    return { test_mode: testMode, preview: false, prices };
+      });
+    }
+    return { test_mode: testMode, preview: false, prices: PLAN_KEYS.flatMap(key => configuredPrices.has(key) ? [configuredPrices.get(key)!] : []) };
   } catch {
     return {
       test_mode: true,
@@ -73,7 +109,7 @@ function resolvePlan(plan: PlanKey, billingInterval?: BillingInterval): PlanKey 
   return resolved;
 }
 
-export async function checkout(input: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined }): Promise<CheckoutResult> {
+export async function checkout(input: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined; returnUrl?: string | undefined }): Promise<CheckoutResult> {
   const user = await currentUser();
   if (!user.email_verified) throw new Error("Verify your account email before checkout.");
   const selectedPlan = resolvePlan(input.plan, input.billingInterval);
@@ -87,6 +123,7 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined;
   if (prices.preview) return { url: null, preview: true, message: "Preview mode only. Stripe is unavailable, so no checkout, payment or subscription access was created." };
   if (!price) throw new Error("This Stripe price is not configured yet.");
   const stripe = await stripeClient(), customerId = await customer(user), origin = requestOrigin();
+  const returnUrl = resolveCheckoutReturnUrl(input.returnUrl, origin);
   let orderId: string | undefined;
   if (selectedPlan === "sales_pack") {
     if (!input.vrm) throw new Error("Select the vehicle for this sales pack.");
@@ -128,7 +165,7 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined;
       ...(selectedPlan.startsWith("workshop_") ? { trial_period_days: 30 } : {}),
       metadata: { app: "v5vault", user_id: user.id, plan_key: selectedPlan, billing_interval: PLAN_DEFINITIONS[selectedPlan].interval },
     } } : {}),
-    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`, cancel_url: `${origin}/passport`,
+    success_url: buildCheckoutSuccessUrl(origin, returnUrl), cancel_url: buildCheckoutCancelUrl(origin, returnUrl),
   });
   if (orderId) await pool.query("UPDATE sales_pack_orders SET stripe_checkout_session_id=$1 WHERE id=$2", [session.id, orderId]);
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");

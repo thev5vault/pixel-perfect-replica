@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { BadgeCheck, CircleHelp, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useV1 } from "@/lib/use-v1";
+import { resolveCheckoutReturnUrl } from "@/lib/checkout-return";
 
 export const Route = createFileRoute("/checkout/success")({
-  validateSearch: (search: Record<string, unknown>) => ({ session_id: typeof search["session_id"] === "string" ? search["session_id"] : "" }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    session_id: typeof search["session_id"] === "string" ? search["session_id"] : "",
+    return_url: typeof search["return_url"] === "string" ? search["return_url"] : "",
+  }),
   component: CheckoutSuccess,
 });
 
 function CheckoutSuccess() {
-  const { session_id } = Route.useSearch();
+  const { session_id, return_url } = Route.useSearch();
+  const returnPath = resolveCheckoutReturnUrl(return_url, "https://v5vault.invalid");
   const v1 = useV1();
   const confirm = useRef(v1.confirmCheckout);
   confirm.current = v1.confirmCheckout;
@@ -30,11 +35,12 @@ function CheckoutSuccess() {
       setState(result.fulfilled
         ? { kind: "paid", detail: result.message || "Payment confirmed by the server. Your account is ready." }
         : { kind: "pending", detail: result.message || "The server has not confirmed a completed payment yet. No entitlement has been granted." });
+      if (result.fulfilled) window.location.replace(returnPath);
     }).catch((error: unknown) => {
       if (active) setState({ kind: "error", detail: error instanceof Error ? error.message : "Payment status could not be confirmed." });
     });
     return () => { active = false; };
-  }, [session_id]);
+  }, [session_id, returnPath]);
   const icon = state.kind === "paid" ? <BadgeCheck className="h-8 w-8 text-success"/> : state.kind === "checking" ? <LoaderCircle className="h-8 w-8 animate-spin text-primary"/> : state.kind === "invalid" || state.kind === "error" ? <ShieldAlert className="h-8 w-8 text-warning"/> : <CircleHelp className="h-8 w-8 text-warning"/>;
   return <main className="mx-auto flex min-h-[100dvh] max-w-xl items-center px-4 pb-28 pt-6">
     <section className="vault-card w-full p-6 sm:p-8">
@@ -44,7 +50,7 @@ function CheckoutSuccess() {
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{state.detail}</p>
       {state.kind === "paid" && <p className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3 text-sm">The confirmation came from the payment server. Plan access is not inferred from this return URL.</p>}
       {(state.kind === "pending" || state.kind === "error") && <p className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">Do not repeat payment solely because this screen is pending. Check your billing account or contact support if the status does not update.</p>}
-      <Link to="/passport" className="btn-primary mt-6 min-h-12 w-full">Return to passport</Link>
+      <a href={returnPath} className="btn-primary mt-6 min-h-12 w-full">Return to where you started</a>
     </section>
   </main>;
 }
