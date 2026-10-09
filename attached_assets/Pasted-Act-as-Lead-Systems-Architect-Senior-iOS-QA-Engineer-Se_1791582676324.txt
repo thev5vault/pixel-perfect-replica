@@ -1,0 +1,98 @@
+Act as Lead Systems Architect, Senior iOS QA Engineer, Security Officer, Fintech Engineer, and Automotive SaaS Director under Anchor 23 parameters. Execute the absolute, ultimate master production-freeze audit, UI/UX polish pass, security hardening, server-side validation, test suite freeze, and final stability report for V5Vault to prepare for public rollout.
+
+Ensure every screen, route, service, and layout element meets 100% production release standards without exception.
+
+---
+
+### 1. iOS Safari, Viewport & Ergonomics Hardening
+- Viewport & Focus Zoom Lock: Set `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">` in `index.html` to prevent iOS Safari from zooming in on text input focus.
+- System Theme & Background Lock: Enforce strict dark mode (`color-scheme: dark`, `#0B0F17` root background) across all root CSS styles to eliminate white flash during cold loads or Safari tab switching.
+- Zero Horizontal Scroll: Set `overflow-x: hidden` on root and app containers. Guarantee 0px horizontal drift across screen sizes (320px to 430px+).
+- Touch Target & Safe Area Insets: Ensure all interactive controls meet minimum 44x44px touch targets. Apply `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)` to prevent Dynamic Island, notch, or iOS home bar overlap.
+- Modal & Drawer Navigation Behavior:
+  * Wire every modal 'X' button to unmount cleanly without changing routes or resetting state.
+  * Pressing the browser/hardware back button while a modal or drawer is open MUST close the active modal first, rather than navigating away from the page.
+- Password Eye Toggle Centering: Enforce absolute vertical alignment (`absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center`) inside all password fields on iOS Safari without visual clipping or overlap.
+
+---
+
+### 2. Router, History Stack & Session Persistence
+- History Stack Integrity: Wire all back buttons to `navigate(-1)` with safe fallback route handling.
+- App Switching & Code Retrieval Persistence:
+  * Auto-save form inputs and active view state to `sessionStorage` / `localStorage`.
+  * Switching apps (e.g. opening the Mail app or Messages to retrieve verification codes/links) or switching browser tabs MUST preserve exact form inputs, scroll positions, and authenticated session state upon return.
+- Zero Flash Redirects: Eliminate flickering or unauthenticated page flashes during state hydration.
+
+---
+
+### 3. Tier-Driven Profile UI & Server-Side Security Hardening
+- UI Tier Mapping: Derive visible profile fields directly from `user.subscriptionTier` and `user.isAdmin`/`user.isGodMode`:
+  * `free` -> "Private Driver"
+  * `pro_diy` -> "Pro DIY Track & Service"
+  * `pro_modder` -> "Pro Modder & Performance"
+  * `verified_workshop` -> "Verified Workshop & Trade Specialist"
+  * `admin` / `god_mode` -> "Platform Founder & Lead Developer"
+- Dynamic UI Rendering:
+  * Always render the "Display Name" text input field for every user.
+  * ONLY render the "WORKSHOP & TRADE DETAILS" section (Trading/Business Name, Company Reg / VAT Number) IF `user.subscriptionTier === 'verified_workshop'`.
+  * For all consumer tiers and Developer/Admin accounts, hide all workshop, trade, and VAT fields completely.
+  * For Developer accounts, render a distinct Founder badge: "Role: Platform Founder & Lead Developer (God Mode Active)".
+- Server-Side Payload Protection (`/api/user/profile`):
+  * Validate profile update requests on the Express server.
+  * If a non-trade account (`free`, `pro_diy`, `pro_modder`) sends `businessName`, `vatNumber`, or trade role flags in their PATCH/POST request body, strip those fields or return HTTP 403 Forbidden unless they have an active `verified_workshop` subscription or admin override.
+
+---
+
+### 4. UK Automotive Data, Formatting & DVSA Integration
+- UK VRM Auto-Formatting: Auto-capitalize and strip illegal characters on registration inputs (e.g., convert `lg57 vyf` -> `LG57 VYF`).
+- UK Localization Standards: Format all dates as `DD/MM/YYYY` and currency amounts as GBP (`£`).
+- MOT Status Badges: Display clear status badges (Pass = Emerald Green `#10B981`, Fail = Rose Red `#EF4444`, Advisory = Amber Yellow `#F59E0B`).
+- DVSA MOT API Graceful Fallback (Key Reference: `6E6X69Y2`):
+  * Wrap DVSA lookup calls in robust try/catch handlers.
+  * If API key is pending activation or encounters DVSA downtime, present a clean alert ("DVSA Live Sync pending verification — manual service entry active") without breaking vehicle lookup or creation.
+
+---
+
+### 5. Local OCR Engine & Asset Guards
+- File Upload Protection: Cap OCR image/receipt uploads at 10MB to prevent browser memory allocation spikes on mobile devices.
+- OCR Worker Cleanup: Ensure local Tesseract OCR engine initializes with progress indicators and cleanly terminates web workers on component unmount.
+- Manual Fallback: If receipt image quality is too low for high-confidence parsing, present clean editable fields for manual correction.
+
+---
+
+### 6. Developer / Admin UI Separation & Security Hardening
+- Complete Admin UI Isolation:
+  * Strictly isolate all God Mode / Admin tools (`/admin`, system metrics, user impersonation).
+  * Hide the 'Admin' tab from all public user tiers (`free`, `pro_diy`, `pro_modder`, `verified_workshop`).
+- Server-Side RBAC Enforcement: Protect all backend `/api/admin/*` endpoints with `req.user.isAdmin === true` middleware verification. Return HTTP 403 Forbidden on unauthorized access.
+- Zero Debugging Artifacts: Ensure no developer console logs, mock data, or environment secrets render in production bundles.
+
+---
+
+### 7. Stripe Billing & Webhook Security
+- Webhook Signature Verification: Ensure Stripe webhooks parse raw request bodies (`express.raw({ type: 'application/json' })`) for signature validation.
+- Checkout & Cancel Handling: Closing or canceling a Stripe checkout session must return cleanly to the previous page without altering account status or dropping state.
+
+---
+
+### 8. UK GDPR Compliance & Production Data Scrubbing
+- Production Empty States: New accounts must display polished empty states (e.g., "No vehicles in your vault yet. Tap '+' to add your vehicle") with primary action buttons.
+- Account Data Management: Ensure user data export (JSON/PDF) and account deletion requests function cleanly under UK GDPR / DPA 2018 standards.
+
+---
+
+### 9. PWA Setup & Automated Test Freeze
+- iOS PWA Manifest & Meta Tags: Confirm `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style` (black-translucent), and `apple-touch-icon` links exist in `index.html`.
+- Full Test Suite Freeze:
+  * Run `npm test` and verify ALL unit and integration tests pass cleanly with 0 failures (target 155+ passing tests).
+  * Run `npm run build` to confirm clean Vite production compilation with 0 TypeScript or linting errors.
+
+---
+
+### 10. Audit Report, Test Breakdown & Build Stability Rating
+- Upon completing all tasks, generate a full markdown Audit Report in the chat response providing:
+  1. Test Execution Breakdown: Total tests run, passed, failed, and skipped (verify 155+ target).
+  2. Security & RBAC Audit: Confirmation of admin route protection and server-side profile payload validation.
+  3. UI/UX & Mobile Safari Status: Verification of viewport zoom locks, safe area insets, touch targets, and password eye alignment.
+  4. Services & Integration Health: Status of WebAuthn biometrics, OCR workers, Stripe raw body parsing, and DVSA API fallback handling.
+  5. Overall Build Stability Score (%): Calculate and output a final percentage rating (e.g., `99% - Production Ready`) based on test pass rate, build compilation health, and feature readiness.
