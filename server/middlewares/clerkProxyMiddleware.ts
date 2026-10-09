@@ -54,15 +54,23 @@ export function getClerkProxyHost(req: {
 
 export function clerkProxyMiddleware(): RequestHandler {
   // Only run proxy in production — Clerk proxying doesn't work for dev instances
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env["NODE_ENV"] !== 'production') {
     return (_req, _res, next) => next();
   }
 
-  const secretKey = process.env.CLERK_SECRET_KEY;
+  const secretKey = process.env["CLERK_SECRET_KEY"];
   if (!secretKey) {
     return (_req, _res, next) => next();
   }
 
+  return createClerkProxyHandler(secretKey);
+}
+
+/** Exposed as a narrow transport seam so proxy behavior can be verified without contacting Clerk. */
+export function createClerkProxyHandler(
+  secretKey: string,
+  requestUpstream: typeof httpsRequest = httpsRequest,
+): RequestHandler {
   const target = new URL(CLERK_FAPI);
   return (req, res, next) => {
     const originalUrl = req.originalUrl || req.url || '/';
@@ -84,7 +92,7 @@ export function clerkProxyMiddleware(): RequestHandler {
       || req.socket.remoteAddress;
     if (clientIp) headers['X-Forwarded-For'] = clientIp;
 
-    const upstream = httpsRequest(target, { method: req.method, path, headers }, (upstreamResponse) => {
+    const upstream = requestUpstream(target, { method: req.method, path, headers }, (upstreamResponse) => {
       const responseHeaders = { ...upstreamResponse.headers };
       delete responseHeaders['transfer-encoding'];
       delete responseHeaders.connection;
