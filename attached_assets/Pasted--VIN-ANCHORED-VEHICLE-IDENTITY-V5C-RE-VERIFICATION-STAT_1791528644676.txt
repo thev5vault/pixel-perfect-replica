@@ -1,0 +1,31 @@
+# VIN-ANCHORED VEHICLE IDENTITY & V5C RE-VERIFICATION STATE MACHINE
+
+Act as a Senior Full-Stack Engineer. Refactor the vehicle ownership and data model in V5Vault to ensure all historical records are strictly anchored to the 17-character VIN, while introducing a dynamic V5C/VRM re-verification state machine.
+
+---
+
+### 1. PERMANENT VIN-ANCHORED DATABASE SCHEMA
+- Ensure all service records, workshop stamps, receipts, MOT logs, and modification records are linked primary-key / foreign-key directly to the vehicle's 17-character VIN (`vin_chassis`).
+- Ensure VRM (registration plate) and 11-digit V5C logbook reference numbers exist on a dynamic verification table tied to the VIN, allowing VRM/V5C updates without decoupling or altering historical records.
+
+### 2. VEHICLE VERIFICATION STATE MACHINE
+Introduce 3 explicit verification states for vehicle profiles:
+- `PENDING_VERIFICATION`: Initial state upon vehicle creation until 11-digit V5C lookup completes.
+- `VERIFIED`: Active status when 11-digit V5C reference and VRM match system lookup. Unlocks full public sharing, Certified Sales Pack exports, and live workshop stamping.
+- `RE_VERIFICATION_REQUIRED`: Activated when a plate change, V5C reissue, or VRM update is flagged/detected.
+
+### 3. DEGRADED FEATURE ACCESS IN `RE_VERIFICATION_REQUIRED`
+When a vehicle profile is in `RE_VERIFICATION_REQUIRED` or `PENDING_VERIFICATION`:
+- **Retain Read Access:** The user can view their complete historical timeline, service entries, and Modder's Vault records bound to the VIN.
+- **Restrict Export/Sharing Actions:** Lock public buyer link generation, Certified Sales Pack PDF exports, and new Verified Workshop stamps, displaying an inline notice:
+  > *Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.*
+
+### 4. V5C UPDATE FLOW
+- Provide a clean "Update Logbook / Plate Details" modal on the Vehicle Dashboard (`/dashboard`).
+- Submitting a new VRM and 11-digit V5C reference triggers verification against the vehicle VIN, updating the dynamic registration record and returning the status to `VERIFIED` upon success.
+
+---
+
+### BUILD & VERIFICATION
+- Do NOT auto-approve pending claims; preserve natural V5C verification steps.
+- Run `npm run build` and ensure all TypeScript models, dashboard notices, and database schema migrations compile cleanly on Vite port 5000.
