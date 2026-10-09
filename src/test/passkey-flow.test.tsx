@@ -9,17 +9,18 @@ const mocks = vi.hoisted(() => ({
   createPasskey: vi.fn(),
   reload: vi.fn(),
   toastError: vi.fn(),
+  toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
 }));
 
-vi.mock("@clerk/react/legacy", () => ({
-  useSignIn: () => ({
-    isLoaded: true,
-    signIn: { authenticateWithPasskey: mocks.authenticateWithPasskey },
+vi.mock("@clerk/react", () => ({
+  useClerk: () => ({
+    loaded: true,
+    client: {
+      signIn: { authenticateWithPasskey: mocks.authenticateWithPasskey },
+    },
     setActive: mocks.setActive,
   }),
-}));
-vi.mock("@clerk/react", () => ({
   useUser: () => ({
     isLoaded: true,
     user: {
@@ -33,7 +34,7 @@ vi.mock("@/lib/account-store", () => ({
   useAccount: () => ({ preview: false, state: { user: { email_verified: true } } }),
 }));
 vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError, success: mocks.toastSuccess },
+  toast: { error: mocks.toastError, info: mocks.toastInfo, success: mocks.toastSuccess },
 }));
 
 function enableWebAuthn() {
@@ -78,9 +79,18 @@ describe("Clerk passkey flows", () => {
     expect(mocks.toastError).toHaveBeenCalledWith("Passkeys require a compatible browser and a secure connection.");
   });
 
+  it("shows the account-settings hint when no passkey is available", async () => {
+    mocks.authenticateWithPasskey.mockRejectedValue(new DOMException("No credentials found.", "NotAllowedError"));
+    render(<PasskeySignInButton />);
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with Face ID or Touch ID" }));
+    await waitFor(() => expect(mocks.toastInfo).toHaveBeenCalledWith(
+      "No Face ID linked yet. Please sign in and register Face ID in Account Settings.",
+    ));
+  });
+
   it("enrolls a passkey from account settings using Clerk's user resource", async () => {
     render(<PasskeySettings />);
-    fireEvent.click(screen.getByRole("button", { name: "Add a passkey on this device" }));
+    fireEvent.click(screen.getByRole("button", { name: "Register Face ID / Add Passkey" }));
     await waitFor(() => expect(mocks.createPasskey).toHaveBeenCalled());
     expect(mocks.reload).toHaveBeenCalled();
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Passkey added. Use Face ID / Touch ID to sign in on this device.");

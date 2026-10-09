@@ -37,9 +37,9 @@ export function PasskeySettings() {
   return (
     <section className="vault-card space-y-3 p-5" aria-labelledby="passkey-settings-title">
       <div>
-        <h2 id="passkey-settings-title" className="text-base font-semibold">Passkeys</h2>
+        <h2 id="passkey-settings-title" className="text-base font-semibold">Face ID / Passkey</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sign in with Face ID, Touch ID, or another device authenticator. Passkeys are managed securely by Clerk.
+          Register Face ID, Touch ID, or another device authenticator for secure sign-in. Passkeys are managed securely by Clerk.
         </p>
       </div>
       <p className="text-xs text-slate-400" aria-live="polite">
@@ -47,7 +47,7 @@ export function PasskeySettings() {
       </p>
       <button type="button" disabled={busy} onClick={() => void addPasskey()} className="btn-ghost w-full">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fingerprint className="h-4 w-4" />}
-        {busy ? "Waiting for device…" : "Add a passkey on this device"}
+        {busy ? "Waiting for device…" : "Register Face ID / Add Passkey"}
       </button>
     </section>
   );

@@ -16,11 +16,11 @@ describe("Stripe checkout POST handler", () => {
     });
   });
 
-  it("accepts test checkout requests and returns Stripe's hosted URL", async () => {
+  it("accepts checkout requests and returns Stripe's hosted URL", async () => {
     const response = await handleCheckoutPost(new Request("https://v5vault.test/api/create-checkout-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "diy_monthly", testCheckout: true }),
+      body: JSON.stringify({ plan: "diy_monthly" }),
     }));
 
     expect(response.status).toBe(200);
@@ -29,7 +29,7 @@ describe("Stripe checkout POST handler", () => {
       preview: false,
       message: "Stripe Checkout session created.",
     });
-    expect(mockedCheckout).toHaveBeenCalledWith({ plan: "diy_monthly", testCheckout: true });
+    expect(mockedCheckout).toHaveBeenCalledWith({ plan: "diy_monthly" });
   });
 
   it("rejects unsupported checkout plans before invoking billing", async () => {

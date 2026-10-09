@@ -12,13 +12,13 @@ describe("checkout client transport", () => {
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await startCheckout({ data: { plan: "diy_monthly", testCheckout: true } });
+    await startCheckout({ data: { plan: "diy_monthly" } });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/create-checkout-session", expect.objectContaining({
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "diy_monthly", testCheckout: true }),
+      body: JSON.stringify({ plan: "diy_monthly" }),
     }));
   });
 });

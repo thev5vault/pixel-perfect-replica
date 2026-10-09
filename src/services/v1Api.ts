@@ -5,7 +5,7 @@ const vrm = z.string().trim().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
 const plan = z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]);
 const billingInterval = z.enum(["month", "year"]);
 export const getBillingCatalog = createServerFn({ method: "GET" }).handler(async () => (await import("./server/billing")).catalog());
-export async function startCheckout({ data }: { data: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined; testCheckout?: boolean | undefined } }): Promise<CheckoutResult> {
+export async function startCheckout({ data }: { data: { plan: PlanKey; vrm?: string | undefined; billingInterval?: BillingInterval | undefined } }): Promise<CheckoutResult> {
   const response = await fetch("/api/create-checkout-session", {
     method: "POST",
     credentials: "same-origin",

@@ -5,7 +5,6 @@ const checkoutInput = z.object({
   plan: z.enum(["sales_pack", "diy_monthly", "diy_yearly", "pro_monthly", "pro_yearly", "workshop_monthly", "workshop_yearly"]),
   vrm: z.string().trim().max(12).optional(),
   billingInterval: z.enum(["month", "year"]).optional(),
-  testCheckout: z.boolean().optional(),
 });
 
 export async function handleCheckoutPost(request: Request) {
@@ -16,7 +15,7 @@ export async function handleCheckoutPost(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout could not be started.";
     const status = message === "Sign in to continue." ? 401
-      : /required|SuperAdmin|test mode/i.test(message) ? 403 : 400;
+      : /required|SuperAdmin/i.test(message) ? 403 : 400;
     return Response.json({ error: message }, { status });
   }
 }

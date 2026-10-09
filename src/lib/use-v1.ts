@@ -36,8 +36,7 @@ export function useV1() {
         interval: PLAN_DEFINITIONS[key].interval, price_id: `sample_${key}`,
       })) } : api.getBillingCatalog(),
       checkout: async (plan: PlanKey, vrm?: string, billingInterval?: BillingInterval) => {
-        const testCheckout = preview || account?.state?.user.role === "dev_admin";
-        return api.startCheckout({ data: { plan, vrm, billingInterval, testCheckout } });
+        return api.startCheckout({ data: { plan, vrm, billingInterval } });
       },
       confirmCheckout: async (session_id: string) => {
         if (preview) return { fulfilled: false, message: "Sample previews do not create Stripe purchases." };
