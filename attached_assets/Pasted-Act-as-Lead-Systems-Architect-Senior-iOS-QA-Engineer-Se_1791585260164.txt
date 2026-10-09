@@ -1,0 +1,57 @@
+Act as Lead Systems Architect, Senior iOS QA Engineer, Security Officer, Fintech Engineer, and Automotive SaaS Director under Anchor 23 parameters. Execute the targeted fix for all pre-launch audit findings, implement the UK GDPR privacy workflow with IMMUTABLE VEHICLE HISTORY preservation, patch security vulnerabilities, fix ESLint formatting, and verify production release readiness.
+
+---
+
+### 1. UK GDPR Data Privacy & Account Management (PERMANENT VIN HISTORY RULE)
+- User Data Export Endpoint (`GET /api/user/export`):
+  * Implement an endpoint allowing users to download a structured JSON bundle containing their personal profile, owned vehicles, and service history created during their ownership.
+  * In `src/components/account/`, render a "Download My Data" button under a "Privacy & Data Management" section.
+- Confirmation-Gated Account Deletion & Anonymization Endpoint (`DELETE /api/user/account`):
+  * Implement an account deletion flow that guarantees zero loss of vehicle service provenance.
+  * Trigger: Add a "Delete Account & Data" red button in Account & Settings.
+  * Confirmation Controls: Require the user to type "DELETE MY ACCOUNT" in a modal before enabling the "Confirm Permanent Deletion" button.
+  * Core Data Anonymization Logic (DO NOT CASCADE DELETE VEHICLES OR SERVICE RECORDS):
+    - PURGE PERSONAL DATA: Delete user authentication records, password hashes, WebAuthn passkeys, email addresses, display names, and active Stripe customer IDs.
+    - PRESERVE VEHICLE PROVENANCE: DO NOT delete vehicles, service logs, modification entries, or OCR receipts from the database.
+    - DISASSOCIATE VIN: Set `ownerId = null` / `unclaimed` on all vehicles linked to the deleting account.
+    - SANITIZE RECEIPTS: Strip any stored personal address or personal name strings from receipt metadata while leaving service items, prices, dates, and workshop details intact.
+    - Destroy active browser session cookies and redirect cleanly to `/` with a confirmation toast: "Account deleted. Vehicle service history has been anonymized and locked to the VIN for future owners."
+
+---
+
+### 2. Dependency Vulnerability Resolution (`package.json`)
+- npm Security Overrides:
+  * Add an `overrides` section in `package.json` to update vulnerable transitive dependencies (`http-proxy-middleware`, `micromatch`, `braces`) to their patched versions.
+  * Run `npm audit` to verify high-severity transitive vulnerability warnings are resolved without breaking Vite, Express, or build scripts.
+
+---
+
+### 3. ESLint Formatter Fix (`npm run lint`)
+- Linter Configuration Patch:
+  * Inspect `.eslintrc` / `eslint.config.js` and fix the configuration issue causing `RangeError: Invalid string length` during full repository linting.
+  * Ensure `npm run lint` completes cleanly with 0 errors.
+
+---
+
+### 4. DVSA MOT API Silent Production Fallback (Reference Key: 6E6X69Y2)
+- Production Fallback Architecture:
+  * Maintain robust try/catch wrapping around all DVSA lookup requests.
+  * Acknowledge that live key `6E6X69Y2` is pending production activation.
+  * If the API key is missing or returns a non-200 status code:
+    - Silently pivot to manual vehicle entry mode without throwing unhandled console errors or breaking automated tests.
+    - Display a clean banner: "DVSA Live Sync pending activation — manual service entry active".
+    - Auto-capitalize VRMs (e.g. `LG57 VYF`) and allow manual vehicle creation.
+
+---
+
+### 5. Automated Test Suite, Build Verification & Audit Score Output
+- Test Verification:
+  * Run `npm test` and verify ALL unit and integration tests pass (160+ passing tests).
+  * Run `npm run build` and `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+  * Run `npm run lint` to verify clean formatting.
+- Final Readiness Score & Audit Report:
+  * Generate an updated Markdown report in the chat response detailing:
+    1. Privacy & GDPR Audit: Status of Data Export and Anonymized Account Deletion endpoints.
+    2. Dependency & Security Audit: Status of `npm audit` vulnerability patches.
+    3. Code Quality Audit: Results of `npm run lint`, `npx tsc`, and `vite build`.
+    4. Overall Build Stability Score (%): Output the updated release readiness estimate (Target: 98%+ Production Release Ready).
