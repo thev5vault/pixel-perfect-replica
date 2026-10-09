@@ -6,11 +6,11 @@ import { sampleAccount, previewEnabled, setPreviewEnabled, SAMPLE_PREVIEW_KEY } 
 
 const mocks=vi.hoisted(()=>({
   auth:{isLoaded:true,isSignedIn:false,user:null as null|{id:string}},
-  getState:vi.fn(),signOut:vi.fn(),role:vi.fn(),review:vi.fn(),edit:vi.fn(),admin:vi.fn(),
+  getState:vi.fn(),saveProfile:vi.fn(),signOut:vi.fn(),role:vi.fn(),review:vi.fn(),edit:vi.fn(),admin:vi.fn(),
 }));
 vi.mock("@clerk/react",()=>({useUser:()=>mocks.auth,useClerk:()=>({signOut:mocks.signOut})}));
 vi.mock("@/services/accountApi",()=>({
-  getAccountState:mocks.getState,switchDevelopmentRole:mocks.role,getAdminState:mocks.admin,
+  getAccountState:mocks.getState,saveAccount:mocks.saveProfile,switchDevelopmentRole:mocks.role,getAdminState:mocks.admin,
   reviewWorkshop:mocks.review,editAdminVehicle:mocks.edit,
 }));
 const wrapper=({children}:{children:ReactNode})=><AccountProvider>{children}</AccountProvider>;
@@ -56,6 +56,18 @@ describe("Session continuity and isolated developer preview",()=>{
     await waitFor(()=>expect(result.current?.error).toBe("Temporary account failure"));
     expect(result.current?.signedIn).toBe(true);
     expect(result.current?.loading).toBe(false);
+  });
+  it("updates the shared profile immediately after a successful display-name save",async()=>{
+    mocks.auth={isLoaded:true,isSignedIn:true,user:{id:"owner"}};
+    mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"owner",full_name:"Original Name"}});
+    mocks.saveProfile.mockResolvedValue(undefined);
+    const {result}=renderHook(useAccount,{wrapper});
+    await waitFor(()=>expect(result.current?.state?.user.full_name).toBe("Original Name"));
+
+    await act(async()=>{await result.current?.saveProfile({full_name:"Updated Name"});});
+
+    expect(mocks.saveProfile).toHaveBeenCalledWith({full_name:"Updated Name"});
+    expect(result.current?.state?.user.full_name).toBe("Updated Name");
   });
   it("hydrates a valid native passkey session when Clerk is signed out",async()=>{
     mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"passkey-owner"}});

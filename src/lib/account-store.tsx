@@ -7,7 +7,7 @@ import { clearPendingSignup } from "./signup-recovery";
 import type { Role, ServiceInput, Modification } from "./vault-store";
 import * as api from "@/services/accountApi";
 import { endPasskeySession } from "@/services/passkeyClient";
-import type { AccountProfileInput } from "./account-profile";
+import { mergeAccountProfile, type AccountProfileInput } from "./account-profile";
 
 export interface AccountContext {
   state: AccountState | null;
@@ -132,8 +132,11 @@ export function AccountProvider({children}:{children:ReactNode}) {
     switchRole:async(role)=>{await api.switchDevelopmentRole({data:{role}});await refresh();},
      saveProfile:async(profile)=>{
        await api.saveAccount(profile);
-       setState(previous=>previous?{...previous,user:{...previous.user,...profile}}:previous);
-       void refresh().catch(()=>{});
+       const applySavedProfile=(previous:AccountState|null)=>previous
+         ?{...previous,user:mergeAccountProfile(previous.user,profile)}
+         :previous;
+       setState(applySavedProfile);
+       void refresh().then(()=>setState(applySavedProfile)).catch(()=>{});
      },
     addService:async(record)=>{await api.createServiceRecord({data:record});await refresh();},
     addMod:async(record)=>{await api.saveModification({data:record});await refresh();},

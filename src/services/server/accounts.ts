@@ -11,6 +11,7 @@ import { getPasskeySessionUserId } from "./webauthn";
 import { hasClerkSessionCredential } from "./auth-transport";
 import type { AccountState, UserAccount, AdminState, AdminUser, AdminVehicleEdit, WorkshopReview } from "@/lib/account-types";
 import { applyAdminPolicy } from "./admin-policy";
+import type { AccountProfileInput } from "@/lib/account-profile";
 import type { Modification, Role, ServiceRecord, Vehicle } from "@/lib/vault-store";
 import { samples, lookupRegistration } from "./dvla";
 import { mayStamp, sampleApproval, signStamp, checkStamp, referenceAction } from "./verification";
@@ -184,7 +185,7 @@ export async function developmentRole(role:Role) {
     status='approved',is_sample=true,dev_role=$4 WHERE id=$5`,[accountRole,tier,role==="Garage",role,user.id]);
   return {ok:true};
 }
-export async function updateAccount(input:{full_name:string;garage_name?:string;garage_registration?:string;workshop_type?:"garage"|"specialist"|undefined}, authRequest?:Request) {
+export async function updateAccount(input:AccountProfileInput, authRequest?:Request) {
   const user = await currentUser(authRequest);
   const hasWorkshopDetails = input.garage_name !== undefined
     || input.garage_registration !== undefined

@@ -14,7 +14,11 @@ const mocks = vi.hoisted(() => ({
   onAuthenticated: vi.fn(),
   PasskeyClientError: class extends Error {
     code?: string;
-    constructor(message: string, code?: string) { super(message); this.name = "PasskeyClientError"; this.code = code; }
+    constructor(message: string, code?: string) {
+      super(message);
+      this.name = "PasskeyClientError";
+      if (code !== undefined) this.code = code;
+    }
   },
 }));
 

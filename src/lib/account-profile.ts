@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { UserAccount } from "./account-types";
 
 const tradeProfileFields = ["garage_name", "garage_registration", "workshop_type"] as const;
 
@@ -18,4 +19,19 @@ export const accountProfileInputSchema = z.object({
   }
 });
 
-export type AccountProfileInput = z.infer<typeof accountProfileInputSchema>;
+export type AccountProfileInput = {
+  full_name: string;
+  garage_name?: string | undefined;
+  garage_registration?: string | undefined;
+  workshop_type?: "garage" | "specialist" | undefined;
+};
+
+export function mergeAccountProfile(user: UserAccount, profile: AccountProfileInput): UserAccount {
+  return {
+    ...user,
+    full_name: profile.full_name,
+    ...(profile.garage_name !== undefined ? { garage_name: profile.garage_name } : {}),
+    ...(profile.garage_registration !== undefined ? { garage_registration: profile.garage_registration } : {}),
+    ...(profile.workshop_type !== undefined ? { workshop_type: profile.workshop_type } : {}),
+  };
+}

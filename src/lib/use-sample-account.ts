@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { AccountContext } from "./account-store";
 import type { AccountState, AdminUser } from "./account-types";
+import { mergeAccountProfile } from "./account-profile";
 import { sampleAccount, sampleUsers } from "./sample-account";
 
 const sampleId = () => `preview-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -33,7 +34,7 @@ export function useSampleAccount(exit: () => void): AccountContext {
         change(s => ({...s, vehicles:s.vehicles.map(v=>v.vrm===vrm?{...v,owner_user_id:s.user.id}:v)}));
         return {status:"approved",is_sample:true,message:"Sample link approved. No real ownership was changed."};
       },
-      saveProfile: async profile => change(s=>({...s,user:{...s.user,...profile}})),
+      saveProfile: async profile => change(s=>({...s,user:mergeAccountProfile(s.user,profile)})),
       addService: async record => {
         vehicleExists(record.vrm);
         const stamped=state.development_role==="Garage"||state.development_role==="superadmin";
