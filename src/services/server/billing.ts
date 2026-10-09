@@ -78,6 +78,9 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined;
   if (!user.email_verified) throw new Error("Verify your account email before checkout.");
   if(user.role==="dev_admin")throw new Error("God Mode already includes all features. Use role previews; no subscription is required.");
   const selectedPlan = resolvePlan(input.plan, input.billingInterval);
+  if(user.tier_override==="pro_modder_lifetime" && ["pro_monthly","pro_yearly"].includes(selectedPlan)) {
+    throw new Error("Your Pro Modder / Collector access is already included for life.");
+  }
   return inTransaction(async db=>{
   await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`billing:${user.id}`]);
   const prices = await catalog(), price = prices.prices.find(p => p.key === selectedPlan);

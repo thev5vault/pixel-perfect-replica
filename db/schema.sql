@@ -11,11 +11,27 @@ CREATE TABLE IF NOT EXISTS user_accounts (
   garage_name TEXT NOT NULL DEFAULT '',
   garage_registration TEXT NOT NULL DEFAULT '',
   workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist')),
+  vat_verified BOOLEAN NOT NULL DEFAULT false,
+  vat_verified_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  subscription_status TEXT NOT NULL DEFAULT 'inactive' CHECK (subscription_status IN ('inactive','trialing','active','past_due','canceled','expired')),
+  trial_expires_at TIMESTAMPTZ,
   is_sample BOOLEAN NOT NULL DEFAULT false
   ,dev_role TEXT
 );
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist'));
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS garage_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified_at TIMESTAMPTZ;
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'inactive' CHECK (subscription_status IN ('inactive','trialing','active','past_due','canceled','expired'));
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS tier_overrides (
+  user_id TEXT PRIMARY KEY REFERENCES user_accounts(id) ON DELETE CASCADE,
+  tier_override TEXT NOT NULL CHECK (tier_override = 'pro_modder_lifetime'),
+  granted_by TEXT NOT NULL REFERENCES user_accounts(id),
+  granted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tier_overrides_granted_by_idx ON tier_overrides(granted_by);
 CREATE TABLE IF NOT EXISTS vehicles (
   vin TEXT PRIMARY KEY,
   id TEXT NOT NULL UNIQUE,

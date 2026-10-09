@@ -56,3 +56,12 @@ export const reviewWorkshop = createServerFn({method:"POST"})
 export const editAdminVehicle = createServerFn({method:"POST"})
   .validator(z.object({vrm,make:z.string().trim().min(1).max(100),model:z.string().trim().min(1).max(150),odometer:z.number().int().min(0).max(2000000),is_scrapped:z.boolean().optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).editAdminVehicle(data));
+export const grantTierOverride = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string().trim().min(1).max(100)}))
+  .handler(async ({data}) => (await import("./server/accounts")).grantTierOverride(data.id));
+export const revokeTierOverride = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string().trim().min(1).max(100)}))
+  .handler(async ({data}) => (await import("./server/accounts")).revokeTierOverride(data.id));
+export const extendWorkshopTrial = createServerFn({method:"POST"})
+  .validator(z.object({id:z.string().trim().min(1).max(100)}))
+  .handler(async ({data}) => (await import("./server/accounts")).extendWorkshopTrial(data.id));

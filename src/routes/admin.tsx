@@ -48,12 +48,21 @@ function AdminPage() {
   const [draftOdometer, setDraftOdometer] = useState("");
   const [draftScrapped, setDraftScrapped] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [tierSearch, setTierSearch] = useState("");
+  const [adminActionId, setAdminActionId] = useState<string | null>(null);
   const getAdminStateRef = useRef(account?.getAdminState);
   const reviewWorkshopRef = useRef(account?.reviewWorkshop);
   const editVehicleRef = useRef(account?.editVehicle);
+  const grantTierOverrideRef = useRef(account?.grantTierOverride);
+  const revokeTierOverrideRef = useRef(account?.revokeTierOverride);
+  const extendWorkshopTrialRef = useRef(account?.extendWorkshopTrial);
   getAdminStateRef.current = account?.getAdminState;
   reviewWorkshopRef.current = account?.reviewWorkshop;
   editVehicleRef.current = account?.editVehicle;
+  grantTierOverrideRef.current = account?.grantTierOverride;
+  revokeTierOverrideRef.current = account?.revokeTierOverride;
+  extendWorkshopTrialRef.current = account?.extendWorkshopTrial;
 
   const isAdmin = account?.state?.user.role === "dev_admin";
   const userId = account?.state?.user.id;
@@ -101,6 +110,48 @@ function AdminPage() {
       setActionError(error instanceof Error ? error.message : "Workshop application could not be updated.");
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const changeTierOverride = async (user: AdminUser) => {
+    const change = user.tier_override === "pro_modder_lifetime"
+      ? revokeTierOverrideRef.current
+      : grantTierOverrideRef.current;
+    if (!change || adminActionId) return;
+    setActionError(null);
+    setActionNotice(null);
+    setAdminActionId(user.id);
+    try {
+      await change(user.id);
+      const load = getAdminStateRef.current;
+      if (!load) throw new Error("Admin data is not available.");
+      setAdminData(await load());
+      setActionNotice(user.tier_override === "pro_modder_lifetime"
+        ? `Lifetime Pro Modder access revoked for ${user.email}.`
+        : `Lifetime Pro Modder access granted to ${user.email}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The tier override could not be updated.");
+    } finally {
+      setAdminActionId(null);
+    }
+  };
+
+  const extendTrial = async (user: AdminUser) => {
+    const extend = extendWorkshopTrialRef.current;
+    if (!extend || adminActionId) return;
+    setActionError(null);
+    setActionNotice(null);
+    setAdminActionId(user.id);
+    try {
+      await extend(user.id);
+      const load = getAdminStateRef.current;
+      if (!load) throw new Error("Admin data is not available.");
+      setAdminData(await load());
+      setActionNotice(`Workshop trial extended by 30 days for ${user.email}.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "The workshop trial could not be extended.");
+    } finally {
+      setAdminActionId(null);
     }
   };
 
@@ -171,6 +222,10 @@ function AdminPage() {
   const vehicles = adminData?.vehicles ?? [];
   const applications = adminData?.applications ?? [];
   const unlinkedVehicles = vehicles.filter((vehicle) => !users.some((user) => user.id === vehicle.owner_user_id));
+  const tierMatches = tierSearch.trim()
+    ? users.filter((user) => user.email.toLowerCase().includes(tierSearch.trim().toLowerCase())
+      || user.id.toLowerCase().includes(tierSearch.trim().toLowerCase())).slice(0, 20)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -190,6 +245,7 @@ function AdminPage() {
         </div>
       )}
       {actionError && <Notice title="Action could not be completed" message={actionError} />}
+      {actionNotice && <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{actionNotice}</p>}
       <InvestorMetricsPanel/>
       <OwnershipClaimsPanel/>
 
@@ -264,6 +320,57 @@ function AdminPage() {
 
           <section className="vault-card overflow-hidden">
             <div className="border-b p-4">
+              <h2 className="flex items-center gap-2 font-bold"><BadgeCheck className="h-5 w-5 text-primary" /> Tier Overrides</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Grant or revoke lifetime Pro Modder / Collector access for a registered account.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Revoking removes the lifetime grant only; any separate active Stripe subscription remains unchanged.</p>
+            </div>
+            <div className="space-y-3 p-4">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Search email or Clerk account ID</span>
+                <input
+                  className="field w-full"
+                  type="search"
+                  value={tierSearch}
+                  onChange={(event) => setTierSearch(event.target.value)}
+                  placeholder="name@example.com or user_..."
+                  aria-label="Search registered users by email or account ID"
+                />
+              </label>
+              {!tierSearch.trim() ? (
+                <p className="text-sm text-muted-foreground">Search the registered account directory to manage an override.</p>
+              ) : tierMatches.length ? (
+                <ul className="divide-y rounded-xl border">
+                  {tierMatches.map((user) => (
+                    <li key={user.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-all text-sm font-semibold">{user.email}</p>
+                        <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{user.id}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {user.tier_override === "pro_modder_lifetime" ? "Pro Modder / Collector · Lifetime · £0.00/mo" : "No lifetime tier override"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className={user.tier_override === "pro_modder_lifetime"
+                          ? "btn-ghost min-h-11 shrink-0 border border-red-500/40 px-3 text-sm text-red-200"
+                          : "btn-primary min-h-11 shrink-0 px-3 text-sm"}
+                        onClick={() => void changeTierOverride(user)}
+                        disabled={adminActionId !== null}
+                      >
+                        {adminActionId === user.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                        {user.tier_override === "pro_modder_lifetime" ? "Revoke Access" : "Grant Lifetime Pro"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No registered account matches that email or account ID.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="vault-card overflow-hidden">
+            <div className="border-b p-4">
               <h2 className="flex items-center gap-2 font-bold"><Users className="h-5 w-5 text-primary" /> Registered users</h2>
               <p className="mt-1 text-sm text-muted-foreground">Linked vehicles are matched using the account owner ID.</p>
             </div>
@@ -287,6 +394,26 @@ function AdminPage() {
                               {user.garage_name}{user.garage_registration ? ` · ${user.garage_registration}` : ""}
                               {user.garage_verified ? " · Verified" : ""}
                             </p>
+                          )}
+                          {user.garage_name && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Pill tone={user.subscription_status === "trialing" ? "warning" : "muted"}>
+                                {user.subscription_status === "trialing" && user.trial_expires_at
+                                  ? `Trial ends ${formatDate(user.trial_expires_at)}`
+                                  : `Workshop billing: ${user.subscription_status || "inactive"}`}
+                              </Pill>
+                              {user.role === "verified_garage" && user.status === "approved" && user.garage_verified && user.vat_verified && (
+                                <button
+                                  type="button"
+                                  className="btn-ghost min-h-10 border px-3 py-1.5 text-xs"
+                                  onClick={() => void extendTrial(user)}
+                                  disabled={adminActionId !== null}
+                                >
+                                  {adminActionId === user.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
+                                  Grant 30-Day Trial Extension
+                                </button>
+                              )}
+                            </div>
                           )}
                           <p className="mt-1 text-xs text-muted-foreground">Joined {formatDate(user.created_at)}</p>
                         </div>

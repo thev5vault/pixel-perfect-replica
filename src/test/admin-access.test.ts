@@ -11,7 +11,7 @@ vi.mock("pg",()=>({Pool:class {query=mocks.query;connect=mocks.connect;}}));
 vi.mock("@clerk/backend",()=>({createClerkClient:()=>({authenticateRequest:mocks.authenticate,users:{getUser:mocks.getUser}})}));
 vi.mock("@clerk/shared/keys",()=>({publishableKeyFromHost:()=>"unit-test-publishable-key"}));
 vi.mock("@tanstack/react-start/server",()=>({getRequest:()=>new Request("https://unit-test.example/api/account",{method:"POST"})}));
-import { adminState, reviewWorkshop, editAdminVehicle, developmentRole, createService, verifyStamp } from "@/services/server/accounts";
+import { adminState, reviewWorkshop, editAdminVehicle, grantTierOverride, revokeTierOverride, extendWorkshopTrial, developmentRole, createService, verifyStamp } from "@/services/server/accounts";
 
 const ownerEmail="kieranroe23@hotmail.co.uk";
 const primary=(emailAddress=ownerEmail,status="verified")=>({id:"primary",emailAddress,verification:{status}});
@@ -23,7 +23,7 @@ beforeEach(()=>{
   mocks.getUser.mockResolvedValue({primaryEmailAddressId:"primary",emailAddresses:[primary()],firstName:"Owner",lastName:""});
   mocks.query.mockImplementation(async(sql:string)=>{
     if(sql==="SELECT * FROM user_accounts WHERE id=$1") return {rows:[base()]};
-    if(sql.startsWith("SELECT id,email")) {
+     if(sql.startsWith("SELECT u.id,u.email") || sql.startsWith("SELECT id,email")) {
       const {password_hash:_password,dev_role:_role,stripe_customer_id:_stripe,permissions:_permissions,...profile}=base();
       return {rows:[profile]};
     }
@@ -56,6 +56,9 @@ describe("Verified server-side owner permissions",()=>{
     ()=>adminState(),
     ()=>reviewWorkshop({id:"application",status:"approved"}),
     ()=>editAdminVehicle({vrm:"AB14CDE",make:"Audi",model:"A4",odometer:88000}),
+     ()=>grantTierOverride("target-user"),
+     ()=>revokeTierOverride("target-user"),
+     ()=>extendWorkshopTrial("target-user"),
   ])("rejects unauthenticated admin reads and mutations before querying the database",async action=>{
     mocks.authenticate.mockResolvedValue({toAuth:()=>({userId:null})});
     await expect(action()).rejects.toThrow("Sign in");
@@ -66,14 +69,14 @@ describe("Verified server-side owner permissions",()=>{
   it("does not promote an owner email that is only a secondary address",async()=>{
     mocks.getUser.mockResolvedValue({primaryEmailAddressId:"primary",emailAddresses:[primary("other@example.com"),{...primary(),id:"secondary"}]});
     await expect(adminState()).rejects.toThrow("SuperAdmin access");
-    expect(mocks.query.mock.calls.some(([sql])=>sql.startsWith("SELECT id,email"))).toBe(false);
+    expect(mocks.query.mock.calls.some(([sql])=>String(sql).startsWith("SELECT u.id,u.email"))).toBe(false);
   });
   it("returns authorized directory data without selecting credentials or ownership reference hashes",async()=>{
     const data=await adminState();
     expect(data.users[0]?.role).toBe("dev_admin");
     expect(data.users[0]?.subscription_tier).toBe("god_mode");
     expect(data.vehicles[0]?.owner_user_id).toBe("another-owner");
-    const directorySql=mocks.query.mock.calls.filter(([sql])=>sql.startsWith("SELECT id,")).map(([sql])=>sql).join(" ");
+    const directorySql=mocks.query.mock.calls.filter(([sql])=>String(sql).startsWith("SELECT u.id,u.email")||String(sql).startsWith("SELECT id,")).map(([sql])=>sql).join(" ");
     expect(directorySql).not.toContain("password_hash");
     expect(directorySql).not.toContain("v5c_reference_hash");
     expect(mocks.authenticate.mock.calls[0]?.[0].method).toBe("GET");
@@ -118,6 +121,26 @@ describe("Verified server-side owner permissions",()=>{
     expect(update?.[1][1]).toBe("AB14CDE");
     expect(update?.[0]).not.toContain("owner_user_id=");
     expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("COMMIT");
+  });
+  it("records lifetime tier grants against the acting verified administrator",async()=>{
+    await grantTierOverride("target-user");
+    const grant=mocks.txQuery.mock.calls.find(([sql])=>String(sql).startsWith("INSERT INTO tier_overrides"));
+    expect(grant?.[0]).toContain("pro_modder_lifetime");
+    expect(grant?.[1]).toEqual(["target-user","clerk-owner"]);
+    expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("COMMIT");
+  });
+  it("revokes only the free lifetime override, without deleting the account",async()=>{
+    await revokeTierOverride("target-user");
+    expect(mocks.txQuery.mock.calls.some(([sql])=>String(sql).startsWith("DELETE FROM tier_overrides WHERE user_id=$1"))).toBe(true);
+    expect(mocks.txQuery.mock.calls.some(([sql])=>String(sql).startsWith("DELETE FROM user_accounts"))).toBe(false);
+    expect(mocks.txQuery.mock.calls.at(-1)?.[0]).toBe("COMMIT");
+  });
+  it("extends an approved VAT-verified workshop trial by 30 days",async()=>{
+    await extendWorkshopTrial("target-workshop");
+    const extension=mocks.txQuery.mock.calls.find(([sql])=>String(sql).startsWith("UPDATE user_accounts SET subscription_status='trialing'"));
+    expect(extension?.[0]).toContain("interval '30 days'");
+    expect(extension?.[0]).toContain("vat_verified=true");
+    expect(extension?.[1]).toEqual(["target-workshop","clerk-owner",true]);
   });
   it("can sign a vehicle record as the administrator without impersonating its garage",async()=>{
     vi.stubEnv("SESSION_SECRET","unit-test-signing-key-only");

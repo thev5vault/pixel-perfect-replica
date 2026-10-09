@@ -3,6 +3,7 @@ import { ArrowUpRight, Check, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useV1 } from "@/lib/use-v1";
 import type { BillingCatalog, BillingInterval, PlanKey } from "@/lib/v1-types";
 import { gbp, PLAN_DEFINITIONS } from "@/lib/plans";
+import { useAccount } from "@/lib/account-store";
 
 type Props = { vrm?: string; compact?: boolean };
 type SubscriptionPlan = Exclude<PlanKey, "sales_pack">;
@@ -35,6 +36,8 @@ const TIERS = [
 
 export function TierPlans({ vrm, compact = false }: Props) {
   const v1 = useV1();
+  const account = useAccount();
+  const lifetimeProModder = account?.state?.user.tier_override === "pro_modder_lifetime";
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<PlanKey | "portal" | null>(null);
@@ -110,20 +113,25 @@ export function TierPlans({ vrm, compact = false }: Props) {
             const price = catalog.prices.find((item) => item.key === key);
             const configured = catalog.preview || v1.preview || Boolean(price);
             const amount = price?.amount_pence ?? PLAN_DEFINITIONS[key].amount;
-            const unavailable = !configured;
+            const isLifetimeProModderPlan = tier.monthly === "pro_monthly" && lifetimeProModder;
+            const unavailable = !configured && !isLifetimeProModderPlan;
             return <article key={tier.title} className="min-w-0 rounded-xl border border-border bg-background/35 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div><p className="text-xs uppercase tracking-wider text-muted-foreground">{index === 0 ? "02 / Membership" : "Membership"}</p><h3 className="mt-1 font-bold">{tier.title}</h3></div>
                 {tier.monthly === "workshop_monthly" ? <ShieldCheck className="h-5 w-5 shrink-0 text-primary" /> : null}
               </div>
-              <p className="mt-3 font-display text-2xl font-bold">{gbp(amount)}<span className="ml-1 text-sm font-medium text-muted-foreground">/{interval === "year" ? "year" : "month"}</span></p>
+              <p className="mt-3 font-display text-2xl font-bold">
+                {isLifetimeProModderPlan ? "£0.00" : gbp(amount)}
+                <span className="ml-1 text-sm font-medium text-muted-foreground">/{isLifetimeProModderPlan ? "lifetime" : interval === "year" ? "year" : "month"}</span>
+              </p>
+              {isLifetimeProModderPlan && <p className="mt-1 text-xs font-medium text-emerald-300">Lifetime access · no monthly charge</p>}
               <ul className="my-4 space-y-2 text-sm text-muted-foreground">
                 {tier.features.map((feature) => <li className="flex gap-2" key={feature}><Check className="h-4 w-4 shrink-0 text-primary" />{feature}</li>)}
               </ul>
               {unavailable && <p className="mb-3 text-xs text-amber-300">Stripe price not configured yet. Add the matching V5Vault lookup price before checkout is enabled.</p>}
-              <button type="button" className="btn-primary min-h-12 w-full" onClick={() => void start(key)} disabled={busy !== null || unavailable}>
+              <button type="button" className="btn-primary min-h-12 w-full" onClick={() => void start(key)} disabled={busy !== null || unavailable || isLifetimeProModderPlan}>
                 {busy === key ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
-                {busy === key ? "Opening checkout…" : "Choose plan"}
+                {busy === key ? "Opening checkout…" : isLifetimeProModderPlan ? "Included for life" : "Choose plan"}
               </button>
             </article>;
           })}

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { pool } from "./db";
 import { paidTier } from "./billing";
-import { vehicleLimit } from "@/lib/plans";
+import { canUseWorkshopFeatures, isWorkshopTrialActive, vehicleLimit } from "@/lib/plans";
 import { createClerkClient } from "@clerk/backend";
 import { vinMatchesMake } from "@/lib/vin";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -44,8 +44,26 @@ export async function currentUser(): Promise<UserAccount & {dev_role:Role|null; 
   await pool.query(`INSERT INTO user_accounts(id,email,full_name) VALUES($1,$2,$3)
     ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email`,[id,email,[identity.firstName,identity.lastName].filter(Boolean).join(" ") || email.split("@")[0]]);
    const profile = (await pool.query("SELECT * FROM user_accounts WHERE id=$1",[id])).rows[0];
-   const billing = await paidTier(profile);
-   return applyAdminPolicy({...profile,subscription_tier:billing.tier,billing_unavailable:billing.unavailable,email_verified:primaryEmail?.verification?.status==="verified"}, primaryEmail);
+   const [billing, overrideResult] = await Promise.all([
+     paidTier(profile),
+     pool.query("SELECT tier_override FROM tier_overrides WHERE user_id=$1",[id]),
+   ]);
+   const tierOverride = overrideResult.rows[0]?.tier_override === "pro_modder_lifetime" ? "pro_modder_lifetime" : null;
+   const approvedTrial = isWorkshopTrialActive(profile)
+     && profile.role === "verified_garage"
+     && profile.status === "approved"
+     && profile.garage_verified
+     && profile.vat_verified;
+   const workshopAccessActive = billing.tier === "verified_garage" || approvedTrial;
+   const tier = tierOverride ? "pro_modder" : approvedTrial ? "verified_garage" : billing.tier;
+   return applyAdminPolicy({
+     ...profile,
+     tier_override:tierOverride,
+     subscription_tier:tier,
+     workshop_access_active:workshopAccessActive,
+     billing_unavailable:billing.unavailable,
+     email_verified:primaryEmail?.verification?.status==="verified",
+   }, primaryEmail);
 }
 async function seedDevelopmentSamples() {
   if (!development) return;
@@ -145,13 +163,19 @@ export async function developmentRole(role:Role) {
 }
 export async function updateAccount(input:{full_name:string;garage_name:string;garage_registration:string;workshop_type?:"garage"|"specialist"|undefined}) {
   const user = await currentUser();
+  const startsWorkshopTrial = !user.trial_expires_at
+    && !user.garage_registration.trim()
+    && Boolean(input.garage_name.trim() && input.garage_registration.trim())
+    && user.subscription_tier !== "verified_garage";
   // Changing workshop identity invalidates live verification; sample approval stays explicit in development.
   await pool.query(`UPDATE user_accounts SET full_name=$1,garage_name=$2,garage_registration=$3,
     garage_verified=CASE WHEN (garage_name=$2 AND garage_registration=$3 AND workshop_type=$6) OR (is_sample AND $4) THEN garage_verified ELSE false END,
     vat_verified=CASE WHEN (garage_name=$2 AND garage_registration=$3 AND workshop_type=$6) OR (is_sample AND $4) THEN vat_verified ELSE false END,
     status=CASE WHEN (garage_name=$2 AND garage_registration=$3 AND workshop_type=$6) OR (is_sample AND $4) THEN status ELSE 'pending' END,
+    subscription_status=CASE WHEN $7 AND trial_expires_at IS NULL THEN 'trialing' ELSE subscription_status END,
+    trial_expires_at=CASE WHEN $7 AND trial_expires_at IS NULL THEN now()+interval '30 days' ELSE trial_expires_at END,
     workshop_type=$6 WHERE id=$5`,
-    [input.full_name,input.garage_name,input.garage_registration,development,user.id,input.workshop_type??"garage"]);
+    [input.full_name,input.garage_name,input.garage_registration,development,user.id,input.workshop_type??"garage",startsWorkshopTrial]);
   return {ok:true};
 }
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
@@ -162,8 +186,8 @@ export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
   const row = (await db.query("SELECT * FROM vehicles WHERE vrm=$1 FOR UPDATE",[vrm])).rows[0];
   if(!row) throw new Error(`No vehicle passport found for ${vrm}.`);
   if(row.is_scrapped) throw new Error("This vehicle is marked as scrapped. Its passport is read-only and new service records are blocked.");
-  const admin=user.role==="dev_admin", workshop=admin||Boolean(user.role==="verified_garage"&&user.garage_verified&&user.vat_verified&&user.subscription_tier==="verified_garage");
-  if(workshop && !admin && (!user.vat_verified || user.subscription_tier!=="verified_garage" || !mayStamp({role:user.role,verified:user.garage_verified,status:user.status,garageSample:user.is_sample,vehicleSample:row.is_sample,development}))) throw new Error("An approved VAT-verified workshop and an active Workshop subscription are required to sign records.");
+   const admin=user.role==="dev_admin", workshop=admin||canUseWorkshopFeatures(user);
+   if(workshop && !admin && !mayStamp({role:user.role,verified:user.garage_verified,status:user.status,garageSample:user.is_sample,vehicleSample:row.is_sample,development})) throw new Error("An approved VAT-verified workshop with an active Workshop subscription or trial is required to sign records.");
   if(!workshop && row.owner_user_id!==user.id) throw new Error("Only the owner can add a DIY record.");
   if(workshop && input.physically_inspected_vin !== true) throw new Error("A workshop must physically inspect and match the VIN before stamping.");
   if(input.vin && input.vin.toUpperCase() !== row.vin) throw new Error("The service record VIN does not match this vehicle passport.");
@@ -256,7 +280,7 @@ export async function markRead() {
 }
 export async function requireGarage() {
   const user=await currentUser();
-  if(user.role!=="dev_admin" && (user.role!=="verified_garage" || !user.garage_verified || !user.vat_verified || user.subscription_tier!=="verified_garage" || user.status!=="approved" || (user.is_sample&&!development))) throw new Error("A VAT-verified Workshop account with an active subscription is required.");
+  if(user.role!=="dev_admin" && (!canUseWorkshopFeatures(user) || (user.is_sample&&!development))) throw new Error("A VAT-verified Workshop account with an active subscription or trial is required.");
   return user;
 }
 export async function book(input:{vrm:string;date:string;notes:string}) {
@@ -313,13 +337,55 @@ async function transaction<T>(action:(db:PoolClient)=>Promise<T>) {
 export async function adminState():Promise<AdminState> {
   const admin = await requireAdmin();
   const [profiles, records] = await Promise.all([
-    pool.query("SELECT id,email,full_name,role,subscription_tier,status,is_sample,garage_name,garage_registration,garage_verified,created_at,workshop_type FROM user_accounts ORDER BY created_at DESC"),
+    pool.query(`SELECT u.id,u.email,u.full_name,u.role,u.subscription_tier,u.status,u.is_sample,
+      u.garage_name,u.garage_registration,u.garage_verified,u.vat_verified,u.created_at,u.workshop_type,
+      u.subscription_status,u.trial_expires_at,o.tier_override
+      FROM user_accounts u LEFT JOIN tier_overrides o ON o.user_id=u.id ORDER BY u.created_at DESC`),
     pool.query("SELECT id,vin,vrm,data,owner_user_id,status,is_sample,verification_tier,is_scrapped FROM vehicles ORDER BY vrm"),
   ]);
   const users:AdminUser[] = profiles.rows.map(u=>u.id===admin.id?{...u,role:admin.role,subscription_tier:admin.subscription_tier}:u);
   return {users,vehicles:records.rows.map(r=>({...r.data,owner_user_id:r.owner_user_id,status:r.status,is_sample:r.is_sample,
     verification_tier:r.verification_tier??"provisional",is_scrapped:Boolean(r.is_scrapped)})),
     applications:users.filter(u=>u.id!==admin.id&&u.status==="pending"&&u.garage_name.trim()&&u.garage_registration.trim())};
+}
+export async function grantTierOverride(id:string) {
+  const admin=await requireAdmin();
+  return transaction(async db=>{
+    const target=(await db.query("SELECT id FROM user_accounts WHERE id=$1 FOR UPDATE",[id])).rows[0];
+    if(!target) throw new Error("Account not found.");
+    await db.query(`INSERT INTO tier_overrides(user_id,tier_override,granted_by)
+      VALUES($1,'pro_modder_lifetime',$2)
+      ON CONFLICT(user_id) DO UPDATE SET tier_override='pro_modder_lifetime',granted_by=EXCLUDED.granted_by,granted_at=now()`,
+      [id,admin.id]);
+    await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",
+      [randomUUID(),id,"A V5Vault administrator granted lifetime Pro Modder access."]);
+    return {ok:true};
+  });
+}
+export async function revokeTierOverride(id:string) {
+  const admin=await requireAdmin();
+  return transaction(async db=>{
+    const result=await db.query("DELETE FROM tier_overrides WHERE user_id=$1 RETURNING user_id",[id]);
+    if(!result.rowCount) throw new Error("This account has no active lifetime Pro Modder override.");
+    await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",
+      [randomUUID(),id,"A V5Vault administrator revoked lifetime Pro Modder access. Any separate active paid subscription remains unchanged."]);
+    return {ok:true};
+  });
+}
+export async function extendWorkshopTrial(id:string) {
+  const admin=await requireAdmin();
+  return transaction(async db=>{
+    const result=await db.query(`UPDATE user_accounts SET subscription_status='trialing',
+      trial_expires_at=GREATEST(COALESCE(trial_expires_at,now()),now())+interval '30 days'
+      WHERE id=$1 AND id<>$2 AND role='verified_garage' AND status='approved'
+        AND garage_verified=true AND vat_verified=true AND ($3 OR NOT is_sample)
+      RETURNING trial_expires_at`,
+      [id,admin.id,development]);
+    if(!result.rowCount) throw new Error("Only an approved, VAT-verified workshop can receive a trial extension.");
+    await db.query("INSERT INTO account_notifications(id,user_id,message) VALUES($1,$2,$3)",
+      [randomUUID(),id,"A V5Vault administrator extended your Workshop trial by 30 days."]);
+    return {ok:true,trial_expires_at:result.rows[0].trial_expires_at};
+  });
 }
 export async function reviewWorkshop(input:WorkshopReview) {
   const admin=await requireAdmin();

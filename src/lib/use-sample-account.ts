@@ -78,6 +78,36 @@ export function useSampleAccount(exit: () => void): AccountContext {
           return {...v,...fields,...(is_scrapped===undefined?{}:{is_scrapped})};
         })}));
       },
+      grantTierOverride: async id => {
+        if(!latest.current.users.some(user=>user.id===id)) throw new Error("Sample account not found.");
+        commit(d=>({
+          ...d,
+          users:d.users.map(user=>user.id===id?{...user,tier_override:"pro_modder_lifetime"}:user),
+          account:d.account.user.id===id?{...d.account,user:{...d.account.user,tier_override:"pro_modder_lifetime",subscription_tier:"pro_modder"}}:d.account,
+        }));
+      },
+      revokeTierOverride: async id => {
+        if(!latest.current.users.some(user=>user.id===id&&user.tier_override==="pro_modder_lifetime")) throw new Error("Sample account has no active lifetime override.");
+        commit(d=>({
+          ...d,
+          users:d.users.map(user=>user.id===id?{...user,tier_override:null,subscription_tier:"free"}:user),
+          account:d.account.user.id===id?{...d.account,user:{...d.account.user,tier_override:null,subscription_tier:"free"}}:d.account,
+        }));
+      },
+      extendWorkshopTrial: async id => {
+        const target=latest.current.users.find(user=>user.id===id);
+        if(!target||target.role!=="verified_garage"||target.status!=="approved"||!target.garage_verified||!target.vat_verified) {
+          throw new Error("Only an approved, VAT-verified sample workshop can receive a trial extension.");
+        }
+        const currentExpiry=target.trial_expires_at?new Date(target.trial_expires_at).getTime():Date.now();
+        const extendedFrom=Math.max(Number.isFinite(currentExpiry)?currentExpiry:Date.now(),Date.now());
+        const trial_expires_at=new Date(extendedFrom+30*24*60*60*1000).toISOString();
+        commit(d=>({
+          ...d,
+          users:d.users.map(user=>user.id===id?{...user,subscription_status:"trialing",trial_expires_at}:user),
+          account:d.account.user.id===id?{...d.account,user:{...d.account.user,subscription_status:"trialing",trial_expires_at,workshop_access_active:true}}:d.account,
+        }));
+      },
     };
   }, [data, exit,commit]);
 }

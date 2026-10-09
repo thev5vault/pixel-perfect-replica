@@ -15,6 +15,7 @@ import {
 } from "@/lib/garage-draft";
 import { validateVIN } from "@/lib/vin";
 import { useAccount } from "@/lib/account-store";
+import { canUseWorkshopFeatures } from "@/lib/plans";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 
 const CATEGORIES = ["Servicing", "Brakes", "Repairs", "Tyres"] as const;
@@ -87,9 +88,8 @@ function GaragePage() {
   const user = account?.state?.user;
   const accountRefreshRef = useRef(account?.refresh);
   const syncingOutboxRef = useRef(false);
-  const canStamp = user?.role === "dev_admin" ||
-    (user?.role === "verified_garage" && user.garage_verified && user.vat_verified && user.subscription_tier === "verified_garage");
-  const canScanInvoice = Boolean(user && user.subscription_tier !== "free");
+  const canStamp = user?.role === "dev_admin" || Boolean(user && canUseWorkshopFeatures(user));
+  const canScanInvoice = Boolean(user && (user.subscription_tier !== "free" || user.workshop_access_active));
   const draftKey = user ? `garage-service:${user.id}` : null;
   const [form, setForm] = useState<GarageForm>(emptyForm);
   const [readyDraftKey, setReadyDraftKey] = useState<string | null>(null);

@@ -22,6 +22,9 @@ export interface AccountContext {
   getAdminState: () => Promise<AdminState>;
   reviewWorkshop: (input: WorkshopReview) => Promise<void>;
   editVehicle: (input: AdminVehicleEdit) => Promise<void>;
+  grantTierOverride: (id: string) => Promise<void>;
+  revokeTierOverride: (id: string) => Promise<void>;
+  extendWorkshopTrial: (id: string) => Promise<void>;
   addService: (record: ServiceInput) => Promise<void>;
   addMod: (record: Omit<Modification,"id"|"status">) => Promise<void>;
   revertMod: (id: string, date: string, mileage: number) => Promise<void>;
@@ -77,6 +80,9 @@ export function AccountProvider({children}:{children:ReactNode}) {
     getAdminState:async()=>api.getAdminState(),
     reviewWorkshop:async(input)=>{await api.reviewWorkshop({data:input});await refresh();},
     editVehicle:async(input)=>{await api.editAdminVehicle({data:input});await refresh();},
+    grantTierOverride:async(id)=>{await api.grantTierOverride({data:{id}});await refresh();},
+    revokeTierOverride:async(id)=>{await api.revokeTierOverride({data:{id}});await refresh();},
+    extendWorkshopTrial:async(id)=>{await api.extendWorkshopTrial({data:{id}});await refresh();},
     claimVehicle:async(vrm,reference,vin)=>{const result=await api.claimVehicle({data:{vrm,reference,...(vin?{vin}:{})}});await refresh();return result;},
     switchRole:async(role)=>{await api.switchDevelopmentRole({data:{role}});await refresh();},
     saveProfile:async(profile)=>{await api.saveAccount({data:profile});await refresh();},

@@ -19,5 +19,22 @@ export function vehicleLimit(user: Pick<UserAccount, "role" | "subscription_tier
   if (user.role === "dev_admin") return Number.POSITIVE_INFINITY;
   return ["pro_modder", "verified_garage"].includes(user.subscription_tier) ? 3 : 1;
 }
+export function isWorkshopTrialActive(
+  user: Pick<UserAccount, "subscription_status" | "trial_expires_at">,
+  now = Date.now(),
+) {
+  if (user.subscription_status !== "trialing" || !user.trial_expires_at) return false;
+  const expiry = new Date(user.trial_expires_at).getTime();
+  return Number.isFinite(expiry) && expiry > now;
+}
+export function canUseWorkshopFeatures(
+  user: Pick<UserAccount, "role" | "status" | "garage_verified" | "vat_verified" | "subscription_tier" | "workshop_access_active">,
+) {
+  return user.role === "verified_garage"
+    && user.status === "approved"
+    && user.garage_verified
+    && user.vat_verified === true
+    && (user.workshop_access_active === true || user.subscription_tier === "verified_garage");
+}
 export function hasPaidStorage(tier: SubscriptionTier) { return tier !== "free"; }
 export function gbp(pence: number) { return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(pence / 100); }
