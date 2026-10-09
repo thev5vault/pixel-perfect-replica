@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { AccountProfileInput } from "@/lib/account-profile";
 
 const vrm = z.string().min(2).max(12).regex(/^[A-Za-z0-9 ]+$/);
 const service = z.object({
@@ -28,9 +29,17 @@ export const claimVehicle = createServerFn({method:"POST"})
 export const switchDevelopmentRole = createServerFn({method:"POST"})
   .validator(z.object({role:z.enum(["Owner","DIY","Pro","Garage","superadmin"])}))
   .handler(async ({data}) => (await import("./server/accounts")).developmentRole(data.role));
-export const saveAccount = createServerFn({method:"POST"})
-  .validator(z.object({full_name:z.string().trim().min(1).max(100),garage_name:z.string().max(100),garage_registration:z.string().max(40),workshop_type:z.enum(["garage","specialist"]).optional()}))
-  .handler(async ({data}) => (await import("./server/accounts")).updateAccount(data));
+export async function saveAccount(input: AccountProfileInput) {
+  const response = await fetch("/api/user/profile", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const result = await response.json() as { error?: string; ok?: boolean };
+  if (!response.ok) throw new Error(result.error || "Profile could not be saved.");
+  return result;
+}
 export const createServiceRecord = createServerFn({method:"POST"}).validator(service)
   .handler(async ({data}) => (await import("./server/accounts")).createService(data));
 export const markNotificationsRead = createServerFn({method:"POST"}).handler(async () => (await import("./server/accounts")).markRead());

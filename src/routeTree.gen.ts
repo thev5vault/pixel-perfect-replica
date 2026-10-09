@@ -37,6 +37,7 @@ import { Route as ApiPasskeysRegistrationVerifyRouteImport } from './routes/api.
 import { Route as ApiPasskeysSignoutRouteImport } from './routes/api.passkeys.signout'
 import { Route as ApiStripeCreateCheckoutSessionRouteImport } from './routes/api.stripe.create-checkout-session'
 import { Route as ApiStripeCreateWorkshopSessionRouteImport } from './routes/api.stripe.create-workshop-session'
+import { Route as ApiUserProfileRouteImport } from './routes/api.user.profile'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
 import { Route as ApiServicesRecordIdInvoiceRouteImport } from './routes/api.services.$recordId.invoice'
 import { Route as ApiServicesRecordIdReceiptRouteImport } from './routes/api.services.$recordId.receipt'
@@ -188,6 +189,11 @@ const ApiStripeCreateWorkshopSessionRoute =
     path: '/api/stripe/create-workshop-session',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiUserProfileRoute = ApiUserProfileRouteImport.update({
+  id: '/api/user/profile',
+  path: '/api/user/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVaultCreateRoute = ApiVaultCreateRouteImport.update({
   id: '/api/vault/create',
   path: '/api/vault/create',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
+  '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
+    | '/api/user/profile'
     | '/api/vault/create'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -370,6 +380,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
+    | '/api/user/profile'
     | '/api/vault/create'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/signout'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
+    | '/api/user/profile'
     | '/api/vault/create'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -437,6 +449,7 @@ export interface RootRouteChildren {
   ApiPasskeysSignoutRoute: typeof ApiPasskeysSignoutRoute
   ApiStripeCreateCheckoutSessionRoute: typeof ApiStripeCreateCheckoutSessionRoute
   ApiStripeCreateWorkshopSessionRoute: typeof ApiStripeCreateWorkshopSessionRoute
+  ApiUserProfileRoute: typeof ApiUserProfileRoute
   ApiVaultCreateRoute: typeof ApiVaultCreateRoute
   ApiServicesRecordIdInvoiceRoute: typeof ApiServicesRecordIdInvoiceRoute
   ApiServicesRecordIdReceiptRoute: typeof ApiServicesRecordIdReceiptRoute
@@ -640,6 +653,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeCreateWorkshopSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/user/profile': {
+      id: '/api/user/profile'
+      path: '/api/user/profile'
+      fullPath: '/api/user/profile'
+      preLoaderRoute: typeof ApiUserProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/vault/create': {
       id: '/api/vault/create'
       path: '/api/vault/create'
@@ -693,6 +713,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPasskeysSignoutRoute: ApiPasskeysSignoutRoute,
   ApiStripeCreateCheckoutSessionRoute: ApiStripeCreateCheckoutSessionRoute,
   ApiStripeCreateWorkshopSessionRoute: ApiStripeCreateWorkshopSessionRoute,
+  ApiUserProfileRoute: ApiUserProfileRoute,
   ApiVaultCreateRoute: ApiVaultCreateRoute,
   ApiServicesRecordIdInvoiceRoute: ApiServicesRecordIdInvoiceRoute,
   ApiServicesRecordIdReceiptRoute: ApiServicesRecordIdReceiptRoute,

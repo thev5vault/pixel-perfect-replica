@@ -7,6 +7,7 @@ import { clearPendingSignup } from "./signup-recovery";
 import type { Role, ServiceInput, Modification } from "./vault-store";
 import * as api from "@/services/accountApi";
 import { endPasskeySession } from "@/services/passkeyClient";
+import type { AccountProfileInput } from "./account-profile";
 
 export interface AccountContext {
   state: AccountState | null;
@@ -19,7 +20,7 @@ export interface AccountContext {
   refresh: () => Promise<void>;
   claimVehicle: (vrm: string, reference: string, vin?:string) => Promise<{ status: "approved" | "pending"; is_sample: boolean; message: string }>;
   switchRole: (role: Role) => Promise<void>;
-  saveProfile: (profile: { full_name: string; garage_name: string; garage_registration: string; workshop_type?: "garage" | "specialist" }) => Promise<void>;
+  saveProfile: (profile: AccountProfileInput) => Promise<void>;
   getAdminState: () => Promise<AdminState>;
   reviewWorkshop: (input: WorkshopReview) => Promise<void>;
   editVehicle: (input: AdminVehicleEdit) => Promise<void>;
@@ -129,7 +130,11 @@ export function AccountProvider({children}:{children:ReactNode}) {
     extendWorkshopTrial:async(id)=>{await api.extendWorkshopTrial({data:{id}});await refresh();},
     claimVehicle:async(vrm,reference,vin)=>{const result=await api.claimVehicle({data:{vrm,reference,...(vin?{vin}:{})}});await refresh();return result;},
     switchRole:async(role)=>{await api.switchDevelopmentRole({data:{role}});await refresh();},
-    saveProfile:async(profile)=>{await api.saveAccount({data:profile});await refresh();},
+     saveProfile:async(profile)=>{
+       await api.saveAccount(profile);
+       setState(previous=>previous?{...previous,user:{...previous.user,...profile}}:previous);
+       void refresh().catch(()=>{});
+     },
     addService:async(record)=>{await api.createServiceRecord({data:record});await refresh();},
     addMod:async(record)=>{await api.saveModification({data:record});await refresh();},
     revertMod:async(id,date,mileage)=>{await api.revertModification({data:{id,date,mileage}});await refresh();},

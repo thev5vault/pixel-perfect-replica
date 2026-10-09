@@ -8,5 +8,5 @@ export const Route = createFileRoute("/settings")({ component: SettingsPage });
 function SettingsPage() {
   const clerk=useClerk();
   const account=useAccount();
-  return <div className="space-y-5"><AccountSettings/><ReminderSettingsPanel/><button disabled={!account?.signedIn} className="btn-ghost w-full" onClick={()=>clerk.openUserProfile()}>Account security · verify email or phone</button><TierPlans/><div className="h-24 w-full shrink-0" aria-hidden="true"/></div>;
+  return <div className="space-y-5"><AccountSettings/><ReminderSettingsPanel/><button disabled={!account?.signedIn} className="btn-ghost w-full" onClick={()=>clerk.openUserProfile()}>Account security · verify email or phone</button><div id="plans-access" className="scroll-mt-4"><TierPlans/></div><div className="h-24 w-full shrink-0" aria-hidden="true"/></div>;
 }

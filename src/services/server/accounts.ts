@@ -56,7 +56,7 @@ export async function currentUser(authRequest?:Request): Promise<UserAccount & {
     if (!email) throw new Error("An email address is required.");
     emailVerified = primaryEmail?.verification?.status==="verified";
     await pool.query(`INSERT INTO user_accounts(id,email,full_name,email_verified) VALUES($1,$2,$3,$4)
-      ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email,full_name=EXCLUDED.full_name,email_verified=EXCLUDED.email_verified`,
+      ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email,email_verified=EXCLUDED.email_verified`,
     [id,email,[identity.firstName,identity.lastName].filter(Boolean).join(" ") || email.split("@")[0],emailVerified]);
   } else {
     // Native passkey sessions are first-party and must not depend on a Clerk API round-trip.
@@ -184,11 +184,21 @@ export async function developmentRole(role:Role) {
     status='approved',is_sample=true,dev_role=$4 WHERE id=$5`,[accountRole,tier,role==="Garage",role,user.id]);
   return {ok:true};
 }
-export async function updateAccount(input:{full_name:string;garage_name:string;garage_registration:string;workshop_type?:"garage"|"specialist"|undefined}) {
-  const user = await currentUser();
+export async function updateAccount(input:{full_name:string;garage_name?:string;garage_registration?:string;workshop_type?:"garage"|"specialist"|undefined}, authRequest?:Request) {
+  const user = await currentUser(authRequest);
+  const hasWorkshopDetails = input.garage_name !== undefined
+    || input.garage_registration !== undefined
+    || input.workshop_type !== undefined;
+  if (!hasWorkshopDetails) {
+    await pool.query("UPDATE user_accounts SET full_name=$1 WHERE id=$2", [input.full_name, user.id]);
+    return {ok:true};
+  }
+  const garageName = input.garage_name ?? user.garage_name;
+  const garageRegistration = input.garage_registration ?? user.garage_registration;
+  const workshopType = input.workshop_type ?? user.workshop_type ?? "garage";
   const startsWorkshopTrial = !user.trial_expires_at
     && !user.garage_registration.trim()
-    && Boolean(input.garage_name.trim() && input.garage_registration.trim())
+    && Boolean(garageName.trim() && garageRegistration.trim())
     && user.subscription_tier !== "verified_garage";
   // Changing workshop identity invalidates live verification; sample approval stays explicit in development.
   await pool.query(`UPDATE user_accounts SET full_name=$1,garage_name=$2,garage_registration=$3,
@@ -198,7 +208,7 @@ export async function updateAccount(input:{full_name:string;garage_name:string;g
     subscription_status=CASE WHEN $7 AND trial_expires_at IS NULL THEN 'trialing' ELSE subscription_status END,
     trial_expires_at=CASE WHEN $7 AND trial_expires_at IS NULL THEN now()+interval '30 days' ELSE trial_expires_at END,
     workshop_type=$6 WHERE id=$5`,
-    [input.full_name,input.garage_name,input.garage_registration,development,user.id,input.workshop_type??"garage",startsWorkshopTrial]);
+    [input.full_name,garageName,garageRegistration,development,user.id,workshopType,startsWorkshopTrial]);
   return {ok:true};
 }
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {
