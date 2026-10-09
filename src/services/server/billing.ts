@@ -106,6 +106,22 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined;
   }
   const session = await stripe.checkout.sessions.create({
     customer: customerId, mode: selectedPlan === "sales_pack" ? "payment" : "subscription",
+    ui_mode: "hosted_page",
+    billing_address_collection: "auto",
+    phone_number_collection: { enabled: false },
+    automatic_tax: { enabled: false },
+    allow_promotion_codes: true,
+    ...(selectedPlan !== "sales_pack" ? { payment_method_collection: "always" as const } : {}),
+    submit_type: "auto",
+    integration_identifier: "hosted_web_0001",
+    origin_context: "web",
+    branding_settings: {
+      background_color: "#ffffff",
+      button_color: "#000000",
+      font_family: "default",
+      border_style: "rounded",
+      logo: { type: "file", file: "file_1UNwXnETnffFZTutmVRk4P7A" },
+    },
     line_items: [{ price: price.price_id, quantity: 1 }], client_reference_id: user.id,
     metadata: { app: "v5vault", user_id: user.id, plan_key: selectedPlan, billing_interval: PLAN_DEFINITIONS[selectedPlan].interval ?? "one_time", ...(orderId ? { order_id: orderId } : {}) },
     ...(selectedPlan !== "sales_pack" ? { subscription_data: {
