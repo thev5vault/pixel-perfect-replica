@@ -75,7 +75,7 @@ describe("vehicle re-verification", () => {
   it("approves only the current keeper's request after an evidence attestation", async () => {
     mocks.txQuery.mockImplementation(async (sql: string) => {
       if (sql.includes("SELECT * FROM vehicle_verification_requests")) {
-        return { rows: [{ id: "request-1", vin, user_id: "keeper-1", requested_vrm: "AB14CDE", v5c_reference_hash: "opaque", status: "pending" }], rowCount: 1 };
+        return { rows: [{ id: "request-1", vin, user_id: "keeper-1", requested_vrm: "LG57VYF", v5c_reference_hash: "opaque", status: "pending" }], rowCount: 1 };
       }
       if (sql.includes("SELECT * FROM vehicles")) return { rows: [{ ...vehicle, verification_state: "RE_VERIFICATION_REQUIRED" }], rowCount: 1 };
       if (sql.includes("SELECT vin FROM vehicles WHERE vrm")) return { rows: [], rowCount: 0 };
@@ -89,8 +89,13 @@ describe("vehicle re-verification", () => {
       reviewed_evidence: true,
       reason: "Current V5C matched the VIN and new registration.",
     });
-    expect(result.verification_state).toBe("VERIFIED");
+    expect(result).toMatchObject({ ok: true, verification_state: "VERIFIED" });
     expect(mocks.txQuery.mock.calls.some(([sql]) => String(sql).includes("set_config('v5vault.allow_verification_update'"))).toBe(true);
-    expect(mocks.txQuery.mock.calls.some(([sql]) => String(sql).includes("UPDATE vehicles SET vrm=$1"))).toBe(true);
+    const vehicleUpdate = mocks.txQuery.mock.calls.find(([sql]) => String(sql).includes("UPDATE vehicles SET vrm="));
+    expect(vehicleUpdate?.[0]).toContain("vrm=$1::text");
+    expect(vehicleUpdate?.[0]).toContain("jsonb_build_object('vrm',$1::text)");
+    expect(vehicleUpdate?.[0]).toContain("v5c_reference_hash=$2::text");
+    expect(vehicleUpdate?.[0]).toContain("WHERE vin=$3::text");
+    expect(vehicleUpdate?.[1]).toEqual(["LG57VYF", "opaque", vin]);
   });
 });

@@ -93,9 +93,9 @@ export async function reviewVehicleVerification(input: {
       if (!used.rowCount) throw new Error("This V5C reference has already been used for this vehicle.");
       await db.query("SELECT set_config('v5vault.allow_registration_update','on',true)");
       await db.query("SELECT set_config('v5vault.allow_verification_update','on',true)");
-      await db.query(`UPDATE vehicles SET vrm=$1,
-        data=COALESCE(data,'{}'::jsonb)||jsonb_build_object('vrm',$1),
-        v5c_reference_hash=$2,verification_state='VERIFIED',public_enabled=false WHERE vin=$3`,
+      await db.query(`UPDATE vehicles SET vrm=$1::text,
+        data=COALESCE(data,'{}'::jsonb)||jsonb_build_object('vrm',$1::text),
+        v5c_reference_hash=$2::text,verification_state='VERIFIED',public_enabled=false WHERE vin=$3::text`,
       [request.requested_vrm, request.v5c_reference_hash, request.vin]);
       await db.query(`INSERT INTO vehicle_registrations(vin,vrm,v5c_reference_hash,verification_state,last_verified_at,updated_at)
         VALUES($1,$2,$3,'VERIFIED',now(),now())
