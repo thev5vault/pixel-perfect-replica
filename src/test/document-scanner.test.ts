@@ -18,6 +18,7 @@ describe("AI service document scan access and output validation", () => {
 
   it("accepts the documented structured extraction and rejects invented enum values", () => {
     const valid = {
+      documentType: "INVOICE" as const,
       garageName: "Apex Motors",
       vatNumber: "GB123456789",
       date: "04/06/2026",
@@ -28,6 +29,7 @@ describe("AI service document scan access and output validation", () => {
     };
     expect(scannedServiceDocumentSchema.parse(valid)).toEqual(valid);
     expect(scannedServiceDocumentSchema.safeParse({ ...valid, category: "Something else" }).success).toBe(false);
+    expect(scannedServiceDocumentSchema.safeParse({ ...valid, documentType: "SERVICE_BOOK" }).success).toBe(false);
     expect(scannedServiceDocumentSchema.parse({ ...valid, vatNumber: undefined }).vatNumber).toBeUndefined();
   });
 });

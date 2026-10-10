@@ -205,6 +205,17 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
         </ModalHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-1">
+          <DocumentPrivacyNotice />
+          <AIScanButton canScan={can.diy(role)} isAdmin={role === "superadmin"} onScanned={(fields, scannedImage) => {
+            setF((current) => ({
+              ...current,
+              name: fields.garageName ? `${fields.category} · ${fields.garageName}`.slice(0, 80) : current.name,
+              installDate: isoDateFromUkDate(fields.date) ?? current.installDate,
+              installMileage: fields.mileage ? String(fields.mileage) : current.installMileage,
+              notes: fields.workSummary || current.notes,
+            }));
+            if (scannedImage) setImage(scannedImage);
+          }} />
           <ModalField label="Part Name">{(id) => (
             <input id={id} required maxLength={80} value={f.name} onChange={set("name")} placeholder="Stage 2 ECU Remap" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
@@ -243,17 +254,6 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <ModalField label="Specialist Tags (comma separated)">{(id) => (
             <input id={id} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
-          <DocumentPrivacyNotice />
-          <AIScanButton canScan={can.diy(role)} onScanned={(fields, scannedImage) => {
-            setF((current) => ({
-              ...current,
-              name: fields.garageName ? `${fields.category} · ${fields.garageName}`.slice(0, 80) : current.name,
-              installDate: isoDateFromUkDate(fields.date) ?? current.installDate,
-              installMileage: fields.mileage ? String(fields.mileage) : current.installMileage,
-              notes: fields.workSummary || current.notes,
-            }));
-            if (scannedImage) setImage(scannedImage);
-          }} />
           <ModalFieldGroup label="Dyno Curve Printout">
             <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
           </ModalFieldGroup>

@@ -96,6 +96,14 @@ export function BasicDiyServiceDialog({
         </ModalHeader>
         <form onSubmit={(event) => void submit(event)} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
+            <DocumentPrivacyNotice />
+            <AIScanButton canScan={can.diy(role)} isAdmin={role === "superadmin"} onScanned={(fields, scannedImage) => {
+              setDate(isoDateFromUkDate(fields.date) ?? date);
+              if (fields.mileage) setMileage(String(fields.mileage));
+              setDescription(fields.workSummary);
+              if (fields.totalCost > 0) setTotalCost(String(fields.totalCost));
+              if (scannedImage) setImage(scannedImage);
+            }} />
             <div className="grid w-full min-w-0 grid-cols-2 gap-3">
               <ModalField label="Date">{(id) => (
                 <input id={id} type="date" max={today()} required value={date} onChange={(event) => setDate(event.target.value)} className={`${MODAL_INPUT_CLASS} text-base`} />
@@ -123,14 +131,6 @@ export function BasicDiyServiceDialog({
             <ModalField label="Work performed">{(id) => (
               <textarea id={id} rows={4} maxLength={1000} required value={description} onChange={(event) => setDescription(event.target.value)} placeholder={"Oil and filter changed\nTyre pressures checked"} className={`${MODAL_TEXTAREA_CLASS} text-base`} />
             )}</ModalField>
-            <DocumentPrivacyNotice />
-            <AIScanButton canScan={can.diy(role)} onScanned={(fields, scannedImage) => {
-              setDate(isoDateFromUkDate(fields.date) ?? date);
-              if (fields.mileage) setMileage(String(fields.mileage));
-              setDescription(fields.workSummary);
-              if (fields.totalCost > 0) setTotalCost(String(fields.totalCost));
-              if (scannedImage) setImage(scannedImage);
-            }} />
             <ModalField label="Invoice total (£) · optional">{(id) => (
               <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={totalCost} onChange={(event) => setTotalCost(event.target.value)} placeholder="0.00" className={`${MODAL_INPUT_CLASS} text-base`} />
             )}</ModalField>

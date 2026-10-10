@@ -1,0 +1,53 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and QA Lead under strict Anchor 23 parameters. Execute a complete visual polish, layout fix, and feature update for the Receipt & AI Service Scanner module across the entire V5Vault codebase.
+
+---
+
+### 1. Compact & Noticeable AI Scanner Button with Tier-Locking (`src/components/service/*`)
+- Sizing & Styling (Compact Premium Look):
+  * Replace plain buttons with a compact, modern action bar: `flex items-center justify-between min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/40 rounded-xl shadow-sm`.
+  * Left side: Inline flex with a animated ✨ sparkle/camera icon and text: `✨ AI Auto-Scan (Receipt, Invoice, Logbook)`.
+- Tier Gating & Free-Tier Lock Behavior:
+  * PAID TIERS & ADMIN (`pro_diy`, `pro_modder`, `verified_workshop`, `isAdmin`):
+    - Right side displays a subtle badge: `[ PRO ]` or `[ UNLOCKED ]`.
+    - Tapping opens the camera/file picker to trigger Gemini Vision extraction.
+  * FREE TIER USERS:
+    - Right side displays a sleek lock icon: `🔒 Upgrade`.
+    - Style container with subtle opacity: `border-slate-700/60 bg-slate-900/80`.
+    - Tapping triggers a sleek Pro Upgrade Modal highlighting: "Unlock AI Auto-Scanning for receipts, invoices & stamped logbook pages on Pro DIY (£0.99/mo)".
+
+---
+
+### 2. Document Type Auto-Detection in Gemini Vision Engine (`server/routes/scan.ts`)
+- Schema Update:
+  * Add `documentType` enum to the extracted JSON schema:
+    `documentType: "RECEIPT" | "INVOICE" | "LOGBOOK_PAGE" | "MOT_CERTIFICATE" | "OTHER"`
+- AI Detection Logic:
+  * Update Gemini system prompt: "Analyze the uploaded image. Automatically classify the document type into RECEIPT (itemized store/garage slip), INVOICE (formal invoice sheet with VAT/header), LOGBOOK_PAGE (stamped or handwritten paper service book entry), or MOT_CERTIFICATE."
+- UI Feedback:
+  * Upon extraction success, display a compact chip above auto-filled inputs: `[ AI Detected: Stamped Logbook Page ]` or `[ AI Detected: Garage Invoice ]` so the user knows what was processed.
+
+---
+
+### 3. Modal Layout & Privacy Notice Cleanup (Fixing Visual Collisions)
+- Fix Privacy Notice & Header Clipping:
+  * Fix the cut-off banner at the top of the modal. Move the privacy/security tip into a clean, collapsible or subtle info line: `flex items-center gap-2 p-3 my-2 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-200/90 text-xs leading-normal`.
+  * Ensure the modal close button `(X)` has proper padding and doesn't overlap text headings.
+- Uniform File Dropzones:
+  * Standardize "Receipt Photo" and "Invoice PDF" dropzones into balanced, matching cards with `border-2 border-dashed border-slate-700/80 rounded-xl bg-slate-900/50 hover:bg-slate-800/50 p-4 text-center cursor-pointer`.
+  * Ensure Lucide icons (`Image`, `FileText`, `Camera`) are flex-centered with `shrink-0` to prevent any detached or hanging icons.
+
+---
+
+### 4. Global Alignment & Systemic UI Sweep
+- Icon & Label Integrity Rule:
+  * Enforce `flex items-center gap-2` on every icon + text combination across all modals, cards, and forms so icons never wrap onto their own line.
+- Mobile Touch Targets & Safe Areas:
+  * Guarantee all buttons and input fields have a minimum height of 44px (`min-h-[44px]`).
+  * Ensure zero horizontal overflow (`overflow-x-hidden`) on mobile viewports (375px–430px).
+
+---
+
+### 5. Build, Test & Type Verification
+- Run `npm test` to verify all 167+ unit and integration tests pass.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm the production build completes cleanly.

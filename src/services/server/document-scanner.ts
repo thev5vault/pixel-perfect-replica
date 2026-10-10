@@ -2,6 +2,7 @@ import { z } from "zod";
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const scannedServiceDocumentSchema = z.object({
+  documentType: z.enum(["RECEIPT", "INVOICE", "LOGBOOK_PAGE", "MOT_CERTIFICATE", "OTHER"]),
   garageName: z.string().max(160),
   vatNumber: z.string().max(40).optional(),
   date: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/),
@@ -25,6 +26,11 @@ export function canUseAiDocumentScan(user: {
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
+    documentType: {
+      type: Type.STRING,
+      enum: ["RECEIPT", "INVOICE", "LOGBOOK_PAGE", "MOT_CERTIFICATE", "OTHER"],
+      description: "Classify the uploaded document based on its visible layout and content",
+    },
     garageName: { type: Type.STRING },
     vatNumber: { type: Type.STRING },
     date: { type: Type.STRING, description: "Standardized UK format DD/MM/YYYY" },
@@ -36,7 +42,7 @@ const responseSchema = {
     },
     workSummary: { type: Type.STRING },
   },
-  required: ["garageName", "date", "mileage", "totalCost", "category", "workSummary"],
+  required: ["documentType", "garageName", "date", "mileage", "totalCost", "category", "workSummary"],
 };
 
 export async function scanServiceDocument(
@@ -50,7 +56,7 @@ export async function scanServiceDocument(
     contents: [{
       role: "user",
       parts: [
-        { text: "Read this UK vehicle receipt, invoice or stamped service logbook page. Extract only facts clearly visible; never invent data. Format date as DD/MM/YYYY, monetary values in GBP, use 0 when mileage or total cost is unreadable, and omit vatNumber when no VAT/company number is visible." },
+        { text: "Analyze the uploaded image and classify documentType as RECEIPT (itemized store or garage slip), INVOICE (formal invoice with VAT/header), LOGBOOK_PAGE (stamped or handwritten paper service-book entry), MOT_CERTIFICATE, or OTHER. Then read any vehicle-service facts clearly visible; never invent data. Format date as DD/MM/YYYY and monetary values in GBP. Use 0 when mileage or total cost is unreadable, and omit vatNumber when no VAT/company number is visible." },
         { inlineData: { mimeType: file.mimeType, data: Buffer.from(file.bytes).toString("base64") } },
       ],
     }],

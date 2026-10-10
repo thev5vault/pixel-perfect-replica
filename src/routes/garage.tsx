@@ -91,7 +91,7 @@ function GaragePage() {
   const accountRefreshRef = useRef(account?.refresh);
   const syncingOutboxRef = useRef(false);
   const canStamp = user?.role === "dev_admin" || Boolean(user && canUseWorkshopFeatures(user));
-  const canScanInvoice = Boolean(user && (user.subscription_tier !== "free" || user.workshop_access_active));
+  const canScanInvoice = Boolean(user && (user.role === "dev_admin" || user.subscription_tier !== "free" || user.workshop_access_active));
   const draftKey = user ? `garage-service:${user.id}` : null;
   const [form, setForm] = useState<GarageForm>(emptyForm);
   const [readyDraftKey, setReadyDraftKey] = useState<string | null>(null);
@@ -478,6 +478,18 @@ function GaragePage() {
         <h2 className="font-semibold text-foreground">VIN-verified fast log</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">A service stamp is created only after the server confirms the vehicle record, your workshop access and the physical VIN inspection.</p>
       </div>
+      <DocumentPrivacyNotice />
+      <AIScanButton canScan={canScanInvoice} isAdmin={user?.role === "dev_admin"} onScanned={(fields, scannedImage) => {
+        setForm((current) => ({
+          ...current,
+          date: isoDateFromUkDate(fields.date) ?? current.date,
+          mileage: fields.mileage ? String(fields.mileage) : current.mileage,
+          notes: fields.workSummary || current.notes,
+          components: current.components.length ? current.components : fields.workSummary.split(/[;,.\n]+/).map((item) => item.trim()).filter(Boolean).slice(0, 12),
+          totalCost: fields.totalCost ? String(fields.totalCost) : current.totalCost,
+          ...(scannedImage ? { receipt: scannedImage } : {}),
+        }));
+      }} />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
         <Field label="Vehicle registration"><input required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field>
         <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-11 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
@@ -517,28 +529,18 @@ function GaragePage() {
       </div>
        <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
        <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-       <DocumentPrivacyNotice />
-        <AIScanButton canScan={canScanInvoice} onScanned={(fields, scannedImage) => {
-          setForm((current) => ({
-            ...current,
-            date: isoDateFromUkDate(fields.date) ?? current.date,
-            mileage: fields.mileage ? String(fields.mileage) : current.mileage,
-            notes: fields.workSummary || current.notes,
-            components: current.components.length ? current.components : fields.workSummary.split(/[;,.\n]+/).map((item) => item.trim()).filter(Boolean).slice(0, 12),
-            ...(scannedImage ? { receipt: scannedImage } : {}),
-            totalCost: fields.totalCost ? String(fields.totalCost) : current.totalCost,
-          }));
-        }} />
        <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><Camera className="h-4 w-4 text-cyan-400" /> Attach receipt photo
+          <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
+            <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Attach receipt photo
             <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
           </label>
           <p className="text-xs text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Available on all account tiers; stored privately."}</p>
           {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="text-xs text-muted-foreground underline">Remove photo</button>}
         </div>
         <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><FileText className="h-4 w-4 text-cyan-400" /> Attach invoice PDF
+          <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
+            <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> Attach invoice PDF
             <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
           </label>
           <p className="break-all text-xs text-muted-foreground">{form.invoiceName ?? "PDF invoices up to 5 MB are stored privately."}</p>

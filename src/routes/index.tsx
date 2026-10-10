@@ -377,7 +377,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
           <DocumentPrivacyNotice />
-          <AIScanButton canScan={pro} onScanned={(fields, scannedImage) => {
+          <AIScanButton canScan={pro} isAdmin={role === "superadmin"} onScanned={(fields, scannedImage) => {
             setForm((current) => ({
               ...current,
               date: isoDateFromUkDate(fields.date) ?? current.date,

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, LoaderCircle, LockKeyhole } from "lucide-react";
+import { Camera, Check, LoaderCircle, LockKeyhole, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { readImage } from "@/lib/vault-store";
@@ -13,16 +13,19 @@ export function isoDateFromUkDate(value: string): string | undefined {
 
 export function AIScanButton({
   canScan,
+  isAdmin = false,
   onScanned,
   className = "",
 }: {
   canScan: boolean;
+  isAdmin?: boolean;
   onScanned: (fields: ScannedServiceDocument, imageData?: string) => void;
   className?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [detectedType, setDetectedType] = useState<ScannedServiceDocument["documentType"]>();
 
   async function scan(file?: File) {
     if (!file) return;
@@ -30,6 +33,7 @@ export function AIScanButton({
       toast.error("Choose an image no larger than 10 MB.");
       return;
     }
+    setDetectedType(undefined);
     setBusy(true);
     try {
       const body = new FormData();
@@ -41,6 +45,7 @@ export function AIScanButton({
         else toast.error(result.message ?? result.error ?? "Unable to scan. Enter the details manually.");
         return;
       }
+      setDetectedType(result.fields.documentType);
       let imageData: string | undefined;
       try { imageData = await readImage(file); } catch { /* Some browsers can scan HEIC but cannot locally re-encode it. */ }
       onScanned(result.fields, imageData);
@@ -54,6 +59,14 @@ export function AIScanButton({
       if (inputRef.current) inputRef.current.value = "";
     }
   }
+
+  const detectedTypeLabel = detectedType ? ({
+    RECEIPT: "Receipt",
+    INVOICE: "Garage Invoice",
+    LOGBOOK_PAGE: "Stamped Logbook Page",
+    MOT_CERTIFICATE: "MOT Certificate",
+    OTHER: "Other Document",
+  } satisfies Record<ScannedServiceDocument["documentType"], string>)[detectedType] : undefined;
 
   return (
     <>
@@ -71,12 +84,27 @@ export function AIScanButton({
         disabled={busy}
         aria-busy={busy}
         onClick={() => canScan ? inputRef.current?.click() : setUpgradeOpen(true)}
-        className={`flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-center font-medium text-emerald-300 transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${className}`}
+        className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-left shadow-sm transition-all active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 ${canScan ? "border-emerald-500/40 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 text-emerald-100 hover:border-emerald-400/60" : "border-slate-700/60 bg-slate-900/80 text-slate-300"} ${className}`}
       >
-        {busy ? <LoaderCircle aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" /> : canScan ? <Camera aria-hidden="true" className="h-4 w-4 shrink-0" /> : <LockKeyhole aria-hidden="true" className="h-4 w-4 shrink-0" />}
-        <span>{busy ? "Analyzing document…" : canScan ? "Scan receipt, invoice or logbook page" : "AI Receipt & Logbook Scanner (Pro Feature)"}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          {busy ? <LoaderCircle aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin text-emerald-300" /> : canScan ? <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 animate-pulse text-emerald-300" /> : <Camera aria-hidden="true" className="h-4 w-4 shrink-0 text-emerald-300" />}
+          <span className="min-w-0 break-words font-semibold">{busy ? "Analyzing document…" : "AI Auto-Scan (Receipt, Invoice, Logbook)"}</span>
+        </span>
+        <span className={`flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-bold tracking-wider ${canScan ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-slate-600/60 bg-slate-800/80 text-slate-300"}`}>
+          {canScan ? isAdmin ? <><Check aria-hidden="true" className="h-3 w-3 shrink-0" /> UNLOCKED</> : "PRO" : <><LockKeyhole aria-hidden="true" className="h-3 w-3 shrink-0" /> Upgrade</>}
+        </span>
       </button>
-      <UpgradeDialog nested open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      {detectedTypeLabel && <div role="status" className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-200">
+        <Check aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+        <span className="break-words">AI Detected: {detectedTypeLabel}</span>
+      </div>}
+      <UpgradeDialog
+        nested
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        description="Unlock AI Auto-Scanning for receipts, invoices & stamped logbook pages on Pro DIY (£0.99/mo)."
+        perks={["Gemini Vision document detection", "Auto-fill service dates, mileage and work notes", "Keep every suggested field editable before saving"]}
+      />
     </>
   );
 }
