@@ -111,6 +111,11 @@
     align-items: center;
     justify-content: center;
   }
+
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    min-height: 44px;
+  }
 }
 
 :root {
@@ -204,7 +209,7 @@
   justify-content: center;
   gap: 0.5rem;
   border-radius: var(--radius-lg);
-  background: var(--color-primary);
+  background: linear-gradient(to right, var(--color-primary), #2563eb);
   color: var(--color-primary-foreground);
   font-weight: 700;
   padding: 0.8rem 1.1rem;
@@ -225,9 +230,42 @@
   color: var(--color-foreground);
   font-weight: 600;
   padding: 0.6rem 0.9rem;
-  transition: background 150ms;
+  transition: background 150ms, transform 150ms;
   &:hover { background: var(--color-muted); }
+  &:active { transform: scale(0.98); }
 }
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--color-input);
+  border-radius: var(--radius-lg);
+  background: oklch(0.208 0.042 265.755 / 70%);
+  color: var(--color-foreground);
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+  transition: background 150ms, transform 150ms, border-color 150ms;
+  &:hover { background: var(--color-muted); border-color: var(--color-primary); }
+  &:active { transform: scale(0.98); }
+  &:disabled { opacity: 0.5; pointer-events: none; }
+}
+
+.btn-primary > svg,
+.btn-ghost > svg,
+.btn-secondary > svg,
+button > svg {
+  flex-shrink: 0;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(71 85 105 / 75%) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { border-radius: 999px; background: rgb(71 85 105 / 75%); }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
 @utility field {
   width: 100%;

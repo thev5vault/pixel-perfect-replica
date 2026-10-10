@@ -63,16 +63,18 @@ export function AIScanButton({
         accept="image/png,image/jpeg,image/webp,image/heic,image/heif"
         capture="environment"
         className="sr-only"
+        aria-label="Choose a receipt, invoice or logbook image to scan"
         onChange={(event) => void scan(event.target.files?.[0])}
       />
       <button
         type="button"
         disabled={busy}
+        aria-busy={busy}
         onClick={() => canScan ? inputRef.current?.click() : setUpgradeOpen(true)}
-        className={`btn-secondary min-h-11 w-full ${className}`}
+        className={`flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-center font-medium text-emerald-300 transition-transform active:scale-[0.98] disabled:cursor-wait disabled:opacity-70 ${className}`}
       >
-        {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : canScan ? <Camera className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
-        {busy ? "Analyzing document…" : canScan ? "Scan receipt, invoice or logbook page" : "AI Receipt & Logbook Scanner (Pro Feature)"}
+        {busy ? <LoaderCircle aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" /> : canScan ? <Camera aria-hidden="true" className="h-4 w-4 shrink-0" /> : <LockKeyhole aria-hidden="true" className="h-4 w-4 shrink-0" />}
+        <span>{busy ? "Analyzing document…" : canScan ? "Scan receipt, invoice or logbook page" : "AI Receipt & Logbook Scanner (Pro Feature)"}</span>
       </button>
       <UpgradeDialog nested open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </>

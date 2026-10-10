@@ -1,0 +1,39 @@
+Act as Lead Frontend Architect, iOS UI/UX Specialist, and Design System Lead under Anchor 23 parameters. Perform an immediate, comprehensive UI/UX overhaul focusing on component alignment, icon placement, text overlapping, and file upload styling across the entire V5Vault application.
+
+---
+
+### 1. Fix Immediate Defect: Receipt & AI Scanning Modal (`src/components/service/*` or `ReceiptUploadModal.tsx`)
+- Camera Icon & Header Alignment:
+  * Fix the stray camera icon: Remove any orphaned `<i>`, `<svg>`, or string icons rendering on their own line above text labels.
+  * Combine the AI Scan action into a unified, high-polish card/button with `flex items-center justify-center gap-2.5 min-h-[48px] py-3 px-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 font-medium`. Ensure the camera icon is strictly inline and shrink-wrapped (`shrink-0`).
+- Privacy Notice Banner Overlap:
+  * Fix text clipping/overlapping on the Privacy Notice card. Apply `flex flex-col gap-1 p-3.5 my-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200/90 text-xs leading-relaxed`.
+- Hide Raw Browser File Inputs (Custom Dropzones):
+  * Replace raw browser `<input type="file">` elements (`Choose File no file selected`) with styled, accessible dropzone buttons (`relative cursor-pointer flex items-center justify-center p-4 border-2 border-dashed border-slate-700/80 rounded-xl bg-slate-900/60 hover:bg-slate-800/60`).
+  * Hide the actual `<input type="file">` using `className="sr-only"` or `hidden` while triggering it cleanly via label/click ref.
+
+---
+
+### 2. Systemic UI/UX Sweep Across ALL Components
+
+- Icon + Label Inline Alignment Rule:
+  * Audit all Lucide icons and emoji indicators across every card, form, header, badge, and table.
+  * Every icon MUST be wrapped inside a flex container (`flex items-center gap-2`) with `shrink-0` on the icon element so icons NEVER line-wrap onto a line by themselves or separate from their associated text label.
+
+- Modal & Sheet Structural Safety:
+  * Ensure all modals, slide-over sheets, and dialogs have explicit top padding (`pt-4`), bottom safe-area insets (`pb-[calc(1rem+env(safe-area-inset-bottom))]`), and internal scrolling (`max-h-[85vh] overflow-y-auto custom-scrollbar`).
+  * Lock overlay backdrops with `backdrop-blur-md bg-black/70`.
+
+- Input Fields & Action Buttons:
+  * Enforce minimum 44px touch target heights (`min-h-[44px]`) on all interactive buttons, inputs, selects, and checkboxes for iOS Safari touch ergonomics.
+  * Ensure action buttons (e.g. "Save to Timeline", "Approve and verify") use crisp gradient fills (`bg-gradient-to-r from-cyan-500 to-blue-600`), centered text, and visible active/pressed states (`active:scale-[0.98] transition-transform`).
+
+- Typography & Badge Overlap Protection:
+  * Fix all text badges, status tags, and metadata lines. Apply `inline-flex items-center whitespace-nowrap` to prevent tag text from breaking or colliding with card borders.
+
+---
+
+### 3. Build & Test Verification
+- Run `npm test` to confirm all 167+ tests pass cleanly.
+- Run `npx tsc --noEmit` to verify zero TypeScript errors.
+- Run `npm run build` to confirm the production bundle compiles without issues.

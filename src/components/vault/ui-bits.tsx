@@ -23,7 +23,7 @@ export function Pill({ tone = "muted", children, className }: { tone?: Tone; chi
     muted: "bg-muted text-muted-foreground border-border",
   }[tone];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold", t, className)}>
+    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold", t, className)}>
       {children}
     </span>
   );
@@ -100,9 +100,9 @@ export function ModalFieldGroup({ label, children }: { label: string; children: 
 
 export function DocumentPrivacyNotice() {
   return (
-    <aside role="note" className="rounded-xl border border-amber-300/70 bg-amber-950/90 p-3 text-sm leading-relaxed text-amber-50 shadow-sm">
-      <strong className="font-bold text-amber-100">Privacy Notice:</strong>{" "}
-      For your security, physically mask or blur your address and 11-digit V5C reference number before uploading.
+    <aside role="note" className="my-3 flex flex-col gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs leading-relaxed text-amber-200/90">
+      <strong className="font-bold text-amber-200">Privacy Notice</strong>
+      <span>For your security, physically mask or blur your address and 11-digit V5C reference number before uploading.</span>
     </aside>
   );
 }
@@ -119,13 +119,14 @@ export function ImagePicker({ value, onChange, label = "Upload image" }: { value
       </div>
     );
   return (
-    <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-input text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-      <ImagePlus className="h-5 w-5" />
-      {busy ? "Processing…" : label}
+      <label className="relative flex min-h-24 cursor-pointer items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/60 p-4 text-sm text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
+       <ImagePlus aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
+       <span className="text-center">{busy ? "Processing…" : label}</span>
       <input
         type="file"
         accept="image/*"
         className="sr-only"
+         aria-label={label}
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
@@ -145,7 +146,7 @@ export function Thumb({ src, alt }: { src: string; alt: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border transition hover:ring-2 hover:ring-primary" aria-label={`View ${alt}`}>
+      <button type="button" onClick={() => setOpen(true)} className="h-16 w-16 min-h-12 min-w-12 shrink-0 overflow-hidden rounded-lg border transition hover:ring-2 hover:ring-primary" aria-label={`View ${alt}`}>
         <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>

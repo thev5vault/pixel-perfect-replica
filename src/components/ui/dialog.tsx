@@ -80,7 +80,7 @@ const DialogOverlay = React.forwardRef<
       ...style,
     } as React.CSSProperties}
     className={cn(
-      "fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 backdrop-blur-sm p-0 overscroll-none sm:items-center sm:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 flex items-end justify-center bg-black/70 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-md overscroll-none sm:items-center sm:p-4 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -100,7 +100,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[var(--dialog-max-height,90dvh)] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-3xl border border-slate-800 bg-slate-900 p-0 shadow-2xl sm:rounded-2xl`,
+        `relative ${nested ? "z-[60]" : "z-50"} flex min-h-0 max-h-[var(--dialog-max-height,85vh)] w-full max-w-lg flex-col gap-0 overflow-y-auto custom-scrollbar rounded-t-3xl border border-slate-800 bg-slate-900 p-0 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl`,
         className,
       )}
       onOpenAutoFocus={(event) => {

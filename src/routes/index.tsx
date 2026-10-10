@@ -370,7 +370,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       <DialogContent showCloseButton={false} className="flex max-h-[var(--dialog-max-height,90dvh)] flex-col gap-4 overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950 p-5 shadow-2xl">
         <ModalHeader className="border-0 bg-transparent px-0 py-0">
           <DialogTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-primary" /> Snap Receipt
+            <Camera className="h-5 w-5 shrink-0 text-primary" /> Snap Receipt
           </DialogTitle>
           <DialogDescription>Upload a receipt first. Pro DIY runs on-device OCR automatically; every suggested value remains editable before saving.</DialogDescription>
         </ModalHeader>
