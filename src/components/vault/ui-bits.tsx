@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
-  const s = { sm: "text-xs", md: "text-base", lg: "text-2xl" }[size];
+  const s = { sm: "text-xs", md: "text-base", lg: "min-h-10 min-w-[120px] px-3 text-base" }[size];
   return (
     <span className={cn("uk-plate", s)}>
-      <span className="flex items-center bg-primary/80 px-1 text-[0.55em] font-sans font-bold text-primary-foreground">UK</span>
+      <span className="flex items-center bg-blue-700 px-1 text-[0.55em] font-sans font-bold text-white">UK</span>
       <span className="px-2 py-0.5">{formatVrm(vrm)}</span>
     </span>
   );
@@ -113,15 +113,15 @@ export function ImagePicker({ value, onChange, label = "Upload image" }: { value
     return (
       <div className="relative h-32 overflow-hidden rounded-lg border">
         <img src={value} alt="Upload preview" className="h-full w-full object-cover" />
-        <button type="button" onClick={() => onChange(undefined)} className="absolute right-2 top-2 rounded-full bg-background/80 p-1" aria-label="Remove image">
+        <button type="button" onClick={() => onChange(undefined)} className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-background/80 p-0" aria-label="Remove image">
           <X className="h-4 w-4" />
         </button>
       </div>
     );
   return (
-      <label className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/50 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
+      <label className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-xs text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
        <ImagePlus aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
-       <span className="break-words">{busy ? "Processing…" : label}</span>
+        <span className="break-words font-medium">{busy ? "Processing…" : label}</span>
       <input
         type="file"
         accept="image/*"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
@@ -49,6 +49,18 @@ function monthsBetween(a: Date, b: Date) {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
+function VehicleSpecification({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-lg bg-slate-950/35 p-2.5">
+      <div className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <p className="mt-1 break-words text-sm font-semibold text-slate-100">{value}</p>
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { vehicle, services, role } = useVault();
   const account = useAccount();
@@ -91,41 +103,32 @@ export function Dashboard() {
     <div className="space-y-6">
       <section className="vault-card relative overflow-hidden p-5">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative flex items-start justify-between gap-3">
-          <div>
+        <div className="relative flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <Plate vrm={vehicle.vrm} size="lg" />
-            <h1 className="mt-3 text-2xl font-bold">
+            <h1 className="mt-3 break-words text-2xl font-bold tracking-tight">
               {vehicle.make} {vehicle.model}
             </h1>
+            <p className="mt-1 break-words text-xs font-medium text-slate-400">
+              {[vehicle.year, vehicle.colour, vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : undefined, vehicle.fuelType].filter(Boolean).join(" · ") || "Vehicle specifications not recorded"}
+            </p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {vehicle.status && <Pill tone={vehicle.status === "approved" ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>{vehicle.is_sample ? "Development sample · " : ""}Keeper link {vehicle.status}</Pill>}
-            <Pill tone={vehicle.verification_tier === "government_data" ? "success" : vehicle.verification_tier === "workshop_checked" ? "primary" : "muted"}>
-              {vehicle.verification_tier === "government_data" ? "Government data matched" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
+          <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:justify-end">
+            <Pill tone={registrationVerified ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>
+              {registrationVerified ? <CheckCircle2 aria-hidden="true" className="h-3 w-3 shrink-0" /> : <ShieldCheck aria-hidden="true" className="h-3 w-3 shrink-0" />}
+              {vehicle.is_sample ? "Sample · " : ""}{registrationVerified ? "Keeper Verified" : vehicle.status === "pending" ? "Keeper Pending" : "Keeper Linked"}
             </Pill>
-            {vehicle.is_scrapped && <Pill tone="warning">Scrapped · read-only</Pill>}
-            <Pill tone="primary">V5C · {vehicle.v5cDate ? fmtDate(vehicle.v5cDate) : "Date unavailable"}</Pill>
-            {vehicle.registrationDate && <Pill tone="muted">First registered · {fmtDate(vehicle.registrationDate)}</Pill>}
+            <Pill tone={vehicle.verification_tier === "government_data" ? "primary" : "muted"}>
+              V5C · {vehicle.verification_tier === "government_data" ? "Government Data" : vehicle.verification_tier === "workshop_checked" ? "Workshop Checked" : "Provisional"}
+            </Pill>
+            {vehicle.is_scrapped && <Pill tone="warning"><AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />Scrapped · read-only</Pill>}
           </div>
         </div>
-        {vehicle.registrationDate && <p className="relative mt-2 text-xs text-muted-foreground">
-          {vehicle.year ?? ""}{vehicle.year ? " · " : ""}{vehicle.colour ?? ""}{vehicle.colour ? " · " : ""}{vehicle.fuelType ?? ""}
-        </p>}
-        <div className="relative mt-4 flex items-center gap-2 text-muted-foreground">
-          <Gauge className="h-4 w-4 text-primary" />
-          <span className="font-display text-xl font-bold text-foreground">{vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)}</span>
-          <span className="text-xs">odometer</span>
-        </div>
-        <div className="relative mt-3 inline-flex items-center gap-2 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-xs font-semibold text-success">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-          </span>
-          {vehicle.source === "official"
-            ? "Official API data · last lookup saved"
-            : vehicle.source === "user-provided"
-              ? "Supplied specifications · not live verified"
-              : "Sample vehicle · demo MOT history"}
+        <div className="relative my-3 grid grid-cols-2 gap-2.5 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 sm:grid-cols-3">
+          <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
+          <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
+          <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
+          <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
         </div>
       </section>
 
@@ -389,18 +392,20 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             }));
             if (scannedImage) setImage(scannedImage);
           }} />
-          <ModalFieldGroup label="Receipt photo · available on every plan">
-            <ImagePicker value={image} onChange={(value) => {
-              setImage(value);
-              if (value && pro) void scanAttachedInvoice(value);
-            }} label="Take photo or upload" />
-          </ModalFieldGroup>
-          <ModalFieldGroup label="Invoice PDF · available on every plan">
-            <PdfReceiptPicker onChange={(file) => {
-              setPdfReceipt(file);
-              if (file?.data && pro) void scanAttachedInvoice(file.data);
-            }} onReadingChange={setReadingPdf}/>
-          </ModalFieldGroup>
+          <div className="my-3 grid w-full min-w-0 grid-cols-2 gap-3">
+            <ModalFieldGroup label="RECEIPT PHOTO">
+              <ImagePicker value={image} onChange={(value) => {
+                setImage(value);
+                if (value && pro) void scanAttachedInvoice(value);
+              }} label="Photo / Image" />
+            </ModalFieldGroup>
+            <ModalFieldGroup label="INVOICE PDF">
+              <PdfReceiptPicker onChange={(file) => {
+                setPdfReceipt(file);
+                if (file?.data && pro) void scanAttachedInvoice(file.data);
+              }} onReadingChange={setReadingPdf} label="PDF Document"/>
+            </ModalFieldGroup>
+          </div>
           {pro && (pdfReceipt || image) && <button type="button" onClick={() => void scanAttachedInvoice()} disabled={scanBusy || readingPdf} className="btn-secondary min-h-11 w-full">
             {scanBusy ? "Scanning on this device…" : "Scan invoice again on this device"}
           </button>}
@@ -486,7 +491,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           )}
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
-            <button type="submit" disabled={saving||readingPdf} className="btn-primary w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>
+            <button type="submit" disabled={saving||readingPdf} className="btn-primary min-h-[44px] w-full">{readingPdf?"Reading PDF…":saving ? "Saving record…" : "Save to Timeline"}</button>
           </footer>
         </form>
         <UpgradeDialog nested open={upsell} onOpenChange={setUpsell} />

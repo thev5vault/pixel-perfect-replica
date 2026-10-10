@@ -75,8 +75,11 @@ describe("Pro DIY entitlements", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /snap receipt/i }));
     expect(await screen.findByRole("heading", { name: "Snap Receipt" })).toBeInTheDocument();
-    expect(screen.getByText("Receipt photo · available on every plan")).toBeInTheDocument();
-    expect(screen.getByText("Invoice PDF · available on every plan")).toBeInTheDocument();
+    expect(screen.getByText("RECEIPT PHOTO")).toBeInTheDocument();
+    expect(screen.getByText("INVOICE PDF")).toBeInTheDocument();
+    expect(screen.getByText("Photo / Image")).toBeInTheDocument();
+    expect(screen.getByText("PDF Document")).toBeInTheDocument();
+    expect(screen.getByText("RECEIPT PHOTO").closest(".grid")).toHaveClass("grid-cols-2");
     expect(screen.getByRole("button", { name: /oem part numbers & fluid specs/i })).toBeInTheDocument();
   });
 

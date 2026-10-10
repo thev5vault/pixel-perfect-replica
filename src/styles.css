@@ -66,6 +66,7 @@
   input:not([type="checkbox"]):not([type="radio"]),
   textarea,
   select { min-height: 44px; }
+  button { min-height: 44px; }
 }
 
 /* Keep Clerk's password-visibility control centered without changing other buttons. */
@@ -140,7 +141,7 @@
   --success-foreground: oklch(0.208 0.042 265.755);
   --warning: oklch(0.769 0.188 70.08); /* #F59E0B */
   --warning-foreground: oklch(0.208 0.042 265.755);
-  --plate: oklch(0.87 0.17 95);
+  --plate: #ffd500;
   --plate-foreground: oklch(0.18 0.01 260);
   --redact: oklch(0.12 0 0);
   --border: oklch(0.984 0.003 247.858 / 9%);
@@ -205,6 +206,7 @@
 
 @utility btn-primary {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -222,6 +224,7 @@
 
 @utility btn-ghost {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
@@ -237,6 +240,7 @@
 
 @utility btn-secondary {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -269,6 +273,7 @@ button > svg {
 
 @utility field {
   width: 100%;
+  min-height: 44px;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
@@ -277,7 +282,7 @@ button > svg {
   background: oklch(0.208 0.042 265.755 / 70%);
   color: var(--color-foreground);
   padding: 0.65rem 0.8rem;
-  font-size: 0.95rem;
+  font-size: 16px;
   outline: none;
   transition: border-color 150ms, box-shadow 150ms;
   &:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px oklch(0.715 0.126 215.2 / 25%); }

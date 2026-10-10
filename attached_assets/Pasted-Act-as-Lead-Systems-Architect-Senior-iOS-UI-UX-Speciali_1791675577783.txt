@@ -1,0 +1,84 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Execute a comprehensive visual, layout, and functional audit of V5Vault, overhauling the Vehicle Header Card, the Service/Receipt Scanner Modal, and overall component hygiene across the codebase.
+
+---
+
+### 1. Vehicle Header & Specifications Overhaul (`src/components/vehicle/*` or `VehicleHeader.tsx`)
+
+- Proportioned UK VRM Plate:
+  * Retain the iconic UK registration plate styling (`LG57 VYF` with yellow background `#FFD500`, black text, rounded corners, and blue UK side strip).
+  * Ensure the plate size is cleanly proportioned (e.g. `h-10 px-3 min-w-[120px] text-base font-bold`) so it pops visually without cluttering or dominating the card layout.
+
+- Clean Make/Model & Specification Hierarchy:
+  * Title: Primary heading `text-2xl font-bold text-white tracking-tight` (e.g. `Audi A4`).
+  * Sub-spec line: `text-xs text-slate-400 font-medium` (e.g. `2007 • Silver • 2.0L Petrol • BUL Engine`).
+
+- Structured Specifications Grid:
+  * Replace scattered status badges with a clean, low-profile 2-column or 3-column spec matrix (`grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-3 p-3 bg-slate-900/50 border border-slate-800/80 rounded-xl`):
+    - Odometer: Lucide `Gauge` icon + mileage value (`87,420 mi` or `Not recorded`).
+    - Engine Specs: `1,984 cc` | Code: `BUL`.
+    - First Registered: `17 Sep 2007`.
+    - Colour: `Silver`.
+
+- Consolidated Verification Status Bar:
+  * Group status tags into a tidy top-right or bottom status row:
+    - `Keeper Verified` (emerald badge).
+    - `V5C Status` (cyan/slate pill).
+  * Eliminate unnecessary stacked pills (`Provisional vehicle data`, `Supplied specifications not live verified`) in favor of a single unified status indicator.
+
+---
+
+### 2. Compact & Noticeable AI Scanner Action (`src/components/service/*`)
+
+- Modern Horizontal Action Bar:
+  * Render a compact banner at the top of the modal: `flex items-center justify-between p-3 bg-gradient-to-r from-emerald-950/60 via-slate-900 to-cyan-950/60 border border-emerald-500/40 rounded-xl shadow-sm`.
+  * Left side: `flex items-center gap-2 text-sm font-semibold text-emerald-400` with text `✨ AI Auto-Scan (Receipt, Invoice, Logbook)`.
+  * Right side (Tier-Gated):
+    - Paid Tiers & Admin (`pro_diy`, `pro_modder`, `verified_workshop`, `isAdmin`): Displays `[ UNLOCKED ]` or `📷 Scan` button.
+    - Free Tier Users: Displays `🔒 Upgrade` badge. Tapping triggers the Pro Upgrade Modal.
+
+---
+
+### 3. Side-by-Side 2-Column Dropzone Grid (`ReceiptUploadModal.tsx`)
+
+- Compact 50/50 Upload Layout:
+  * Replace tall stacked dropzones with a 2-column grid (`grid grid-cols-2 gap-3 my-3`).
+  * Column 1 (Photo Upload):
+    - Header: `RECEIPT PHOTO` (`text-[10px] text-slate-400 uppercase tracking-wider font-semibold`).
+    - Dropzone: `flex flex-col items-center justify-center p-3 min-h-[76px] rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 hover:bg-slate-800/60 cursor-pointer text-center transition-colors`.
+    - Icon + Label: Lucide `Camera` + `Photo / Image` (`text-xs text-slate-300 font-medium mt-1`).
+  * Column 2 (PDF Upload):
+    - Header: `INVOICE PDF` (`text-[10px] text-slate-400 uppercase tracking-wider font-semibold`).
+    - Dropzone: `flex flex-col items-center justify-center p-3 min-h-[76px] rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 hover:bg-slate-800/60 cursor-pointer text-center transition-colors`.
+    - Icon + Label: Lucide `FileText` + `PDF Document` (`text-xs text-slate-300 font-medium mt-1`).
+
+- Form Layout Alignment:
+  * Place "Date" and "Mileage" inputs side-by-side (`grid grid-cols-2 gap-3`).
+  * Bottom CTA: `Save to Timeline` (`w-full min-h-[44px] bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-semibold text-white active:scale-[0.98] transition-transform`).
+
+---
+
+### 4. Document Type Auto-Detection in Gemini Vision Engine (`server/routes/scan.ts`)
+
+- AI Classification Engine:
+  * Update Gemini 1.5 Flash response schema to include `documentType`:
+    `documentType: "RECEIPT" | "INVOICE" | "LOGBOOK_PAGE" | "MOT_CERTIFICATE" | "OTHER"`
+  * Instruct model: "Automatically detect whether the uploaded image is an itemized sales receipt, a formal garage invoice, a stamped paper logbook page, or an MOT certificate."
+- UI Detection Feedback Chip:
+  * Display a chip above auto-filled fields upon success: `✨ AI Detected: Stamped Logbook Page` or `✨ AI Detected: Garage Invoice`.
+
+---
+
+### 5. Global Visual Hygiene & Integrity Verification
+
+- Icon & Label Alignment Rule:
+  * Enforce `flex items-center gap-2` on all icon + label elements globally so icons never line-wrap onto a line by themselves.
+- Touch Targets & Viewport Security:
+  * Ensure all interactive buttons and inputs have a minimum height of 44px (`min-h-[44px]`).
+  * Eliminate horizontal overflow (`overflow-x-hidden`) across all mobile screen sizes (375px–430px).
+
+---
+
+### 6. Build, Test & Type Verification
+- Run `npm test` to confirm all 167+ unit and integration tests pass.
+- Run `npx tsc --noEmit` to verify zero TypeScript compilation errors.
+- Run `npm run build` to confirm the production bundle builds cleanly.
