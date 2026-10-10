@@ -29,6 +29,7 @@ import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicleRegistrationDialog";
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
+import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -250,7 +251,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const pro = can.diy(role);
   const quickWorkItems = ["Oil & filter", "Brakes", "Tyres", "Battery", "Coolant", "Inspection"];
   const invoiceComponents = ["Engine oil", "Oil filter", "Air filter", "Cabin filter", "Brake pads", "Brake discs", "Brake fluid", "Tyres", "Battery", "Coolant", "Suspension"];
-  const empty = { date: today(), mileage: "", category: "Servicing" as ServiceCategory, description: "", garage: "", parts: "", fluids: "", partsCost: "", labourCost: "" };
+  const empty = { date: today(), mileage: "", category: "Servicing" as ServiceCategory, description: "", garage: "", parts: "", fluids: "", partsCost: "", labourCost: "", totalCost: "" };
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState<string>();
   const [upsell, setUpsell] = useState(false);
@@ -341,7 +342,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       category: form.category,
       description: (lines[0] ?? "").slice(0, 80),
       items: lines.slice(1),
-      cost: partsCost != null || labourCost != null ? (partsCost ?? 0) + (labourCost ?? 0) : undefined,
+      cost: money(form.totalCost) ?? (partsCost != null || labourCost != null ? (partsCost ?? 0) + (labourCost ?? 0) : undefined),
       partsCost,
       labourCost,
       parts: parts?.length ? parts : undefined,
@@ -376,6 +377,18 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
           <DocumentPrivacyNotice />
+          <AIScanButton canScan={pro} onScanned={(fields, scannedImage) => {
+            setForm((current) => ({
+              ...current,
+              date: isoDateFromUkDate(fields.date) ?? current.date,
+              mileage: fields.mileage ? String(fields.mileage) : current.mileage,
+              garage: fields.garageName || current.garage,
+              description: fields.workSummary || current.description,
+              totalCost: fields.totalCost > 0 ? String(fields.totalCost) : current.totalCost,
+              category: fields.category === "Major Repair" ? "Repairs" : fields.category === "MOT" ? "Repairs" : fields.category === "Modification" ? "Repairs" : "Servicing",
+            }));
+            if (scannedImage) setImage(scannedImage);
+          }} />
           <ModalFieldGroup label="Receipt photo · available on every plan">
             <ImagePicker value={image} onChange={(value) => {
               setImage(value);
@@ -426,6 +439,9 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           </div>
           <ModalField label="Work Description">{(id) => (
             <textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className={MODAL_TEXTAREA_CLASS} />
+          )}</ModalField>
+          <ModalField label="Invoice total (£) · optional">{(id) => (
+            <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.totalCost} onChange={set("totalCost")} placeholder="0.00" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Quick add work items</p>

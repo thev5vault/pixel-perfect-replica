@@ -17,6 +17,7 @@ import { validateVIN } from "@/lib/vin";
 import { useAccount } from "@/lib/account-store";
 import { canUseWorkshopFeatures } from "@/lib/plans";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
+import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
 const CATEGORIES = ["Servicing", "Brakes", "Repairs", "Tyres"] as const;
 const COMPONENTS = [
@@ -56,18 +57,19 @@ type GarageForm = {
   advisories: string;
   partsCost: string;
   labourCost: string;
+  totalCost: string;
   receipt?: string;
   invoiceName?: string;
   invoiceData?: string;
 };
 
 function emptyForm(): GarageForm {
-  return { vrm: "", vin: "", physicalVinInspected: false, mileage: "", date: today(), category: "Servicing", components: [], notes: "", advisories: "", partsCost: "", labourCost: "" };
+  return { vrm: "", vin: "", physicalVinInspected: false, mileage: "", date: today(), category: "Servicing", components: [], notes: "", advisories: "", partsCost: "", labourCost: "", totalCost: "" };
 }
 
 function hasDraftContent(form: GarageForm) {
   return Boolean(form.vrm.trim() || form.vin.trim() || form.physicalVinInspected || form.mileage || form.components.length ||
-    form.notes.trim() || form.advisories.trim() || form.partsCost || form.labourCost ||
+    form.notes.trim() || form.advisories.trim() || form.partsCost || form.labourCost || form.totalCost ||
     form.receipt || form.invoiceData);
 }
 
@@ -390,7 +392,7 @@ function GaragePage() {
     }
     const partsCost = form.partsCost ? Number(form.partsCost) : undefined;
     const labourCost = form.labourCost ? Number(form.labourCost) : undefined;
-    const totalCost = (partsCost ?? 0) + (labourCost ?? 0);
+    const totalCost = form.totalCost ? Number(form.totalCost) : (partsCost ?? 0) + (labourCost ?? 0);
     const payload: GarageStampPayload = {
       client_submission_id: createSubmissionId(),
       vrm: registration,
@@ -513,8 +515,20 @@ function GaragePage() {
         <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className="field" /></Field>
         <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className="field" /></Field>
       </div>
-      <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
+       <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
+       <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
        <DocumentPrivacyNotice />
+        <AIScanButton canScan={canScanInvoice} onScanned={(fields, scannedImage) => {
+          setForm((current) => ({
+            ...current,
+            date: isoDateFromUkDate(fields.date) ?? current.date,
+            mileage: fields.mileage ? String(fields.mileage) : current.mileage,
+            notes: fields.workSummary || current.notes,
+            components: current.components.length ? current.components : fields.workSummary.split(/[;,.\n]+/).map((item) => item.trim()).filter(Boolean).slice(0, 12),
+            ...(scannedImage ? { receipt: scannedImage } : {}),
+            totalCost: fields.totalCost ? String(fields.totalCost) : current.totalCost,
+          }));
+        }} />
        <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-slate-200"><Camera className="h-4 w-4 text-cyan-400" /> Attach receipt photo

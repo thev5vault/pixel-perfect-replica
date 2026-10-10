@@ -35,6 +35,7 @@ import { Route as ApiPasskeysCountRouteImport } from './routes/api.passkeys.coun
 import { Route as ApiPasskeysRegistrationOptionsRouteImport } from './routes/api.passkeys.registration-options'
 import { Route as ApiPasskeysRegistrationVerifyRouteImport } from './routes/api.passkeys.registration-verify'
 import { Route as ApiPasskeysSignoutRouteImport } from './routes/api.passkeys.signout'
+import { Route as ApiServiceScanReceiptRouteImport } from './routes/api.service.scan-receipt'
 import { Route as ApiStripeCreateCheckoutSessionRouteImport } from './routes/api.stripe.create-checkout-session'
 import { Route as ApiStripeCreateWorkshopSessionRouteImport } from './routes/api.stripe.create-workshop-session'
 import { Route as ApiUserAccountRouteImport } from './routes/api.user.account'
@@ -179,6 +180,11 @@ const ApiPasskeysSignoutRoute = ApiPasskeysSignoutRouteImport.update({
   path: '/api/passkeys/signout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiServiceScanReceiptRoute = ApiServiceScanReceiptRouteImport.update({
+  id: '/api/service/scan-receipt',
+  path: '/api/service/scan-receipt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeCreateCheckoutSessionRoute =
   ApiStripeCreateCheckoutSessionRouteImport.update({
     id: '/api/stripe/create-checkout-session',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
   '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
+  '/api/service/scan-receipt': typeof ApiServiceScanReceiptRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/user/account': typeof ApiUserAccountRoute
@@ -287,6 +294,7 @@ export interface FileRoutesByTo {
   '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
   '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
+  '/api/service/scan-receipt': typeof ApiServiceScanReceiptRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/user/account': typeof ApiUserAccountRoute
@@ -324,6 +332,7 @@ export interface FileRoutesById {
   '/api/passkeys/registration-options': typeof ApiPasskeysRegistrationOptionsRoute
   '/api/passkeys/registration-verify': typeof ApiPasskeysRegistrationVerifyRoute
   '/api/passkeys/signout': typeof ApiPasskeysSignoutRoute
+  '/api/service/scan-receipt': typeof ApiServiceScanReceiptRoute
   '/api/stripe/create-checkout-session': typeof ApiStripeCreateCheckoutSessionRoute
   '/api/stripe/create-workshop-session': typeof ApiStripeCreateWorkshopSessionRoute
   '/api/user/account': typeof ApiUserAccountRoute
@@ -362,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/registration-options'
     | '/api/passkeys/registration-verify'
     | '/api/passkeys/signout'
+    | '/api/service/scan-receipt'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/user/account'
@@ -398,6 +408,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/registration-options'
     | '/api/passkeys/registration-verify'
     | '/api/passkeys/signout'
+    | '/api/service/scan-receipt'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/user/account'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/api/passkeys/registration-options'
     | '/api/passkeys/registration-verify'
     | '/api/passkeys/signout'
+    | '/api/service/scan-receipt'
     | '/api/stripe/create-checkout-session'
     | '/api/stripe/create-workshop-session'
     | '/api/user/account'
@@ -471,6 +483,7 @@ export interface RootRouteChildren {
   ApiPasskeysRegistrationOptionsRoute: typeof ApiPasskeysRegistrationOptionsRoute
   ApiPasskeysRegistrationVerifyRoute: typeof ApiPasskeysRegistrationVerifyRoute
   ApiPasskeysSignoutRoute: typeof ApiPasskeysSignoutRoute
+  ApiServiceScanReceiptRoute: typeof ApiServiceScanReceiptRoute
   ApiStripeCreateCheckoutSessionRoute: typeof ApiStripeCreateCheckoutSessionRoute
   ApiStripeCreateWorkshopSessionRoute: typeof ApiStripeCreateWorkshopSessionRoute
   ApiUserAccountRoute: typeof ApiUserAccountRoute
@@ -665,6 +678,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPasskeysSignoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/service/scan-receipt': {
+      id: '/api/service/scan-receipt'
+      path: '/api/service/scan-receipt'
+      fullPath: '/api/service/scan-receipt'
+      preLoaderRoute: typeof ApiServiceScanReceiptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/create-checkout-session': {
       id: '/api/stripe/create-checkout-session'
       path: '/api/stripe/create-checkout-session'
@@ -751,6 +771,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPasskeysRegistrationOptionsRoute: ApiPasskeysRegistrationOptionsRoute,
   ApiPasskeysRegistrationVerifyRoute: ApiPasskeysRegistrationVerifyRoute,
   ApiPasskeysSignoutRoute: ApiPasskeysSignoutRoute,
+  ApiServiceScanReceiptRoute: ApiServiceScanReceiptRoute,
   ApiStripeCreateCheckoutSessionRoute: ApiStripeCreateCheckoutSessionRoute,
   ApiStripeCreateWorkshopSessionRoute: ApiStripeCreateWorkshopSessionRoute,
   ApiUserAccountRoute: ApiUserAccountRoute,

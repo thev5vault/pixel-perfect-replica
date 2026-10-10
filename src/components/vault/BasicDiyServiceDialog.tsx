@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ModalHeader } from "@/components/vault/ModalHeader";
 import { DocumentPrivacyNotice, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS } from "@/components/vault/ui-bits";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
-import { SERVICE_CATEGORIES, today, useVault, type ServiceCategory } from "@/lib/vault-store";
+import { SERVICE_CATEGORIES, can, today, useVault, type ServiceCategory } from "@/lib/vault-store";
+import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
 const QUICK_WORK_ITEMS = ["Oil & filter", "Brakes", "Tyres", "Battery", "Coolant", "Inspection"];
 
@@ -16,11 +17,12 @@ export function BasicDiyServiceDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { vehicle, addService } = useVault();
+  const { vehicle, addService, role } = useVault();
   const [date, setDate] = useState(today());
   const [mileage, setMileage] = useState("");
   const [category, setCategory] = useState<ServiceCategory>("Servicing");
   const [description, setDescription] = useState("");
+  const [totalCost, setTotalCost] = useState("");
   const [image, setImage] = useState<string>();
   const [pdf, setPdf] = useState<{ name: string; data: string }>();
   const [readingPdf, setReadingPdf] = useState(false);
@@ -58,6 +60,7 @@ export function BasicDiyServiceDialog({
         category,
         description: (lines[0] ?? "").slice(0, 80),
         items: lines.slice(1),
+        cost: totalCost ? Number(totalCost) : undefined,
         garage: "Owner logged DIY",
         verified: false,
         is_verified_stamp: false,
@@ -71,6 +74,7 @@ export function BasicDiyServiceDialog({
       setMileage("");
       setCategory("Servicing");
       setDescription("");
+      setTotalCost("");
       setImage(undefined);
       setPdf(undefined);
       onOpenChange(false);
@@ -120,6 +124,16 @@ export function BasicDiyServiceDialog({
               <textarea id={id} rows={4} maxLength={1000} required value={description} onChange={(event) => setDescription(event.target.value)} placeholder={"Oil and filter changed\nTyre pressures checked"} className={`${MODAL_TEXTAREA_CLASS} text-base`} />
             )}</ModalField>
             <DocumentPrivacyNotice />
+            <AIScanButton canScan={can.diy(role)} onScanned={(fields, scannedImage) => {
+              setDate(isoDateFromUkDate(fields.date) ?? date);
+              if (fields.mileage) setMileage(String(fields.mileage));
+              setDescription(fields.workSummary);
+              if (fields.totalCost > 0) setTotalCost(String(fields.totalCost));
+              if (scannedImage) setImage(scannedImage);
+            }} />
+            <ModalField label="Invoice total (£) · optional">{(id) => (
+              <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={totalCost} onChange={(event) => setTotalCost(event.target.value)} placeholder="0.00" className={`${MODAL_INPUT_CLASS} text-base`} />
+            )}</ModalField>
             <ModalFieldGroup label="Optional receipt photo · available on every plan">
               <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
             </ModalFieldGroup>

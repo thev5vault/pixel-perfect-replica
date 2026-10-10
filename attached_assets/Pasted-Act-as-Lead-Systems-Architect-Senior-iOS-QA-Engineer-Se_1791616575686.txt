@@ -1,0 +1,66 @@
+Act as Lead Systems Architect, Senior iOS QA Engineer, Security Officer, and Automotive SaaS Director under Anchor 23 parameters. Implement the AI Photo & Document Scanning Engine for servicing, repairs, parts invoices, and stamped logbooks, fully integrated with V5Vault's tier entitlement system.
+
+---
+
+### 1. Server-Side Tier Entitlement & Endpoint (`server/routes.ts` or `/api/service/scan-receipt`)
+- Dedicated API Endpoint: `POST /api/service/scan-receipt`
+- Multipart File Handling:
+  * Use Multer memory storage with a strict 10MB file upload limit.
+  * Accept image formats: PNG, JPEG, WEBP, HEIC/HEIF.
+- Server-Side Tier Check (RBAC):
+  * Check `req.user.subscriptionTier` or `req.user.isAdmin`.
+  * IF `user.subscriptionTier === 'free'` (and not admin):
+    - Instantly return HTTP 403 Forbidden with payload: `{ error: "FEATURE_LOCKED", message: "AI Scanning requires a Pro DIY, Pro Modder, or Verified Workshop subscription." }`.
+  * ALLOW access ONLY if tier is `pro_diy`, `pro_modder`, `verified_workshop`, or `admin`.
+
+---
+
+### 2. AI Vision Processing & Structured JSON Output
+- Gemini / OpenAI Vision Integration:
+  * Send image base64 buffer to the Vision model using structured JSON schema output.
+  * Extracted Fields Required:
+    - `garageName` (string): Name of workshop, dealer, or stamp.
+    - `vatNumber` (string, optional): Company or VAT registration.
+    - `date` (string): Standardized to UK format `DD/MM/YYYY`.
+    - `mileage` (number): Vehicle mileage recorded on document.
+    - `category` (enum): "Full Service", "Interim Service", "Major Repair", "MOT", "Modification", or "Oil Change".
+    - `totalCost` (number): Total in GBP (£).
+    - `workSummary` (string): Clean summary of work performed, parts replaced, or stamp notes.
+    - `confidenceScore` (string): "HIGH", "MEDIUM", or "LOW".
+- Graceful API Fallback:
+  * Wrap AI calls in robust try/catch.
+  * If the AI key is unconfigured or call fails, return HTTP 500 with a clean user alert: "Unable to auto-scan document right now. Please enter details manually."
+
+---
+
+### 3. Frontend Mobile Camera Trigger & UI Auto-Fill Component
+- Component Location: `src/components/service/AIScanButton.tsx` (and embed inside Service & Modification logging forms).
+- Interactive States:
+  * FREE TIER USERS: Render a styled button: "📷 AI Receipt & Logbook Scanner (Pro Feature)".
+    - Tapping opens a sleek upgrade modal: "Unlock AI Service Book & Receipt Scanning — Upgrade to Pro DIY (£0.99/mo) or Pro Modder (£1.49/mo)".
+  * PAID TIER USERS: Render a primary mobile action button: "📷 Scan Receipt, Invoice or Logbook Page".
+    - Uses native camera upload (`<input type="file" accept="image/*" capture="environment" />`).
+    - During scanning, display a pulse animation: "Analyzing receipt & extracting details...".
+- Auto-Populate Form Inputs:
+  * On AI success response, auto-fill all service form state fields (Date, Mileage, Garage Name, Work Summary, Total Cost).
+  * Highlight auto-filled fields with a subtle emerald glow and show a toast: "Form auto-filled by AI. Verify details before saving."
+
+---
+
+### 4. Database Persistence & Immutable VIN Lock
+- Service Record Attachment:
+  * Upon saving the digital log, persist the structured record to the database linked to the vehicle's `vin`.
+  * Store the uploaded receipt image file path/URL alongside the record.
+- VIN Provenance Lock:
+  * Guarantee that AI-scanned service history and receipts stay locked to the VIN even if an account is deleted or transferred.
+
+---
+
+### 5. Automated Tests & Build Freeze
+- Unit & Component Tests:
+  * Add unit tests verifying tier restriction logic (403 for `free`, 200 for `pro_diy`/`pro_modder`/`verified_workshop`).
+  * Add component tests for input auto-population.
+  * Ensure all 164+ existing tests pass with 0 failures.
+- Build & Lint Verification:
+  * Run `npm test` to verify test suite health.
+  * Run `npm run build` and `npx tsc --noEmit` to confirm zero compilation errors.

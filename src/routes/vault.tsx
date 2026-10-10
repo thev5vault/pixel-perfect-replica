@@ -10,6 +10,7 @@ import { FeatureLock } from "@/components/vault/FeatureLock";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
+import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
 export const Route = createFileRoute("/vault")({
   head: () => ({
@@ -160,7 +161,7 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
 }
 
 function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { addMod, vehicle } = useVault();
+  const { addMod, vehicle, role } = useVault();
   const empty = { name: "", category: "Engine/ECU" as ModCategory, installDate: today(), installMileage: "", gains: "", notes: "", stage: "Stage 1", specs: "", tags: "" };
   const [f, setF] = useState(empty);
   const [image, setImage] = useState<string>();
@@ -243,6 +244,16 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
             <input id={id} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
           <DocumentPrivacyNotice />
+          <AIScanButton canScan={can.diy(role)} onScanned={(fields, scannedImage) => {
+            setF((current) => ({
+              ...current,
+              name: fields.garageName ? `${fields.category} · ${fields.garageName}`.slice(0, 80) : current.name,
+              installDate: isoDateFromUkDate(fields.date) ?? current.installDate,
+              installMileage: fields.mileage ? String(fields.mileage) : current.installMileage,
+              notes: fields.workSummary || current.notes,
+            }));
+            if (scannedImage) setImage(scannedImage);
+          }} />
           <ModalFieldGroup label="Dyno Curve Printout">
             <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
           </ModalFieldGroup>
