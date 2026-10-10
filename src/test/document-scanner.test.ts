@@ -7,6 +7,7 @@ describe("AI service document scan access and output validation", () => {
       expect(canUseAiDocumentScan({ subscription_tier: tier })).toBe(true);
     }
     expect(canUseAiDocumentScan({ role: "dev_admin", subscription_tier: "god_mode" })).toBe(true);
+    expect(canUseAiDocumentScan({ isAdmin: true, subscription_tier: "free" })).toBe(true);
   });
 
   it("denies free, missing and unknown account tiers", () => {
@@ -24,9 +25,9 @@ describe("AI service document scan access and output validation", () => {
       category: "Full Service",
       totalCost: 249.99,
       workSummary: "Oil and filter changed",
-      confidenceScore: "HIGH",
     };
     expect(scannedServiceDocumentSchema.parse(valid)).toEqual(valid);
     expect(scannedServiceDocumentSchema.safeParse({ ...valid, category: "Something else" }).success).toBe(false);
+    expect(scannedServiceDocumentSchema.parse({ ...valid, vatNumber: undefined }).vatNumber).toBeUndefined();
   });
 });
