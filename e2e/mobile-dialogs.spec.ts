@@ -144,6 +144,19 @@ async function checkPageHasNoHorizontalOverflow(page: Page, label: string) {
   );
 }
 
+async function increasePageTextScale(page: Page) {
+  await page.evaluate(() => {
+    const root = document.documentElement;
+    const currentSize = Number.parseFloat(getComputedStyle(root).fontSize);
+    root.style.fontSize = `${currentSize * 1.5}px`;
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize)),
+    )
+    .toBeGreaterThan(20);
+}
+
 async function checkInsideParent(element: Locator, label: string) {
   const bounds = await element.evaluate((node, elementLabel) => {
     const parent = node.parentElement;
@@ -532,6 +545,61 @@ for (const width of [320, 390]) {
     }
   });
 }
+
+test("passport views reflow with enlarged text on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await startSamplePreview(page);
+  await selectTier(page, /Pro Modder/);
+  await page.goto("/passport");
+  const document = page.locator(".passport-document");
+  await page.getByRole("button", { name: "Standard Passport", exact: false }).click();
+  await expect(document.locator("header p.text-primary")).toHaveText("Standard Passport");
+  await increasePageTextScale(page);
+  await checkPageHasNoHorizontalOverflow(page, "passport certificate at 150% text size");
+
+  const certificateChoices = [
+    "Standard Passport",
+    "OEM Provenance Certificate",
+    "Master Build Sheet",
+  ];
+  for (const title of certificateChoices) {
+    const choice = page.getByRole("button", { name: title, exact: false });
+    await expect(choice).toBeVisible();
+    await checkInsideParent(choice, `${title} choice at enlarged text size`);
+    if (title !== "Standard Passport") await choice.click();
+    await expect(document.locator("header p.text-primary")).toHaveText(title);
+    await expect(document.locator("header h2")).toHaveCSS("font-size", "30px");
+    const download = document.getByRole("button", { name: "Download PDF" });
+    await expect(download).toBeVisible();
+    await checkInsideParent(
+      document.locator("header p.text-primary"),
+      `${title} heading at enlarged text size`,
+    );
+    await checkInsideParent(download, `${title} download control at enlarged text size`);
+    await checkPageHasNoHorizontalOverflow(page, `${title} at 150% text size`);
+  }
+
+  await page.goto("/v/AB14CDE?sample=true");
+  await expect(page.getByRole("heading", { name: "Parts Breakdown" }).first()).toBeVisible();
+  await increasePageTextScale(page);
+  await expect(page.getByRole("heading", { name: "MOT mileage trend" })).toBeVisible();
+  await expect(page.getByText(/Keeper contact details and V5C reference are never displayed/)).toBeVisible();
+  await expect(page.getByText("Important: not government certification")).toBeVisible();
+  await checkInsideParent(
+    page.getByRole("heading", { name: /Audi A4/ }),
+    "public passport vehicle heading at enlarged text size",
+  );
+  await expect(page.getByRole("heading", { name: /Audi A4/ })).toHaveCSS("font-size", "45px");
+  await checkInsideParent(
+    page.getByText(/Keeper contact details and V5C reference are never displayed/),
+    "public passport privacy notice at enlarged text size",
+  );
+  await checkInsideParent(
+    page.getByText("Important: not government certification"),
+    "public passport certification notice at enlarged text size",
+  );
+  await checkPageHasNoHorizontalOverflow(page, "public passport at 150% text size");
+});
 
 async function checkCloseFocus(page: Page, dialog: Locator) {
   const close = dialog.getByRole("button", { name: "Close", exact: true });
