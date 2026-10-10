@@ -52,3 +52,37 @@ test("dashboard waits for Clerk hydration before routing a signed-out visitor", 
     timeout: 45_000,
   });
 });
+
+test("authenticated Clerk session survives a dashboard reload on the HTTPS preview", async ({
+  page,
+}) => {
+  const email = process.env["PLAYWRIGHT_AUTH_EMAIL"];
+  const password = process.env["PLAYWRIGHT_AUTH_PASSWORD"];
+  test.skip(
+    !email || !password,
+    "Set PLAYWRIGHT_AUTH_EMAIL and PLAYWRIGHT_AUTH_PASSWORD to an isolated, verified Clerk test account.",
+  );
+
+  await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Sign in to V5Vault" })).toBeVisible({
+    timeout: 45_000,
+  });
+
+  const continueButton = page.getByRole("button", { name: /^continue$/i });
+  await page.getByRole("textbox").first().fill(email!);
+  await continueButton.click();
+  await page.getByLabel(/password/i).fill(password!);
+  await continueButton.click();
+
+  await expect(page).toHaveURL(/\/dashboard\/?$/, { timeout: 60_000 });
+  await expect(page.getByRole("status")).toHaveText("Opening your V5Vault dashboard…", {
+    timeout: 45_000,
+  });
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/dashboard\/?$/, { timeout: 45_000 });
+  await expect(page.getByRole("status")).toHaveText("Opening your V5Vault dashboard…", {
+    timeout: 45_000,
+  });
+  await expect(page.getByRole("heading", { name: "Sign in to V5Vault" })).toHaveCount(0);
+});
