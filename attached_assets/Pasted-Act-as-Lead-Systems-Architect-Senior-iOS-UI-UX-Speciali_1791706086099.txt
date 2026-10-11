@@ -1,0 +1,51 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Refine the Vehicle Header component (`VehicleHeader.tsx`) to remove all emoji icons from status micro-pills, relying strictly on clean typography, background colors, and ambient color glows.
+
+---
+
+### 1. Pure Glowing Color Micro-Pills (No Emojis or Icons)
+
+- Micro-Pill Styling:
+  * Style: `px-3 py-1 text-[11px] font-bold rounded-full border shrink-0 inline-flex items-center transition-all shadow-sm backdrop-blur-sm tracking-wide uppercase`.
+  * REMOVE all emojis (`✓`, `🟢`, `🔴`, `⚠️`). Use clean, plain text labels only.
+
+- Color & Ambient Glow Classes:
+  1. **EMERALD GREEN (Verified / Taxed / Insured):**
+     * Class: `bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.35)]`
+     * Text Labels: `Keeper Verified`, `Taxed`, `Insured`
+  2. **ROSE RED (Not Taxed / Not Insured):**
+     * Class: `bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.35)]`
+     * Text Labels: `Not Taxed`, `Not Insured`
+  3. **AMBER GOLD (Pending / Keeper Unverified):**
+     * Class: `bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.35)]`
+     * Text Labels: `Keeper Unverified`
+
+- Pill Container Layout:
+  * Arrange micro-pills in a clean, tight row: `flex flex-wrap items-center gap-2 my-2`.
+
+---
+
+### 2. UK VRM Registration Plate Specs (`VehicleHeader.tsx`)
+
+- Proportional UK Registration Mark:
+  * Container: `inline-flex items-center h-8 bg-[#FFD500] border border-yellow-500/50 rounded-md overflow-hidden shadow-sm select-none shrink-0`.
+  * Left Blue UK Band: `flex flex-col items-center justify-center w-4 h-full bg-[#003399] text-white text-[8px] font-black px-1 rounded-l-md shrink-0 mr-1.5`.
+  * Plate Text: `px-2 text-xs sm:text-sm font-mono font-black text-black tracking-wider uppercase leading-none`.
+
+---
+
+### 3. View Mode Reactivity (`Easy` vs `Detailed`)
+
+- **EASY VIEW MODE (`viewMode === 'easy'`):**
+  * Displays: Proportional VRM Plate, Title (`Audi A4`), Subtitle (`2007 · Petrol`), and the clean glowing micro-pill row.
+  * Displays ONLY the subtle inline link `View Full Specifications ˅`. Keep the 2x2 specification grid hidden by default.
+
+- **DETAILED VIEW MODE (`viewMode === 'detailed'`):**
+  * Displays: VRM Plate, Title, Subtitle, micro-pill row, expanded 2x2 specification grid (`ODOMETER`, `ENGINE SPECS`, `FIRST REGISTERED`, `COLOUR`), and `VIN PROVENANCE` card.
+
+---
+
+### 4. Build, Type & Unit Test Verification
+
+- Run `npm test` to verify all unit/integration tests pass (updating pill text assertions where applicable).
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.
