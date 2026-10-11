@@ -1,0 +1,35 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and QA Lead under strict Anchor 23 parameters. Refine the Vehicle Header Component (`VehicleHeader.tsx`) to scale up the UK VRM plate slightly and enforce strict reactivity for Easy View vs. Detailed View modes.
+
+---
+
+### 1. Scale Up UK VRM Plate Proportions (`VehicleHeader.tsx`)
+- Increase Plate Presence:
+  * Scale up the UK plate badge slightly: Set container to `h-9 sm:h-10 px-3 min-w-[130px] rounded-lg bg-[#FFD500] border border-yellow-500/50 shadow-sm flex items-center shrink-0`.
+  * Left Blue UK Band: Set to `w-5 h-full bg-[#003399] text-white text-[9px] font-extrabold flex flex-col justify-center items-center rounded-l-md shrink-0 mr-2`.
+  * Registration Text: `text-sm sm:text-base font-mono font-black text-black tracking-wider leading-none uppercase`.
+  * Ensure the plate looks authentic and legible without dominating or cluttering the top card section.
+
+---
+
+### 2. Strict View-Mode Reactivity (`useViewMode` / `VehicleHeader.tsx`)
+
+- **EASY VIEW MODE (`viewMode === 'easy'`):**
+  * Display: VRM Plate, Title (`Audi A4`), Subtitle (`2007 · Petrol`), and slim status pills (`Keeper Verified`, `V5C`, `Tax`, `Insurance`).
+  * Specifications: Render ONLY the subtle, inline collapsible link `View Full Specifications ˅`. Do NOT render the 2x2 grid or VIN card on initial mount to keep vertical height minimal.
+
+- **DETAILED VIEW MODE (`viewMode === 'detailed'`):**
+  * Display: VRM Plate, Title, Subtitle, and slim status pills.
+  * Specifications: Automatically render the 2x2 spec grid (`ODOMETER`, `ENGINE SPECS`, `FIRST REGISTERED`, `COLOUR`) and the `VIN PROVENANCE` card directly in the layout.
+  * Hide the `View Full Specifications` link since specifications are already fully expanded.
+
+---
+
+### 3. Layout Hygiene & Badge Wrapping
+- Ensure status pills (`Keeper Verified`, `Tax Unrecorded`, `Insurance Unverified`) use `inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-900/80 border border-slate-800 rounded-full text-slate-300` and wrap cleanly on narrow 375px viewports with zero horizontal overflow (`overflow-x-hidden`).
+
+---
+
+### 4. Verification & Build Integrity
+- Run `npm test` to verify all 168+ tests pass.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

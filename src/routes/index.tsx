@@ -79,6 +79,9 @@ export function Dashboard() {
   const account = useAccount();
   const easyView = account?.displayPreference !== "detailed";
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
+  useEffect(() => {
+    setSpecificationsExpanded(false);
+  }, [easyView, vehicle.vin, vehicle.vrm]);
   const insuranceKey = `v5vault_insurance_expiry:${vehicle.vin || vehicle.vrm}`;
   const taxKey = `v5vault_tax_expiry:${vehicle.vin || vehicle.vrm}`;
   const [insuranceExpiry, setInsuranceExpiry] = useState("");
@@ -135,6 +138,11 @@ export function Dashboard() {
     setStatusEditorOpen(false);
   };
   const serviceOk = lastService && monthsBetween(new Date(lastService.date), new Date()) < 24;
+  const vehicleSubtitle = [
+    vehicle.year,
+    vehicle.fuelType,
+    !easyView && vehicle.engineCapacity ? `${(vehicle.engineCapacity / 1000).toFixed(1)}L` : undefined,
+  ].filter(Boolean).join(" · ") || "Vehicle specifications not recorded";
 
   if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
     return <section className="vault-card relative overflow-hidden p-6 sm:p-8">
@@ -162,19 +170,19 @@ export function Dashboard() {
               {vehicle.make} {vehicle.model}
             </h1>
             <p className="mt-1 break-words text-xs font-medium text-slate-400">
-              {[vehicle.year, vehicle.fuelType, vehicle.engineCapacity ? `${(vehicle.engineCapacity / 1000).toFixed(1)}L` : undefined].filter(Boolean).join(" · ") || "Vehicle specifications not recorded"}
+              {vehicleSubtitle}
             </p>
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:justify-end">
-            <Pill tone={registrationVerified ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>
+            <Pill className="gap-1.5 rounded-full border-slate-800 bg-slate-900/80 px-2.5 py-1 text-xs font-medium text-slate-300" tone={registrationVerified ? "success" : vehicle.status === "pending" ? "warning" : "muted"}>
               {registrationVerified ? <CheckCircle2 aria-hidden="true" className="h-3 w-3 shrink-0" /> : <ShieldCheck aria-hidden="true" className="h-3 w-3 shrink-0" />}
               {vehicle.is_sample ? "Sample · " : ""}{registrationVerified ? "Keeper Verified" : vehicle.status === "pending" ? "Keeper Pending" : "Keeper Linked"}
             </Pill>
-            <Pill tone={vehicle.verification_tier === "government_data" ? "primary" : "muted"}>
+            <Pill className="gap-1.5 rounded-full border-slate-800 bg-slate-900/80 px-2.5 py-1 text-xs font-medium text-slate-300" tone={vehicle.verification_tier === "government_data" ? "primary" : "muted"}>
               V5C · {vehicle.verification_tier === "government_data" ? "Government Data" : vehicle.verification_tier === "workshop_checked" ? "Workshop Checked" : "Provisional"}
             </Pill>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`inline-flex min-h-8 items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${taxBadge === "Tax Due" ? "text-amber-300" : taxBadge === "Taxed" ? "text-emerald-300" : "text-slate-300"}`}>{taxBadge}</button>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`inline-flex min-h-8 items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${insuranceBadge === "Insured" ? "text-emerald-300" : "text-slate-300"}`}>{insuranceBadge}</button>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${taxBadge === "Tax Due" ? "text-amber-300" : taxBadge === "Taxed" ? "text-emerald-300" : "text-slate-300"}`}>{taxBadge}</button>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border border-slate-800 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${insuranceBadge === "Insured" ? "text-emerald-300" : "text-slate-300"}`}>{insuranceBadge}</button>
             {vehicle.is_scrapped && <Pill tone="warning"><AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />Scrapped · read-only</Pill>}
           </div>
         </div>
@@ -184,7 +192,7 @@ export function Dashboard() {
           <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
           <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
         </div>}
-        {!easyView && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
+        {(!easyView || specificationsExpanded) && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
         {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setSpecificationsExpanded((open) => !open)} className="mt-1 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:text-cyan-300">
           {specificationsExpanded ? "Hide full specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "⌃" : "⌄"}</span>
         </button>}

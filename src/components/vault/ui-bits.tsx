@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
+  const sizing = size === "sm" ? "h-8 min-w-[112px] px-2" : "h-9 min-w-[130px] px-3 sm:h-10";
+  const textSize = size === "sm" ? "text-xs" : "text-sm sm:text-base";
   return (
-    <span className={cn("uk-plate h-8 min-w-[112px] select-none rounded-md border border-yellow-500/40 bg-[#FFD500] text-black shadow-sm", size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-sm")}>
-      <span className="flex w-5 shrink-0 flex-col items-center justify-center rounded-l-md bg-[#003399] px-1 text-[8px] font-sans font-bold leading-none text-white">UK</span>
-      <span className="flex items-center px-2.5 text-xs font-mono font-black uppercase leading-none tracking-wider sm:text-sm">{formatVrm(vrm)}</span>
+    <span className={cn("uk-plate shrink-0 items-center rounded-lg border border-yellow-500/50 bg-[#FFD500] text-black shadow-sm", sizing)}>
+      <span className="mr-2 flex h-full w-5 shrink-0 flex-col items-center justify-center rounded-l-md bg-[#003399] text-[9px] font-extrabold leading-none text-white">UK</span>
+      <span className={cn("flex items-center font-mono font-black uppercase leading-none tracking-wider", textSize)}>{formatVrm(vrm)}</span>
     </span>
   );
 }
