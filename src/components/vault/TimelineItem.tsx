@@ -63,7 +63,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
               {(s.image || s.has_receipt || s.has_invoice) && (
                 pro
                   ? s.image
-                    ? <a href={s.image} target="_blank" rel="noreferrer" aria-label={`View ${s.description} receipt`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 text-[11px] font-semibold text-cyan-400 hover:bg-slate-800/90">View receipt</a>
+                    ? <a href={s.image} target="_blank" rel="noopener noreferrer" aria-label={`View ${s.description} receipt`} className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 transition-colors hover:bg-slate-800 hover:text-white">View receipt</a>
                     : <span className="inline-flex min-h-[44px] items-center text-[11px] text-slate-400">Receipt on file</span>
                   : <button type="button" onClick={() => setUpsell("receipt")} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 text-[11px] font-semibold text-cyan-400 hover:bg-slate-800/90" aria-label="Upgrade to Pro DIY to view receipt photo"><LockKeyhole className="h-3.5 w-3.5" />Unlock receipt</button>
               )}
