@@ -243,6 +243,26 @@ test("vehicle header plate and status matrix fit at 375px", async ({ page }) => 
   const plate = page.locator(".uk-plate").first();
   await expect(plate).toBeVisible();
   await expect(plate).toHaveCSS("height", "36px");
+  const plateDetails = await plate.evaluate((element) => {
+    const band = element.firstElementChild!;
+    const text = element.lastElementChild!;
+    const outer = element.getBoundingClientRect();
+    const bandBounds = band.getBoundingClientRect();
+    const textBounds = text.getBoundingClientRect();
+    return {
+      outerLeft: outer.left,
+      outerTop: outer.top,
+      borderLeft: parseFloat(getComputedStyle(element).borderLeftWidth),
+      borderTop: parseFloat(getComputedStyle(element).borderTopWidth),
+      bandLeft: bandBounds.left,
+      bandTop: bandBounds.top,
+      bandHeight: bandBounds.height,
+      textFontSize: getComputedStyle(text).fontSize,
+    };
+  });
+  expect(plateDetails.bandLeft).toBeCloseTo(plateDetails.outerLeft + plateDetails.borderLeft, 1);
+  expect(plateDetails.bandTop).toBeCloseTo(plateDetails.outerTop + plateDetails.borderTop, 1);
+  expect(plateDetails.textFontSize).toBe("16px");
   const pillRow = page.getByTestId("vehicle-status-pills");
   await expect(pillRow.getByText("Keeper Unverified", { exact: true })).toBeVisible();
   await expect(pillRow.getByText(/V5C (Verified|Provisional)/)).toBeVisible();
@@ -253,6 +273,12 @@ test("vehicle header plate and status matrix fit at 375px", async ({ page }) => 
     }),
   );
   expect(pillRects).toHaveLength(4);
+  expect(Math.max(...pillRects.map((item) => item.width)) - Math.min(...pillRects.map((item) => item.width))).toBeLessThanOrEqual(1);
+  expect(await pillRow.evaluate((row) => row.getBoundingClientRect().width)).toBeLessThanOrEqual(320);
+  const visiblePills = await pillRow.locator(":scope > span").evaluateAll((items) =>
+    items.map((item) => getComputedStyle(item).height),
+  );
+  expect(visiblePills).toEqual(["30px", "30px"]);
   expect(Math.abs(pillRects[0].centerY - pillRects[1].centerY)).toBeLessThanOrEqual(1);
   expect(Math.abs(pillRects[2].centerY - pillRects[3].centerY)).toBeLessThanOrEqual(1);
   expect(pillRects[2].top).toBeGreaterThan(pillRects[0].top);

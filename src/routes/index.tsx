@@ -31,7 +31,7 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
-const STATUS_PILL_BASE = "flex w-fit items-center justify-center px-2.5 py-1 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none text-center whitespace-nowrap min-h-[28px]";
+const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap transition-all shadow-sm select-none";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -174,7 +174,7 @@ export function Dashboard() {
               {vehicleSubtitle}
             </p>
           </div>
-          <div data-testid="vehicle-status-pills" className="my-2.5 grid w-full max-w-[340px] grid-cols-2 gap-2">
+          <div data-testid="vehicle-status-pills" className="my-2.5 grid w-full max-w-[320px] grid-cols-2 gap-2">
             <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.25)]"}`}>
               {registrationVerified ? "Keeper Verified" : "Keeper Unverified"}
             </span>

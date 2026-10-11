@@ -1,0 +1,41 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute a precise visual refactoring of the Vehicle Header component (`src/components/vehicle/VehicleHeader.tsx` or `VehicleCard.tsx`) to scale up the UK VRM plate font and lock the 2x2 status pills into a tight, perfectly aligned grid.
+
+---
+
+### 1. Enhanced UK VRM Plate Typography (`VehicleHeader.tsx`)
+
+- Proportional Plate Container & Larger Legible Font:
+  * Plate Container: `inline-flex items-center h-9 sm:h-10 bg-[#FFD500] border border-yellow-500/60 rounded-md overflow-hidden shadow-sm shrink-0 select-none mb-2`.
+  * Left Blue UK Band: `flex flex-col items-center justify-center w-5 h-full bg-[#003399] text-white text-[9px] font-extrabold px-1 shrink-0 rounded-l-[5px] border-r border-yellow-500/40`.
+  * Registration Text: Increase font size slightly for authentic UK plate impact: `px-2.5 text-base sm:text-lg font-mono font-black text-black tracking-widest uppercase leading-none flex items-center h-full`.
+  * Ensure `LG57 VYF` is bold, easy to read, and fits comfortably inside the yellow container without clipping or crowding borders.
+
+---
+
+### 2. Tight, Perfectly Stacked 2x2 Status Matrix (`VehicleHeader.tsx`)
+
+- Fix Floating Gap & Constrain Grid Width:
+  * Replace full-width flex containers with a tight 2-column grid container: `grid grid-cols-2 gap-2 my-2.5 max-w-[320px] w-full`.
+  * Micro-Pill Styling: Apply uniform sizing to all 4 cells: `w-full h-7.5 min-h-[30px] flex items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap transition-all shadow-sm select-none`.
+
+- Cell Assignments & Ambient Glows:
+  * **Cell 1 (Top Left):** `Keeper Verified` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Keeper Unverified` (`bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]`).
+  * **Cell 2 (Top Right):** `V5C Verified` or `V5C Provisional` (`bg-slate-800/80 text-slate-300 border-slate-700/60`).
+  * **Cell 3 (Bottom Left):** `Taxed` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Untaxed` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+  * **Cell 4 (Bottom Right):** `Insured` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Uninsured` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+
+---
+
+### 3. Header Hierarchy & Spec Grid Alignment
+
+- Subtitle Line: `2007 · Petrol · Silver` (`text-xs text-slate-400 font-medium`).
+- Collapsible Link: `text-xs text-cyan-400 font-medium hover:underline inline-flex items-center gap-1 mt-2` (`View Full Specifications ˅`).
+- Detailed Spec Grid (`viewMode === 'detailed'`): Replace `COLOUR` cell with `TRANSMISSION` (`Manual 6-Speed`).
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.
