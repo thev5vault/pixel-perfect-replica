@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { CalendarPlus, ChevronDown, LockKeyhole } from "lucide-react";
+import { CalendarPlus, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { can, fmtDate, fmtMiles, useVault, type ServiceRecord } from "@/lib/vault-store";
 import { useAccount } from "@/lib/account-store";
-import { Pill, Thumb, VerifiedBadge } from "./ui-bits";
+import { Pill, VerifiedBadge } from "./ui-bits";
 import { UpgradeDialog } from "./UpgradeDialog";
 
 export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookable?: boolean }) {
@@ -35,56 +35,48 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
     <li className="relative">
       <span className="absolute -left-[27px] top-4 h-3 w-3 rounded-full border-2 border-background bg-primary glow" />
       <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
-        <div className="mb-2 flex w-full min-w-0 items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span>{fmtDate(s.date)}</span>·<span>{fmtMiles(s.mileage)}</span>
-            </div>
-            <h3 className="break-words whitespace-normal text-sm font-bold leading-tight text-white">{s.description}</h3>
-            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-400">
-              {isSampleWorkshopStamp
-                ? <VerifiedBadge sample />
-                : garageName
-                  ? <span title={garageName} className="max-w-full break-words whitespace-normal rounded-md border border-slate-800 bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-slate-300">{garageName}</span>
-                  : <span className="rounded-md border border-slate-800 bg-slate-900/60 px-2 py-0.5 text-[10px] font-semibold text-slate-400">Owner Logged / DIY</span>}
-              {s.is_verified_stamp === true && (
-                isAdminStamp
-                  ? <Pill tone="primary">{s.is_sample ? "Sample administrator stamp" : "Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
-                  : !s.is_sample && <VerifiedBadge sample={false} />
-              )}
-              <span className="rounded-md border border-cyan-800/40 bg-cyan-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase text-cyan-300/90">{s.category || "Servicing"}</span>
-            </div>
+        <div className="flex w-full min-w-0 flex-col gap-1.5">
+          <p className="text-[11px] font-medium text-slate-400">{fmtDate(s.date)} • {fmtMiles(s.mileage)}</p>
+          <h3 className="break-words text-sm font-bold leading-tight text-white">{s.description}</h3>
+          <div className="mt-0.5 flex items-center">
+            <span className="rounded-md border border-cyan-800/40 bg-cyan-950/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-cyan-300/90">{s.category || "Servicing"}</span>
           </div>
-          <div className="flex min-w-[100px] shrink-0 flex-col items-end justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {s.cost != null && s.cost > 0 && <span className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs font-bold text-slate-100 shadow-sm">£{s.cost.toFixed(2)}</span>}
-              {(s.image || (!pro && (s.has_receipt || s.has_invoice))) &&
-                (pro && s.image ? (
-                  <Thumb src={s.image} alt={`${s.description} receipt`} />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setUpsell("receipt")}
-                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border"
-                    aria-label="Upgrade to Pro DIY to view receipt photo"
-                  >
-                    {s.image ? <img src={s.image} alt="" loading="lazy" className="h-full w-full scale-110 object-cover blur-[4px]" /> : <div aria-hidden="true" className="h-full w-full bg-slate-200 p-3 blur-[4px]"><div className="mb-2 h-1 w-full bg-slate-500" /><div className="mb-2 h-1 w-3/4 bg-slate-500" /><div className="h-1 w-full bg-slate-500" /></div>}
-                    <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-slate-950/45 text-[9px] font-bold text-white">
-                      <LockKeyhole className="h-3.5 w-3.5" />
-                      Pro DIY
-                    </span>
-                  </button>
-                ))}
+          <div className="flex items-center gap-1.5">
+            {isSampleWorkshopStamp
+              ? <VerifiedBadge sample />
+              : garageName
+                ? <span title={garageName} className="max-w-full break-words rounded-md border border-slate-800 bg-slate-900/80 px-2.5 py-0.5 text-[10px] font-semibold text-slate-300">{garageName}</span>
+                : <span className="rounded-md border border-slate-800 bg-slate-900/60 px-2.5 py-0.5 text-[10px] font-semibold text-slate-400">Owner Logged / DIY</span>}
+            {s.is_verified_stamp === true && (
+              isAdminStamp
+                ? <Pill tone="primary">{s.is_sample ? "Sample administrator stamp" : "Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
+                : !s.is_sample && <VerifiedBadge sample={false} />
+            )}
+          </div>
+          <div className="mt-0.5 flex w-full items-center justify-between border-t border-slate-800/60 pt-1.5">
+            <div>
+              {s.cost != null && s.cost > 0
+                ? <span className="inline-flex items-center rounded-lg border border-emerald-800/40 bg-emerald-950/30 px-2.5 py-1 text-xs font-bold text-emerald-400">£{s.cost.toFixed(2)}</span>
+                : <span className="text-[11px] font-medium text-slate-500">No cost logged</span>}
             </div>
-            {hasBreakdownData && <button
-              type="button"
-              aria-expanded={isExpanded}
-              aria-controls={isExpanded ? `service-breakdown-${s.id}` : undefined}
-              onClick={() => setIsExpanded((expanded) => !expanded)}
-              className="flex min-h-[44px] min-w-[44px] shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold text-cyan-400 transition-colors hover:bg-slate-800/90 hover:text-cyan-300"
-            >
-              {isExpanded ? "Hide Details ˄" : "Details ˅"}
-            </button>}
+            <div className="flex items-center gap-2">
+              {(s.image || s.has_receipt || s.has_invoice) && (
+                pro
+                  ? s.image
+                    ? <a href={s.image} target="_blank" rel="noreferrer" aria-label={`View ${s.description} receipt`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 text-[11px] font-semibold text-cyan-400 hover:bg-slate-800/90">View receipt</a>
+                    : <span className="inline-flex min-h-[44px] items-center text-[11px] text-slate-400">Receipt on file</span>
+                  : <button type="button" onClick={() => setUpsell("receipt")} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 text-[11px] font-semibold text-cyan-400 hover:bg-slate-800/90" aria-label="Upgrade to Pro DIY to view receipt photo"><LockKeyhole className="h-3.5 w-3.5" />Unlock receipt</button>
+              )}
+              {hasBreakdownData && <button
+                type="button"
+                aria-expanded={isExpanded}
+                aria-controls={isExpanded ? `service-breakdown-${s.id}` : undefined}
+                onClick={() => setIsExpanded((expanded) => !expanded)}
+                className="flex min-h-[44px] min-w-[44px] shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-[11px] font-semibold text-cyan-400 transition-colors hover:bg-slate-800/90 hover:text-cyan-300"
+              >
+                {isExpanded ? "Hide Details ˄" : "Details ˅"}
+              </button>}
+            </div>
           </div>
         </div>
         {isExpanded && hasBreakdownData && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-2.5 rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 text-xs text-slate-300">
