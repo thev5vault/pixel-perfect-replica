@@ -1,0 +1,48 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Fix the layout alignment of the Vehicle Header component (`src/components/vehicle/VehicleHeader.tsx` or `VehicleCard.tsx`) to scale up the UK VRM plate and lock all status micro-pills into a single, perfectly aligned horizontal row.
+
+---
+
+### 1. Scale Up UK VRM Plate Proportions (`VehicleHeader.tsx`)
+
+- Proportional UK Registration Plate:
+  * Container: Increase height and presence: `inline-flex items-center h-9 sm:h-10 px-3 bg-[#FFD500] border border-yellow-500/60 rounded-md overflow-hidden shadow-sm shrink-0 select-none mb-2`.
+  * Left Blue UK Flag/Band: `flex flex-col items-center justify-center w-4 sm:w-5 h-full bg-[#003399] text-white text-[8px] sm:text-[9px] font-black px-1 rounded-l-md shrink-0 mr-2`.
+  * Registration Text: `px-1 text-sm sm:text-base font-mono font-black text-black tracking-widest uppercase leading-none`.
+  * Ensure the plate looks like an authentic UK physical registration mark.
+
+---
+
+### 2. Single-Line Micro-Pill Alignment & Compact Sizing
+
+- Fix Awkward Line Wrapping:
+  * Eliminate the broken 2-line break where pills get stranded on a new row.
+  * Micro-Pill Sizing: Apply `inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none whitespace-nowrap`.
+  * Pill Container Row: `flex flex-wrap items-center gap-1.5 mt-2 mb-1 w-full`.
+
+- Status & Color Glow Mappings:
+  1. **Tax Status:**
+     * Taxed: `"Taxed"` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`).
+     * Untaxed: `"Untaxed"` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+  2. **Insurance Status:**
+     * Insured: `"Insured"` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`).
+     * Uninsured: `"Uninsured"` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+  3. **Keeper Verification:**
+     * Verified: `"Keeper Verified"` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`).
+     * Unverified: `"Keeper Unverified"` (`bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]`).
+  4. **V5C Status:**
+     * Keep as slim slate badge: `bg-slate-800/80 text-slate-300 border-slate-700/60`.
+
+---
+
+### 3. View Mode Consistency & Layout Cleanliness
+
+- Ensure `Easy View` renders the scaled VRM plate, vehicle title (`Audi A4`), subtitle (`2007 · Petrol`), single-line status pills, and the inline `View Full Specifications ˅` toggle link.
+- Ensure zero horizontal overflow (`overflow-x-hidden`) on 375px viewports.
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm 0 TypeScript compilation errors.
+- Run `npm run build` to verify production bundle success.

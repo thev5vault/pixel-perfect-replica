@@ -5,12 +5,15 @@ import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
-  const sizing = "mb-1.5 h-8";
-  const textSize = size === "sm" ? "text-[11px]" : "text-xs sm:text-sm";
+  const sizing = size === "sm" ? "h-8 px-2" : "mb-2 h-9 px-3 sm:h-10";
+  const bandWidth = size === "sm" ? "w-4" : "w-4 sm:w-5";
+  const bandSpacing = size === "sm" ? "mr-1.5" : "mr-2";
+  const bandText = size === "sm" ? "text-[8px]" : "text-[8px] sm:text-[9px]";
+  const textSize = size === "sm" ? "text-xs" : "text-sm sm:text-base";
   return (
     <span className={cn("uk-plate shrink-0 items-center rounded-md border border-yellow-500/60 bg-[#FFD500] text-black shadow-sm select-none", sizing)}>
-      <span className="mr-1.5 flex h-full w-4 shrink-0 flex-col items-center justify-center rounded-l-md bg-[#003399] px-1 text-[8px] font-black leading-none text-white">UK</span>
-      <span className={cn("flex items-center px-2 font-mono font-black uppercase leading-none tracking-wider", textSize)}>{formatVrm(vrm)}</span>
+      <span className={cn("flex h-full shrink-0 flex-col items-center justify-center rounded-l-md bg-[#003399] px-1 font-black leading-none text-white", bandWidth, bandSpacing, bandText)}>UK</span>
+      <span className={cn("flex items-center px-1 font-mono font-black uppercase leading-none tracking-widest", textSize)}>{formatVrm(vrm)}</span>
     </span>
   );
 }

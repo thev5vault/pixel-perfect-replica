@@ -31,7 +31,7 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
-const STATUS_PILL_BASE = "inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none";
+const STATUS_PILL_BASE = "inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none whitespace-nowrap";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -165,7 +165,7 @@ export function Dashboard() {
       <DisplayPreferenceSetup account={account} />
       <section className="vault-card relative mb-3 overflow-hidden p-3.5 sm:p-4">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="relative flex min-w-0 flex-col gap-3">
           <div className="min-w-0">
             <Plate vrm={vehicle.vrm} size="lg" />
             <h1 className="mt-0 break-words text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl">
@@ -175,17 +175,24 @@ export function Dashboard() {
               {vehicleSubtitle}
             </p>
           </div>
-          <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
-            {vehicle.is_sample && <span className={`${STATUS_PILL_BASE} border-slate-700 bg-slate-900/80 text-slate-300`}>Sample</span>}
-            <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]"}`}>
+          <div data-testid="vehicle-status-pills" className="mt-2 mb-1 flex w-full flex-wrap items-center gap-1.5">
+            <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]"}`}>
               {registrationVerified ? "Keeper Verified" : "Keeper Unverified"}
             </span>
-            <span className={`${STATUS_PILL_BASE} border-slate-700 bg-slate-900/80 text-slate-300`}>
-              V5C · {vehicle.verification_tier === "government_data" ? "Government Data" : vehicle.verification_tier === "workshop_checked" ? "Workshop Checked" : "Provisional"}
+            <span
+              aria-label={`${vehicle.is_sample ? "Development sample. " : ""}V5C verification: ${vehicle.verification_tier === "government_data" ? "Government data" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional"}`}
+              title={`${vehicle.is_sample ? "Development sample · " : ""}V5C verification: ${vehicle.verification_tier === "government_data" ? "Government data" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional"}`}
+              className={`${STATUS_PILL_BASE} border-slate-700/60 bg-slate-800/80 text-slate-300`}
+            >
+              V5C
             </span>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`${STATUS_PILL_BASE} cursor-pointer ${taxBadge === "Taxed" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : taxBadge === "Tax Due" ? "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.25)]"}`}>{taxBadge}</button>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`${STATUS_PILL_BASE} cursor-pointer ${insuranceBadge === "Insured" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.25)]"}`}>{insuranceBadge}</button>
-            {vehicle.is_scrapped && <span className={`${STATUS_PILL_BASE} border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]`}>Scrapped · read-only</span>}
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center border-0 bg-transparent p-0">
+              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${taxBadge === "Taxed" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : taxBadge === "Tax Due" ? "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.2)]"}`}>{taxBadge}</span>
+            </button>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center border-0 bg-transparent p-0">
+              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${insuranceBadge === "Insured" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.2)]"}`}>{insuranceBadge}</span>
+            </button>
+            {vehicle.is_scrapped && <span className={`${STATUS_PILL_BASE} border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]`}>Scrapped · read-only</span>}
           </div>
         </div>
         {(!easyView || specificationsExpanded) && <div className="relative my-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
