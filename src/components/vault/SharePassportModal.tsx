@@ -100,7 +100,7 @@ export function SharePassportModal({ open, onOpenChange, vrm }: Props) {
            <DialogTitle className="text-lg font-bold tracking-tight text-white">Share a buyer-safe passport</DialogTitle>
            <DialogDescription className="text-xs leading-snug text-slate-400">Preview your record privately, then opt in before a public link becomes available.</DialogDescription>
          </div>
-         <DialogClose className="ml-2 -mr-1 -mt-1 flex h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg p-2 text-slate-400 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/40">
+         <DialogClose className="ml-2 -mr-1 -mt-1 flex h-12 w-12 min-h-12 min-w-12 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-slate-400 outline-none transition-colors hover:text-white focus:outline-none focus:ring-0">
            <X aria-hidden="true" className="h-4 w-4" />
            <span className="sr-only">Close</span>
          </DialogClose>

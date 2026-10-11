@@ -1,0 +1,43 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute a precise visual refactoring of modal close buttons and eliminate dashboard button duplications across V5Vault.
+
+---
+
+### 1. Remove Modal Close Button 'X' Border (Global Rule)
+
+- Frameless Close Button Refactoring (`SharePassportModal.tsx`, `ReceiptUploadModal.tsx`, `BasicDIYEntryModal.tsx`):
+  * Locate the top-right 'X' close button in ALL pop-up modals.
+  * REMOVE all container borders (`border border-slate-700`), background boxes (`bg-slate-800`), and outline rings.
+  * Apply a clean, frameless style: `p-1 text-slate-400 hover:text-white bg-transparent border-none outline-none focus:outline-none transition-colors cursor-pointer`.
+  * Ensure the 'X' icon sits flush in the top-right corner of the modal header without any box wrapping it.
+
+---
+
+### 2. Eliminate Dashboard Action Button Duplication (`VehicleDashboard.tsx`)
+
+- Clean Action Trigger Pair:
+  * On the main Vehicle Dashboard, render a single, balanced 2-button action bar:
+    - Primary Button (Gradient CTA): `📷 Snap Receipt` (Triggers AI OCR Receipt Scanner).
+    - Secondary Button (Outline CTA): `🛠️ Add DIY Service Entry` (Triggers Manual DIY Log).
+  * Render them side-by-side or stacked cleanly (`flex flex-col sm:flex-row gap-2.5 my-3`).
+
+- Strip Duplicate Buttons from Empty Placeholder Card:
+  * Inside the "No Maintenance Records Saved Yet" empty card, REMOVE the embedded `Snap Receipt` and `Add DIY Entry` buttons.
+  * Keep the card strictly informational:
+    - Title: `No Maintenance Records Saved Yet`
+    - Subtext: `Use "Snap Receipt" above to auto-scan an invoice or "Add DIY Entry" to log self-servicing.`
+  * REMOVE the standalone bottom outline button (`Add a basic DIY service entry`) so buttons are NEVER duplicated on the screen.
+
+---
+
+### 3. Verify Easy View vs. Detailed View Integrity
+
+- Ensure Easy View and Detailed View both inherit the clean 2-button pair without floating button duplicates.
+- Ensure minimum touch target heights of 44px (`min-h-[44px]`) on both action buttons.
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to confirm all 168+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

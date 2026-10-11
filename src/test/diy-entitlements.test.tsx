@@ -73,7 +73,7 @@ describe("Pro DIY entitlements", () => {
       </VaultProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Snap Receipt/i }));
     expect(await screen.findByRole("heading", { name: "Snap Receipt" })).toBeInTheDocument();
     expect(screen.getByText("RECEIPT PHOTO")).toBeInTheDocument();
     expect(screen.getByText("INVOICE PDF")).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("Pro DIY entitlements", () => {
       </VaultProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /add new repair \/ service record/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add DIY Service Entry/i }));
     expect(await screen.findByRole("heading", { name: "Add a Basic DIY Service Entry" })).toBeInTheDocument();
     const workField = screen.getByLabelText("Work performed");
     expect(workField).toBeEnabled();
@@ -111,7 +111,7 @@ describe("Pro DIY entitlements", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY" }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
 
-    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Snap Receipt/i }));
     await screen.findByRole("heading", { name: "Snap Receipt" });
 
     const total = screen.getByText("Invoice total (£)");

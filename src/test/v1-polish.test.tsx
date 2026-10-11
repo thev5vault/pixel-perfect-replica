@@ -102,7 +102,7 @@ describe("V1 polish", () => {
   it("keeps the receipt header and Save footer outside the padded scrolling form", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY" }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
-    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Snap Receipt/i }));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog.querySelector("header")).toHaveClass("sticky", "top-0");
@@ -125,11 +125,13 @@ describe("V1 polish", () => {
     expect(screen.queryByText("Recorded spend")).not.toBeInTheDocument();
     expect(screen.queryByText(/Engine size not returned|Tax status not returned/)).not.toBeInTheDocument();
 
-    const scan = screen.getByRole("button", { name: /scan receipt or logbook page/i });
-    const repair = screen.getByRole("button", { name: /add new repair \/ service record/i });
-    expect(scan.parentElement).toHaveClass("flex", "flex-col", "gap-3");
+    const scan = screen.getByRole("button", { name: /Snap Receipt/i });
+    const repair = screen.getByRole("button", { name: /Add DIY Service Entry/i });
+    expect(scan.parentElement).toHaveClass("flex", "flex-col", "gap-2.5", "my-3", "sm:flex-row");
     expect(scan).toHaveClass("min-h-[44px]");
     expect(repair).toHaveClass("min-h-[44px]");
+    expect(screen.getAllByRole("button", { name: /Snap Receipt/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /Add DIY Service Entry/i })).toHaveLength(1);
   });
 
   it("combines empty service and MOT histories into one actionable placeholder", () => {
@@ -153,9 +155,11 @@ describe("V1 polish", () => {
     render(<VaultProvider><Dashboard /></VaultProvider>);
 
     expect(screen.getByRole("heading", { name: "No Maintenance Records Saved Yet" })).toBeInTheDocument();
-    expect(screen.getByText(/Use "Snap Receipt" above to auto-extract an invoice/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Snap Receipt/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Add DIY Entry/ })).toBeInTheDocument();
+    expect(screen.getByText(/Use "Snap Receipt" above to auto-scan an invoice or "Add DIY Entry" to log self-servicing/)).toBeInTheDocument();
+    const emptyState = screen.getByRole("heading", { name: "No Maintenance Records Saved Yet" }).closest("section")!;
+    expect(within(emptyState).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Snap Receipt/ })).toHaveClass("min-h-[44px]");
+    expect(screen.getByRole("button", { name: /Add DIY Service Entry/ })).toHaveClass("min-h-[44px]");
     expect(screen.queryByRole("heading", { name: "Service History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /MOT History/ })).not.toBeInTheDocument();
   });

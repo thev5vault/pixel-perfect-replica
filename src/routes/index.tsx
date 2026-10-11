@@ -250,21 +250,17 @@ export function Dashboard() {
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
-      <div className="flex flex-col gap-3">
-        <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className={`btn-primary min-h-[44px] w-full ${easyView ? "min-h-12 py-3 text-base" : "py-4 text-base"}`}>
-          <Camera className="h-5 w-5 shrink-0" /> {easyView ? "Scan Receipt or Logbook Page" : "Snap Receipt"}
+      <div className="my-3 flex flex-col gap-2.5 sm:flex-row">
+        <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className="btn-primary min-h-[44px] w-full flex-1 py-3 text-base">
+          <Camera className="h-5 w-5 shrink-0" /> Snap Receipt
         </button>
-        {easyView && <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full">➕ Add New Repair / Service Record</button>}
+        <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full flex-1">🛠️ Add DIY Service Entry</button>
       </div>
 
       {history.length === 0 && motReadings.length === 0 ? (
         <section role="status" className="my-3 rounded-xl border border-slate-800/80 bg-slate-900/60 p-4 text-center">
           <h2 className="font-bold text-slate-100">No Maintenance Records Saved Yet</h2>
-          <p className="mt-1 text-sm text-slate-400">Use "Snap Receipt" above to auto-extract an invoice or tap "Add DIY Entry" to log manual work.</p>
-          <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-slate-400">
-            <button type="button" onClick={() => setReceiptOpen(true)} className="min-h-10 rounded-full border border-slate-700 px-3 hover:border-cyan-500/50 hover:text-cyan-300">📷 Snap Receipt</button>
-            <button type="button" onClick={() => setDiyOpen(true)} className="min-h-10 rounded-full border border-slate-700 px-3 hover:border-cyan-500/50 hover:text-cyan-300">➕ Add DIY Entry</button>
-          </div>
+          <p className="mt-1 text-sm text-slate-400">Use "Snap Receipt" above to auto-scan an invoice or "Add DIY Entry" to log self-servicing.</p>
         </section>
       ) : (
         <>
@@ -297,7 +293,6 @@ export function Dashboard() {
       )}
 
       <VehicleDataTools/>
-      {!easyView && <button className="btn-ghost w-full" onClick={()=>setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>}
       {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
       <SnapReceiptDialog open={receiptOpen} onOpenChange={setReceiptOpen} />
