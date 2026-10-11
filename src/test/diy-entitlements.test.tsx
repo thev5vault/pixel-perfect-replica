@@ -33,7 +33,8 @@ describe("Pro DIY entitlements", () => {
     );
 
     expect(screen.queryByText("Brembo 09.C401.13")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Breakdown/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Details ˅" }));
+    expect(screen.getByRole("button", { name: "Hide Details ˄" })).toBeInTheDocument();
     expect(screen.getByText("Brembo 09.C401.13")).toHaveClass("blur-sm", "select-none", "opacity-40", "text-slate-400");
     expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).toHaveClass("blur-sm", "font-mono");
     expect(screen.getByText("Fluid specs")).not.toHaveClass("blur-sm");
@@ -60,7 +61,7 @@ describe("Pro DIY entitlements", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("button", { name: "View Brake replacement receipt" })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /Breakdown/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Details ˅" }));
     expect(screen.getByText("Brembo 09.C401.13")).not.toHaveClass("blur-sm");
     expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).not.toHaveClass("blur-sm");
     expect(container.querySelector("img")?.className).not.toContain("blur-[4px]");
@@ -136,10 +137,10 @@ describe("Pro DIY entitlements", () => {
   it("keeps the garage name in its own sub-row and hides empty breakdown controls", () => {
     const { rerender } = render(<VaultProvider><TimelineItem s={service} /></VaultProvider>);
     expect(screen.getAllByText("Apex Performance Ltd")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: /Breakdown/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Details ˅" })).toBeInTheDocument();
 
     rerender(<VaultProvider><TimelineItem s={{...service, items:[], parts:[], fluids:undefined, partsCost:0, labourCost:0, cost:undefined, image:undefined, has_receipt:false, has_invoice:false}} /></VaultProvider>);
-    expect(screen.queryByRole("button", { name: /Breakdown/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Details/ })).not.toBeInTheDocument();
   });
 
   it("keeps sample workshop stamps while removing verification debug badges", () => {

@@ -46,7 +46,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
                 ? <VerifiedBadge sample />
                 : garageName
                   ? <span title={garageName} className="max-w-full break-words whitespace-normal rounded-md border border-slate-800 bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-slate-300">{garageName}</span>
-                  : <span className="rounded-md border border-slate-800 bg-slate-900/60 px-2 py-0.5 text-[10px] font-semibold text-slate-400">🛠️ Owner Logged / DIY</span>}
+                  : <span className="rounded-md border border-slate-800 bg-slate-900/60 px-2 py-0.5 text-[10px] font-semibold text-slate-400">Owner Logged / DIY</span>}
               {s.is_verified_stamp === true && (
                 isAdminStamp
                   ? <Pill tone="primary">{s.is_sample ? "Sample administrator stamp" : "Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
@@ -55,7 +55,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
               <span className="rounded-md border border-cyan-800/40 bg-cyan-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase text-cyan-300/90">{s.category || "Servicing"}</span>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex min-w-[100px] shrink-0 flex-col items-end justify-between gap-2">
             <div className="flex items-center gap-2">
               {s.cost != null && s.cost > 0 && <span className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs font-bold text-slate-100 shadow-sm">£{s.cost.toFixed(2)}</span>}
               {(s.image || (!pro && (s.has_receipt || s.has_invoice))) &&
@@ -81,9 +81,9 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
               aria-expanded={isExpanded}
               aria-controls={isExpanded ? `service-breakdown-${s.id}` : undefined}
               onClick={() => setIsExpanded((expanded) => !expanded)}
-              className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-slate-800 bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+              className="flex min-h-[44px] min-w-[44px] shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 px-2.5 py-1 text-[11px] font-semibold text-cyan-400 transition-colors hover:bg-slate-800/90 hover:text-cyan-300"
             >
-              {isExpanded ? "Hide Breakdown ˄" : "Breakdown ˅"}
+              {isExpanded ? "Hide Details ˄" : "Details ˅"}
             </button>}
           </div>
         </div>
