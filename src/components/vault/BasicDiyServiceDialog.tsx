@@ -134,12 +134,14 @@ export function BasicDiyServiceDialog({
             <ModalField label="Invoice total (£) · optional">{(id) => (
               <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={totalCost} onChange={(event) => setTotalCost(event.target.value)} placeholder="0.00" className={`${MODAL_INPUT_CLASS} text-base`} />
             )}</ModalField>
-            <ModalFieldGroup label="Optional receipt photo · available on every plan">
-              <ImagePicker value={image} onChange={setImage} label="Take photo or upload" />
-            </ModalFieldGroup>
-            <ModalFieldGroup label="Optional invoice PDF · available on every plan">
-              <PdfReceiptPicker onChange={setPdf} onReadingChange={setReadingPdf} />
-            </ModalFieldGroup>
+            <div className="grid grid-cols-2 gap-3">
+              <ModalFieldGroup label="Optional receipt photo">
+                <ImagePicker value={image} onChange={setImage} label="Photo / Image" />
+              </ModalFieldGroup>
+              <ModalFieldGroup label="Optional invoice PDF">
+                <PdfReceiptPicker onChange={setPdf} onReadingChange={setReadingPdf} label="PDF Document" />
+              </ModalFieldGroup>
+            </div>
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
             <button type="submit" disabled={saving || readingPdf} className="btn-primary mb-8 w-full">

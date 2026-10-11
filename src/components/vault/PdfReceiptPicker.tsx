@@ -1,12 +1,12 @@
 import { useId, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { FileText } from "lucide-react";
 export function PdfReceiptPicker({ onChange,onReadingChange, label = "PDF Document" }: { onChange: (file: { name: string; data: string } | undefined) => void; onReadingChange:(reading:boolean)=>void; label?: string }) {
   const [error,setError]=useState("");
   const inputId = useId();
   const [fileName,setFileName]=useState("");
   return <div className="min-w-0 space-y-2 text-sm">
-    <label htmlFor={inputId} className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-slate-300 transition-colors hover:bg-slate-800/60 focus-within:ring-2 focus-within:ring-cyan-500/50">
-      {fileName ? <FileText aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" /> : <Upload aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />}
+    <label htmlFor={inputId} className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3.5 text-center text-slate-300 transition-colors hover:bg-slate-800/60 focus-within:ring-2 focus-within:ring-cyan-500/50">
+      <FileText aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
       <span className="min-w-0 break-words text-center text-xs font-medium">{fileName || label}</span>
     </label>
     <input id={inputId} className="sr-only" type="file" accept="application/pdf,.pdf" aria-describedby={error ? `${inputId}-error` : undefined} onChange={async e=>{

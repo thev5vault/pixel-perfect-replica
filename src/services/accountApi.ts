@@ -50,7 +50,7 @@ export const updateBooking = createServerFn({method:"POST"})
   .validator(z.object({id:z.string(),status:z.enum(["completed","cancelled"])}))
   .handler(async ({data}) => (await import("./server/accounts")).bookingStatus(data.id,data.status));
 export const saveModification = createServerFn({method:"POST"})
-  .validator(z.object({vrm,name:z.string().min(1).max(160),category:z.enum(["Engine/ECU","Exhaust","Intake","Suspension","Brakes","Visual"]),installDate:z.string(),installMileage:z.number().int().min(0),gains:z.string().max(200),notes:z.string().max(2000),image:z.string().max(4000000).optional(),stage:z.string().optional(),specs:z.string().optional(),tags:z.array(z.string()).optional()}))
+  .validator(z.object({vrm,name:z.string().min(1).max(160),category:z.enum(["Engine/ECU","Exhaust","Intake","Suspension","Brakes","Visual"]),installDate:z.string(),installMileage:z.number().int().min(0),gains:z.string().max(200),notes:z.string().max(2000),image:z.string().max(4000000).optional(),invoice_name:z.string().max(200).optional(),invoice_data:z.string().max(7000000).regex(/^data:application\/pdf;base64,[A-Za-z0-9+/=\r\n]+$/).optional(),stage:z.string().optional(),specs:z.string().optional(),tags:z.array(z.string()).optional()}))
   .handler(async ({data}) => (await import("./server/accounts")).addModification(data));
 export const revertModification = createServerFn({method:"POST"})
   .validator(z.object({id:z.string(),date:z.string(),mileage:z.number().int().min(0)}))

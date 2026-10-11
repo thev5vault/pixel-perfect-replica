@@ -529,18 +529,18 @@ function GaragePage() {
       </div>
        <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
        <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
+        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3.5">
           <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
-            <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Attach receipt photo
+             <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Photo / Image
             <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
           </label>
           <p className="text-xs text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Available on all account tiers; stored privately."}</p>
           {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="text-xs text-muted-foreground underline">Remove photo</button>}
         </div>
-        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3">
+        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3.5">
           <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
-            <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> Attach invoice PDF
+             <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> PDF Document
             <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
           </label>
           <p className="break-all text-xs text-muted-foreground">{form.invoiceName ?? "PDF invoices up to 5 MB are stored privately."}</p>

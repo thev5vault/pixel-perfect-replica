@@ -251,7 +251,7 @@ function AdminPage() {
       <OwnershipClaimsPanel/>
       <VehicleVerificationRequestsPanel/>
 
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Directory totals">
+      <section className="mb-4 grid grid-cols-2 gap-2.5" aria-label="Directory totals">
         <Summary icon={<Users className="h-5 w-5" />} label="Registered users" value={adminData ? users.length : null} />
         <Summary icon={<CarFront className="h-5 w-5" />} label="Vehicle records" value={adminData ? vehicles.length : null} />
         <Summary icon={<Clock3 className="h-5 w-5" />} label="Pending applications" value={adminData ? applications.length : null} />

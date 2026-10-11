@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
+import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 
 export const Route = createFileRoute("/vault")({
   head: () => ({
@@ -151,6 +152,7 @@ function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
         </div>
       )}
       {m.notes && <p className="mt-2 text-sm text-muted-foreground">{m.notes}</p>}
+      {m.invoice_data && <a href={m.invoice_data} download={m.invoice_name || "modification-invoice.pdf"} className="mt-2 inline-flex min-h-[44px] max-w-full items-center break-all text-sm text-cyan-300 underline underline-offset-2">PDF Document · {m.invoice_name || "Download evidence"}</a>}
       {!reverted && !m.frozen_at && (
         <button onClick={onRevert} className="btn-ghost mt-3 w-full text-sm">
           <RotateCcw className="h-4 w-4" /> Revert to Stock
@@ -165,6 +167,8 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
   const empty = { name: "", category: "Engine/ECU" as ModCategory, installDate: today(), installMileage: "", gains: "", notes: "", stage: "Stage 1", specs: "", tags: "" };
   const [f, setF] = useState(empty);
   const [image, setImage] = useState<string>();
+  const [pdf, setPdf] = useState<{ name: string; data: string }>();
+  const [readingPdf, setReadingPdf] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
@@ -184,6 +188,8 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
       gains: f.gains.trim().slice(0, 60),
       notes: f.notes.trim().slice(0, 1000),
       image,
+      invoice_name: pdf?.name,
+      invoice_data: pdf?.data,
       stage: f.category === "Engine/ECU" ? f.stage : undefined,
       specs: f.specs.trim().slice(0, 200) || undefined,
       tags: f.tags.split(",").map((t) => t.trim().slice(0, 40)).filter(Boolean).slice(0, 5),
@@ -191,6 +197,7 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
     toast.success(`${f.name} added to your build`);
     setF(empty);
     setImage(undefined);
+    setPdf(undefined);
     onOpenChange(false);
     } catch (error) { toast.error(error instanceof Error ? error.message : "Modification could not be saved"); }
     finally { setBusy(false); }
@@ -254,15 +261,20 @@ function AddModDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
           <ModalField label="Specialist Tags (comma separated)">{(id) => (
             <input id={id} maxLength={200} value={f.tags} onChange={set("tags")} placeholder="Tuned by Apex Performance, Dyno verified" className={MODAL_INPUT_CLASS} />
           )}</ModalField>
-          <ModalFieldGroup label="Dyno Curve Printout">
-            <ImagePicker value={image} onChange={setImage} label="Upload dyno printout" />
-          </ModalFieldGroup>
+          <div className="grid grid-cols-2 gap-3">
+            <ModalFieldGroup label="Dyno Curve Printout">
+              <ImagePicker value={image} onChange={setImage} label="Photo / Image" />
+            </ModalFieldGroup>
+            <ModalFieldGroup label="Supporting PDF">
+              <PdfReceiptPicker onChange={setPdf} onReadingChange={setReadingPdf} label="PDF Document" />
+            </ModalFieldGroup>
+          </div>
           <ModalField label="Detailed Notes">{(id) => (
             <textarea id={id} rows={3} maxLength={1000} value={f.notes} onChange={set("notes")} placeholder="Supporting mods, fuel requirements, tuner…" className={MODAL_TEXTAREA_CLASS} />
           )}</ModalField>
           </div>
           <footer className="sticky bottom-0 z-20 flex-none bg-slate-950 pt-2">
-            <button type="submit" disabled={busy} className="btn-primary w-full">{busy ? "Saving…" : "Add to Active Build"}</button>
+            <button type="submit" disabled={busy || readingPdf} className="btn-primary min-h-[44px] w-full">{readingPdf ? "Reading PDF…" : busy ? "Saving…" : "Add to Active Build"}</button>
           </footer>
         </form>
       </DialogContent>

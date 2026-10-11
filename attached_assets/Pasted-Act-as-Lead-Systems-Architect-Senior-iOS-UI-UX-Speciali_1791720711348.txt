@@ -1,0 +1,91 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Execute a comprehensive visual, layout, and functional refactoring across V5Vault (Main Dashboard, Service Modals, Modder's Vault, Workshop Terminal, Vehicle Passport, and Admin Console) to ensure a super clean, tidy, high-contrast, and airy user interface while maintaining 100% test passing rates and zero TypeScript compilation errors.
+
+---
+
+### 1. Header Navigation & View Mode Isolation
+
+- Header Cleanliness (`src/components/layout/Header.tsx`):
+  * Remove any floating view mode toggles (`⚡ Easy | 🛠️ Detailed`) from the persistent top navigation bar.
+  * Keep the top bar clean: V5Vault logo, vehicle selector dropdown, and user profile avatar only.
+
+- Interface Mode Setup (`src/context/ViewModeContext.tsx`, `OnboardingFlow.tsx`, `AccountSettings.tsx`):
+  * Persist `viewMode` (`'easy'` | `'detailed'`) in `localStorage` and sync with user settings.
+  * Restrict view mode selection strictly to:
+    1. Initial Account Onboarding setup step.
+    2. Account Settings under "Display & Accessibility".
+
+---
+
+### 2. Vehicle Header Component Polish (`VehicleHeader.tsx`)
+
+- Authentic UK VRM Registration Plate:
+  * Container: `inline-flex items-center h-9 sm:h-10 px-3 bg-[#FFD500] border border-yellow-500/60 rounded-md overflow-hidden shadow-sm shrink-0 select-none mb-2`.
+  * Left Blue UK Band: `flex flex-col items-center justify-center w-5 h-full bg-[#003399] text-white text-[9px] font-extrabold px-1 shrink-0 rounded-l-[5px] border-r border-yellow-500/40 mr-2`.
+  * Registration Font: Bold, crisp, highly legible text: `px-1 text-base sm:text-lg font-mono font-black text-black tracking-widest uppercase leading-none flex items-center h-full`.
+
+- Clean Subtitle Hierarchy:
+  * Title: `Audi A4` (`text-xl sm:text-2xl font-bold text-white tracking-tight`).
+  * Subtitle: `2007 · Petrol · Silver` (`text-xs text-slate-400 font-medium`).
+
+- Balanced 2x2 Status Micro-Pill Matrix:
+  * Grid Container: `grid grid-cols-2 gap-2 my-2.5 max-w-[320px] w-full`.
+  * Micro-Pill Base Style: `w-full h-7.5 min-h-[30px] flex items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap transition-all shadow-sm select-none uppercase`.
+  * NO emojis or icons inside pills. Text only:
+    - Cell 1 (Top Left): `Keeper Verified` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Keeper Unverified` (`bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]`).
+    - Cell 2 (Top Right): `V5C Verified` or `V5C Provisional` (`bg-slate-800/80 text-slate-300 border-slate-700/60`).
+    - Cell 3 (Bottom Left): `Taxed` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Untaxed` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+    - Cell 4 (Bottom Right): `Insured` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]`) or `Uninsured` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.2)]`).
+
+- Specifications Matrix Handling:
+  * In `Easy View`: Render ONLY the collapsible inline link `View Full Specifications ˅`. Keep specs collapsed by default.
+  * In `Detailed View`: Automatically render the 2x2 specification grid (`ODOMETER`, `ENGINE SPECS`, `FIRST REGISTERED`, `TRANSMISSION`) and `VIN PROVENANCE` card. (`TRANSMISSION` replaces duplicate `COLOUR`).
+
+---
+
+### 3. Redundant Text Removal & Empty State Clean-up
+
+- Remove Duplicate Metadata Line:
+  * Remove the raw string at the bottom of the vehicle dashboard: `"Petrol · Engine size not returned · Tax status not returned"`.
+
+- Empty Financial State Condensation:
+  * Condense empty financial cards (`Financial Summary £0.00`) and empty timeline blocks in `PassportTab.tsx` and main dashboard into a single-line status chip bar: `[ 📄 No Service Records ] · [ 💰 Recorded Spend: £0.00 ]`.
+
+---
+
+### 4. Global Document Dropzone Standardization
+
+- Side-by-Side 2-Column Dropzones:
+  * Enforce a uniform 2-column dropzone grid (`grid grid-cols-2 gap-3`) across ALL upload forms (`ReceiptUploadModal`, `BasicDIYEntryModal`, `WorkshopFastLog`, `AddModificationModal`).
+  * Column 1: `Camera` + "Photo / Image". Column 2: `FileText` + "PDF Document".
+  * Eliminate all stacked vertical dropzone boxes across the entire application.
+
+---
+
+### 5. Privacy Alert Condensation & Admin Dashboard Optimization
+
+- 1-Line Privacy Alert:
+  * Condense 4-line warning boxes in modals to: `flex items-center gap-2 p-2.5 px-3 mb-3 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-200/90 text-[11px]`.
+  * Text: `🔒 Privacy Tip: Blur address & 11-digit V5C reference number before uploading.`
+
+- Admin Metrics 2-Column Grid:
+  * Restructure stacked full-width admin metric cards into a tight 2-column grid (`grid grid-cols-2 gap-2.5 mb-4`).
+
+---
+
+### 6. Visual Breathability & Touch Safety Rules (Anti-Cramming Guard)
+
+- Card Padding & Spacing:
+  * Maintain internal card padding of `p-3.5 sm:p-4` on all cards and modals—never compress below 14px padding.
+  * Maintain minimum element gap of `gap-3` (12px) between side-by-side grid items to prevent a cramped or clumped look.
+  * Form inputs & CTA buttons must maintain a minimum touch target height of 44px (`min-h-[44px]`).
+
+- Clean Visual Boundaries:
+  * Every card must use `bg-slate-900/60 border border-slate-800/80 rounded-xl` for distinct, airy visual boundaries.
+
+---
+
+### 7. Verification & Build Tests
+
+- Run `npm test` to verify all 168+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build compilation success.

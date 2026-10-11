@@ -210,20 +210,27 @@ function Certificate({ cert }: { cert: Cert }) {
               </ResponsiveContainer>
             </div>
           </section>
-          <RecordCards
-            title="Service History"
-            rows={history.map((s) => ({
-              key: s.id,
-              title: s.category || "Service record",
-              date: fmtDate(s.date),
-              provider: s.garage,
-              badge: fmtMiles(s.mileage),
-              summaryLabel: "Work summary",
-              summary: s.description,
-              details: [{ label: "Record provenance", value: provenance(s) }],
-            }))}
-            empty="No service records."
-          />
+          {history.length > 0
+            ? <RecordCards
+                title="Service History"
+                rows={history.map((s) => ({
+                  key: s.id,
+                  title: s.category || "Service record",
+                  date: fmtDate(s.date),
+                  provider: s.garage,
+                  badge: fmtMiles(s.mileage),
+                  summaryLabel: "Work summary",
+                  summary: s.description,
+                  details: [{ label: "Record provenance", value: provenance(s) }],
+                }))}
+                empty="No service records."
+              />
+            : <section className="passport-section min-w-0 p-4" aria-label="Service History">
+                <h3 className="mb-3 font-bold">Service History</h3>
+                <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2.5 text-[11px] font-semibold text-slate-800">
+                  <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
+                </div>
+              </section>}
           <RecordCards
             title={vehicle.source === "official" ? "Official MOT & Mileage Log" : "Sample MOT & Mileage Log"}
             rows={[...motReadings].reverse().map((m, index) => ({
@@ -244,7 +251,7 @@ function Certificate({ cert }: { cert: Cert }) {
 
       {(cert === "oem" || cert === "master") && (
         <>
-          <section className="passport-section min-w-0 p-4" aria-labelledby="financial-summary-title">
+          {history.length > 0 && <section className="passport-section min-w-0 p-4" aria-labelledby="financial-summary-title">
             <h3 id="financial-summary-title" className="mb-3 font-bold">Financial Summary</h3>
             <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
             {[
@@ -258,7 +265,7 @@ function Certificate({ cert }: { cert: Cert }) {
               </div>
             ))}
             </div>
-          </section>
+          </section>}
           {history.map((s) => (
             <section key={s.id} className="passport-section passport-service-record min-w-0 p-4">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">

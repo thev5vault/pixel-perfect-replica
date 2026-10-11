@@ -31,7 +31,7 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
-const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap transition-all shadow-sm select-none";
+const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap uppercase transition-all shadow-sm select-none";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -261,9 +261,8 @@ export function Dashboard() {
         <h2 className="mb-3 text-lg font-bold">Service History</h2>
         {history.length > 0
           ? <ol className="relative space-y-4 border-l border-primary/30 pl-5">{history.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
-          : <div role="status" className="vault-card border-cyan-500/30 bg-slate-900/90 p-5">
-              <p className="font-semibold text-slate-100">No service records saved yet.</p>
-              <p className="mt-2 text-sm text-slate-300">Tap "Scan Receipt" above to auto-extract your first invoice or logbook page.</p>
+          : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
+              <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
             </div>}
       </section>
 

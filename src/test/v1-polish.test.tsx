@@ -62,6 +62,19 @@ describe("V1 polish", () => {
     expect(doc.querySelector("button")?.closest(".print\\:hidden")).not.toBeNull();
   });
 
+  it("condenses empty passport history and omits zero-value certificate cards", async () => {
+    localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services: [] }));
+    vi.useFakeTimers();
+    const { container } = render(<VaultProvider><Passport /></VaultProvider>);
+    fireEvent.click(screen.getByRole("button", { name: /OEM Provenance Certificate/ }));
+    await act(async () => { vi.advanceTimersByTime(1100); });
+    const doc = container.querySelector(".passport-document")!;
+    expect(doc).toHaveTextContent("📄 No Service Records");
+    expect(doc).toHaveTextContent("💰 Recorded Spend: £0.00");
+    expect(doc).not.toHaveTextContent("Financial Summary");
+    expect(doc).not.toHaveTextContent("No service records.");
+  });
+
   it("links a passport QR to the actual stored workshop stamp", async () => {
     localStorage.setItem("v5vault:v1",JSON.stringify({
       role:"Owner",
@@ -98,8 +111,8 @@ describe("V1 polish", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services: [] }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
 
-    expect(screen.getByText("No service records saved yet.")).toBeInTheDocument();
-    expect(screen.getByText('Tap "Scan Receipt" above to auto-extract your first invoice or logbook page.')).toBeInTheDocument();
+    expect(screen.getByText("📄 No Service Records")).toBeInTheDocument();
+    expect(screen.getByText("💰 Recorded Spend: £0.00")).toBeInTheDocument();
     expect(screen.queryByText("Recorded spend")).not.toBeInTheDocument();
     expect(screen.queryByText(/Engine size not returned|Tax status not returned/)).not.toBeInTheDocument();
 

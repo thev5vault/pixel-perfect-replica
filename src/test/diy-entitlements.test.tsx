@@ -94,8 +94,10 @@ describe("Pro DIY entitlements", () => {
     expect(await screen.findByRole("heading", { name: "Add a Basic DIY Service Entry" })).toBeInTheDocument();
     const workField = screen.getByLabelText("Work performed");
     expect(workField).toBeEnabled();
-    expect(screen.getByText("Optional receipt photo · available on every plan")).toBeInTheDocument();
-    expect(screen.getByText("Optional invoice PDF · available on every plan")).toBeInTheDocument();
+    expect(screen.getByText("Optional receipt photo")).toBeInTheDocument();
+    expect(screen.getByText("Optional invoice PDF")).toBeInTheDocument();
+    expect(screen.getByLabelText("Photo / Image").closest(".grid")).toHaveClass("grid-cols-2", "gap-3");
+    expect(screen.getByLabelText("PDF Document")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Oil & filter" }));
     expect(workField).toHaveValue("Oil & filter");
     expect(screen.queryByText(/OEM part numbers/i)).not.toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { BadgeCheck, ChevronDown, ImagePlus, ShieldAlert, X } from "lucide-react";
+import { BadgeCheck, Camera, ChevronDown, ShieldAlert, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
@@ -103,9 +103,9 @@ export function ModalFieldGroup({ label, children }: { label: string; children: 
 
 export function DocumentPrivacyNotice() {
   return (
-    <aside role="note" className="my-2 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-normal text-amber-200/90">
-      <ShieldAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-      <span><strong className="font-semibold text-amber-200">Privacy:</strong> Physically mask or blur your address and 11-digit V5C reference number before uploading.</span>
+    <aside role="note" className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 px-3 text-[11px] text-amber-200/90">
+      <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-300" />
+      <span>🔒 Privacy Tip: Blur address &amp; 11-digit V5C reference number before uploading.</span>
     </aside>
   );
 }
@@ -122,8 +122,8 @@ export function ImagePicker({ value, onChange, label = "Upload image" }: { value
       </div>
     );
   return (
-      <label className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-xs text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
-       <ImagePlus aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
+      <label className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3.5 text-center text-xs text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
+        <Camera aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
         <span className="break-words font-medium">{busy ? "Processing…" : label}</span>
       <input
         type="file"

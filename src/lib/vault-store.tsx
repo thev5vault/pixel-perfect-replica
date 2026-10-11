@@ -82,6 +82,8 @@ export interface Modification {
   gains: string;
   notes: string;
   image?: string | undefined;
+  invoice_name?: string | undefined;
+  invoice_data?: string | undefined;
   status: "active" | "reverted";
   stage?: string | undefined;
   specs?: string | undefined;

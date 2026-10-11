@@ -328,7 +328,8 @@ for (const viewport of viewports) {
     await page.getByRole("button", { name: /add new repair \/ service record/i }).click();
     const manualEntry = page.getByRole("dialog", { name: "Add a Basic DIY Service Entry" });
     await expect(manualEntry).toBeVisible();
-    await expect(manualEntry.getByText("Optional receipt photo · available on every plan")).toBeVisible();
+    await expect(manualEntry.getByText("Photo / Image")).toBeVisible();
+    await expect(manualEntry.getByText("PDF Document")).toBeVisible();
     await expect(manualEntry.getByLabel("Work performed", { exact: true })).toBeEnabled();
     await manualEntry.getByRole("button", { name: "Close" }).click();
     await expect(manualEntry).toBeHidden();
