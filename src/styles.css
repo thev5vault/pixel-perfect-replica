@@ -294,11 +294,11 @@ button > svg {
   align-items: stretch;
   overflow: hidden;
   border-radius: 0.375rem;
-  background: var(--color-plate);
-  color: var(--color-plate-foreground);
+  background: #FFD500;
+  color: #000;
   font-family: var(--font-plate);
-  letter-spacing: 0.06em;
-  border: 2px solid var(--color-plate-foreground);
+  letter-spacing: 0.08em;
+  border: 1px solid rgb(234 179 8 / 40%);
 }
 
 @keyframes vault-open {

@@ -80,10 +80,16 @@ export function Dashboard() {
   const easyView = account?.displayPreference !== "detailed";
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
   const insuranceKey = `v5vault_insurance_expiry:${vehicle.vin || vehicle.vrm}`;
+  const taxKey = `v5vault_tax_expiry:${vehicle.vin || vehicle.vrm}`;
   const [insuranceExpiry, setInsuranceExpiry] = useState("");
+  const [taxExpiry, setTaxExpiry] = useState("");
+  const [statusEditorOpen, setStatusEditorOpen] = useState(false);
+  const [draftInsuranceExpiry, setDraftInsuranceExpiry] = useState("");
+  const [draftTaxExpiry, setDraftTaxExpiry] = useState("");
   useEffect(() => {
     setInsuranceExpiry(window.localStorage.getItem(insuranceKey) ?? "");
-  }, [insuranceKey]);
+    setTaxExpiry(window.localStorage.getItem(taxKey) ?? "");
+  }, [insuranceKey, taxKey]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [diyOpen, setDiyOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -106,6 +112,28 @@ export function Dashboard() {
   const motDate = vehicle.motExpiry ? new Date(`${vehicle.motExpiry.slice(0, 10)}T00:00:00`) : undefined;
   const motDays = motDate ? Math.ceil((motDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : -1;
   const insuranceDays = insuranceExpiry ? Math.ceil((new Date(`${insuranceExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
+  const effectiveTaxExpiry = taxExpiry || vehicle.taxDueDate?.slice(0, 10) || "";
+  const taxDays = effectiveTaxExpiry ? Math.ceil((new Date(`${effectiveTaxExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
+  const recordedTaxStatus = vehicle.taxStatus ?? "";
+  const taxBadge = taxDays !== undefined
+    ? taxDays <= 30 ? "Tax Due" : "Taxed"
+    : /not taxed|untaxed|sorn|due/i.test(recordedTaxStatus) ? "Tax Due"
+      : /taxed/i.test(recordedTaxStatus) ? "Taxed" : "Tax Unrecorded";
+  const insuranceBadge = insuranceDays !== undefined && insuranceDays >= 0 ? "Insured" : "Insurance Unverified";
+  const openStatusEditor = () => {
+    setDraftTaxExpiry(effectiveTaxExpiry);
+    setDraftInsuranceExpiry(insuranceExpiry);
+    setStatusEditorOpen(true);
+  };
+  const saveStatusReminders = () => {
+    setTaxExpiry(draftTaxExpiry);
+    setInsuranceExpiry(draftInsuranceExpiry);
+    if (draftTaxExpiry) window.localStorage.setItem(taxKey, draftTaxExpiry);
+    else window.localStorage.removeItem(taxKey);
+    if (draftInsuranceExpiry) window.localStorage.setItem(insuranceKey, draftInsuranceExpiry);
+    else window.localStorage.removeItem(insuranceKey);
+    setStatusEditorOpen(false);
+  };
   const serviceOk = lastService && monthsBetween(new Date(lastService.date), new Date()) < 24;
 
   if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
@@ -145,6 +173,8 @@ export function Dashboard() {
             <Pill tone={vehicle.verification_tier === "government_data" ? "primary" : "muted"}>
               V5C · {vehicle.verification_tier === "government_data" ? "Government Data" : vehicle.verification_tier === "workshop_checked" ? "Workshop Checked" : "Provisional"}
             </Pill>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`inline-flex min-h-8 items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${taxBadge === "Tax Due" ? "text-amber-300" : taxBadge === "Taxed" ? "text-emerald-300" : "text-slate-300"}`}>{taxBadge}</button>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`inline-flex min-h-8 items-center gap-1 rounded-full border border-slate-700/60 bg-slate-900/80 px-2.5 py-1 text-xs font-medium ${insuranceBadge === "Insured" ? "text-emerald-300" : "text-slate-300"}`}>{insuranceBadge}</button>
             {vehicle.is_scrapped && <Pill tone="warning"><AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />Scrapped · read-only</Pill>}
           </div>
         </div>
@@ -155,8 +185,8 @@ export function Dashboard() {
           <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
         </div>}
         {!easyView && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
-        {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setSpecificationsExpanded((open) => !open)} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-700/70 px-3 text-sm font-semibold text-cyan-200 hover:bg-slate-900/70">
-          🛠️ {specificationsExpanded ? "Hide full specifications" : "View Full Specifications"}
+        {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setSpecificationsExpanded((open) => !open)} className="mt-1 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:text-cyan-300">
+          {specificationsExpanded ? "Hide full specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "⌃" : "⌄"}</span>
         </button>}
       </section>
 
@@ -193,26 +223,6 @@ export function Dashboard() {
           forceWarn
           easy={easyView}
         />
-        <HealthCard
-          icon={<ShieldCheck className="h-5 w-5" />}
-          title="Vehicle Tax"
-          ok={/taxed/i.test(vehicle.taxStatus ?? "")}
-          status={vehicle.taxStatus ?? "Not recorded"}
-          meta={vehicle.taxDueDate ? `Due ${fmtDate(vehicle.taxDueDate)}` : "Expiry date unavailable"}
-          easy={easyView}
-        />
-        <div className="vault-card min-w-0 p-4">
-          <p className={`${easyView ? "text-base text-white" : "text-xs text-muted-foreground"} font-semibold uppercase tracking-wider`}>Insurance</p>
-          <p className="mt-1 text-sm font-semibold text-slate-100">{insuranceExpiry ? insuranceDays !== undefined && insuranceDays < 0 ? "Expiry passed" : `Due in ${insuranceDays} days` : "Expiry not recorded"}</p>
-          <label className="mt-2 block text-xs text-slate-300" htmlFor="insurance-expiry">Insurance expiry date</label>
-          <input id="insurance-expiry" type="date" value={insuranceExpiry} onChange={(event) => {
-            const value=event.target.value;
-            setInsuranceExpiry(value);
-            if(value) window.localStorage.setItem(insuranceKey,value);
-            else window.localStorage.removeItem(insuranceKey);
-          }} className="field mt-1 w-full min-w-0 text-base" />
-          <p className="mt-1 text-xs text-slate-400">Reminder saved on this device.</p>
-        </div>
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
@@ -253,6 +263,19 @@ export function Dashboard() {
       {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
       <SnapReceiptDialog open={receiptOpen} onOpenChange={setReceiptOpen} />
+      <Dialog open={statusEditorOpen} onOpenChange={setStatusEditorOpen}>
+        <DialogContent className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-5">
+          <DialogTitle className="text-lg font-bold text-white">Tax &amp; insurance reminders</DialogTitle>
+          <DialogDescription className="text-sm text-slate-300">These reminders are saved on this device and do not verify cover or government tax status.</DialogDescription>
+          <label className="block space-y-1.5 text-xs font-semibold text-slate-300">Tax due date
+            <input type="date" value={draftTaxExpiry} onChange={(event) => setDraftTaxExpiry(event.target.value)} className="field mt-1 w-full text-base" />
+          </label>
+          <label className="block space-y-1.5 text-xs font-semibold text-slate-300">Insurance expiry date
+            <input type="date" value={draftInsuranceExpiry} onChange={(event) => setDraftInsuranceExpiry(event.target.value)} className="field mt-1 w-full text-base" />
+          </label>
+          <button type="button" onClick={saveStatusReminders} className="btn-primary min-h-12 w-full">Save reminders</button>
+        </DialogContent>
+      </Dialog>
       <BasicDiyServiceDialog open={diyOpen} onOpenChange={setDiyOpen} />
       <UpdateVehicleRegistrationDialog
         open={registrationOpen}

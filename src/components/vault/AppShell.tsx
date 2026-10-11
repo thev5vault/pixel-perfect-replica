@@ -132,10 +132,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
-      {signed && <div role="group" aria-label="Display mode" className="flex shrink-0 items-center justify-center gap-1 border-b border-slate-800/70 bg-slate-950 px-3 py-1">
-        <button type="button" aria-pressed={account?.displayPreference !== "detailed"} onClick={() => void account?.setDisplayPreference("easy").catch((error) => toast.error(error instanceof Error ? error.message : "Display preference could not be saved"))} className={`flex min-h-9 items-center gap-2 rounded-full px-3 text-xs font-semibold transition-colors ${account?.displayPreference !== "detailed" ? "bg-cyan-500/15 text-cyan-200" : "text-slate-400 hover:bg-slate-800"}`}>⚡ Easy</button>
-        <button type="button" aria-pressed={account?.displayPreference === "detailed"} onClick={() => void account?.setDisplayPreference("detailed").catch((error) => toast.error(error instanceof Error ? error.message : "Display preference could not be saved"))} className={`flex min-h-9 items-center gap-2 rounded-full px-3 text-xs font-semibold transition-colors ${account?.displayPreference === "detailed" ? "bg-cyan-500/15 text-cyan-200" : "text-slate-400 hover:bg-slate-800"}`}>🛠️ Detailed</button>
-      </div>}
       {account?.preview&&<div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/25 bg-amber-950/40 px-4 py-2 text-[11px] text-amber-100">
         <span>Sample God Mode · No real account or database access. Changes reset on reload.</span>
         <button type="button" onClick={()=>void account.signOut()} className="min-h-9 shrink-0 rounded-lg border border-amber-500/30 px-2">Exit preview</button>

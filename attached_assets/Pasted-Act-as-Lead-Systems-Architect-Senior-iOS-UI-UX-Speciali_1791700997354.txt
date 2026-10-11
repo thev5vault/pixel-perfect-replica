@@ -1,0 +1,67 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Execute an immediate UI/UX refactoring across V5Vault to eliminate visual clutter, fix VRM plate proportions, streamline Tax/Insurance indicators, and relocate the Dual View Mode toggle.
+
+---
+
+### 1. Remove Top Navigation View Switcher & Restrict to Settings/Onboarding
+
+- Remove Header Floating Toggle:
+  * Completely delete the floating view mode switcher bar (`⚡ Easy | 🛠️ Detailed`) from the top navigation header (`Header.tsx` / `App.tsx`).
+  * Ensure the top bar remains clean and uncluttered with only the V5Vault logo, vehicle selector dropdown, and user profile avatar.
+
+- Enforce View Switching Locations:
+  * View switching MUST ONLY occur in two places:
+    1. **Initial Account Setup / Onboarding (`OnboardingFlow.tsx`):** Selection step during sign-up.
+    2. **Account Settings (`AccountSettings.tsx`):** A clean "Display & Accessibility" section with a segmented switcher (`Easy View` vs. `Detailed View`).
+
+---
+
+### 2. Perfect UK VRM Registration Plate Styling (`VehicleHeader.tsx`)
+
+- Realistic & Proportional UK Number Plate Component:
+  * Fix the squashed, untidy VRM box (`LG57 VYF`). Re-architect the plate container into a sleek, authentic UK plate:
+    - Container: `inline-flex items-center h-8 bg-[#FFD500] text-black font-extrabold tracking-widest rounded-md overflow-hidden shadow-sm border border-yellow-500/40 select-none`.
+    - Left Blue UK Strip: `flex flex-col items-center justify-center w-5 h-full bg-[#003399] text-white text-[8px] font-bold px-1 rounded-l-md shrink-0`.
+    - Plate Text: `px-2.5 text-xs sm:text-sm uppercase font-mono font-black text-black leading-none` with proper character spacing (`tracking-wider`).
+  * Ensure the plate sits naturally in the header alignment without clipping, squashing text, or floating awkwardly.
+
+---
+
+### 3. Replace Massive Tax & Insurance Cards with Slim Status Badges
+
+- Eliminate Bulky Cards:
+  * Completely remove the huge, space-wasting "VEHICLE TAX" and "INSURANCE" block cards (with empty inputs and large warning boxes) from the main dashboard flow.
+
+- Integrated Slim Status Row:
+  * Replace them with clean, ultra-slim inline status badges inside the main vehicle header or primary summary bar:
+    - **Tax Status Badge:** `[ 🟢 Taxed ]` or `[ 🟠 Tax Due ]` / `[ ⚪ Tax Unrecorded ]` (`inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900/80 border border-slate-700/60 rounded-full text-xs font-medium text-slate-300`).
+    - **Insurance Status Badge:** `[ 🟢 Insured ]` or `[ ⚪ Insurance Unverified ]` (`inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900/80 border border-slate-700/60 rounded-full text-xs font-medium text-slate-300`).
+  * Tapping a badge opens a clean, compact modal/drawer to edit tax or insurance expiry dates if the user wants to update them, keeping the main screen 100% clutter-free.
+
+---
+
+### 4. Polish "Easy View" Layout Architecture
+
+- Clean, Uncluttered Screen Flow:
+  1. **Compact Vehicle Header Card:**
+     * Perfectly proportioned UK VRM plate, Vehicle Title (`Audi A4`), Subtitle (`2007 · Petrol · 2.0L`), and slim badge row (`Keeper Verified` | `Taxed` | `Insured`).
+     * Replace the awkward full-width "View Full Specifications" button with a subtle inline expandable drawer or subtle link (`text-xs text-cyan-400 font-medium flex items-center gap-1`).
+  2. **Essential Maintenance Summary Cards:**
+     * **Servicing:** Last service date/mileage & status in plain English.
+     * **MOT Status:** MOT expiry date & days remaining.
+  3. **Primary Action Triggers:**
+     * Prominent touch buttons for `📷 Scan Receipt or Logbook Page` and `➕ Add New Repair / Service Record`.
+
+---
+
+### 5. Polish "Detailed View" Layout Architecture
+
+- Technical Spec Density:
+  * Maintains the structured 2x2 specification grid (`ODOMETER`, `ENGINE SPECS`, `FIRST REGISTERED`, `COLOUR`) and `VIN PROVENANCE` card without visual overlap or duplicate text labels.
+
+---
+
+### 6. Build, Type & Test Verification
+
+- Run `npm test` to verify all 167+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

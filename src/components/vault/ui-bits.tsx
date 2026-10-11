@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
-  const s = { sm: "text-xs", md: "text-base", lg: "h-8 min-w-[112px] px-2.5 text-sm font-bold tracking-wider shadow-sm" }[size];
   return (
-    <span className={cn("uk-plate", s)}>
-      <span className="flex items-center bg-blue-700 px-1 text-[0.55em] font-sans font-bold text-white">UK</span>
-      <span className="px-2 py-0.5">{formatVrm(vrm)}</span>
+    <span className={cn("uk-plate h-8 min-w-[112px] select-none rounded-md border border-yellow-500/40 bg-[#FFD500] text-black shadow-sm", size === "sm" ? "text-xs" : size === "md" ? "text-sm" : "text-sm")}>
+      <span className="flex w-5 shrink-0 flex-col items-center justify-center rounded-l-md bg-[#003399] px-1 text-[8px] font-sans font-bold leading-none text-white">UK</span>
+      <span className="flex items-center px-2.5 text-xs font-mono font-black uppercase leading-none tracking-wider sm:text-sm">{formatVrm(vrm)}</span>
     </span>
   );
 }
