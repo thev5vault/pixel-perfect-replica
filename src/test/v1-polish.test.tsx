@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { VaultProvider, useVault } from "@/lib/vault-store";
 import { Route as PassportRoute } from "@/routes/passport";
@@ -8,6 +8,15 @@ import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
 import { Route as VaultRoute } from "@/routes/vault";
 import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
 import { V5VaultLogo } from "@/components/vault/V5VaultLogo";
+
+const accountMocks = vi.hoisted(() => ({ displayPreference: "easy" as "easy" | "detailed" }));
+vi.mock("@/lib/account-store", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/account-store")>();
+  return {
+    ...actual,
+    useAccount: () => ({ displayPreference: accountMocks.displayPreference } as ReturnType<typeof actual.useAccount>),
+  };
+});
 
 vi.mock("@/services/dvlaApi", () => ({ lookupVehicle: vi.fn(async () => ({
   vehicle: { vrm: "BUL200", make: "VW", model: "Golf", odometer: 100, v5cDate: "", motExpiry: "", motHistory: [], source: "demo" },
@@ -23,7 +32,7 @@ const Passport = PassportRoute.options.component!;
 const Vault = VaultRoute.options.component!;
 
 describe("V1 polish", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => { localStorage.clear(); accountMocks.displayPreference = "easy"; });
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it("renders the official blended V5Vault logo image", () => {
@@ -123,14 +132,76 @@ describe("V1 polish", () => {
     expect(repair).toHaveClass("min-h-[44px]");
   });
 
+  it("combines empty service and MOT histories into one actionable placeholder", () => {
+    localStorage.setItem("v5vault:v1", JSON.stringify({
+      role: "DIY",
+      services: [],
+      activeVrm: "AB14CDE",
+      vehicles: [{
+        vrm: "AB14CDE",
+        make: "Audi",
+        model: "A4",
+        odometer: 87420,
+        v5cDate: "2019-03-15",
+        motExpiry: "2026-11-18",
+        year: 2014,
+        fuelType: "Diesel",
+        motHistory: [],
+        source: "demo",
+      }],
+    }));
+    render(<VaultProvider><Dashboard /></VaultProvider>);
+
+    expect(screen.getByRole("heading", { name: "No Maintenance Records Saved Yet" })).toBeInTheDocument();
+    expect(screen.getByText(/Use "Snap Receipt" above to auto-extract an invoice/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Snap Receipt/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Add DIY Entry/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Service History" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /MOT History/ })).not.toBeInTheDocument();
+  });
+
   it("animates the Easy View specifications accordion", () => {
     render(<VaultProvider><Dashboard /></VaultProvider>);
+    const healthCards = within(screen.getByTestId("vehicle-health-cards"));
+    expect(healthCards.getByText("Servicing")).toBeInTheDocument();
+    expect(healthCards.getByText("MOT Status")).toBeInTheDocument();
+    expect(healthCards.queryByText("Brakes")).not.toBeInTheDocument();
     const toggle = screen.getByRole("button", { name: /view full specifications/i });
     const accordion = screen.getByTestId("vehicle-specifications-accordion");
     expect(accordion).toHaveClass("duration-300", "ease-in-out", "grid-rows-[0fr]");
     fireEvent.click(toggle);
     expect(screen.getByRole("button", { name: /hide full specifications/i })).toHaveAttribute("aria-expanded", "true");
     expect(accordion).toHaveClass("grid-rows-[1fr]");
+  });
+
+  it("shows the complete specification grid and brake card in Detailed View", () => {
+    accountMocks.displayPreference = "detailed";
+    localStorage.setItem("v5vault:v1", JSON.stringify({
+      role: "DIY",
+      activeVrm: "AB14CDE",
+      vehicles: [{
+        vrm: "AB14CDE",
+        make: "Audi",
+        model: "A4",
+        odometer: 87420,
+        v5cDate: "2019-03-15",
+        motExpiry: "2026-11-18",
+        year: 2014,
+        fuelType: "Diesel",
+        vin: "WAUZZZ8K9AA000001",
+        motHistory: [],
+        source: "demo",
+      }],
+    }));
+    render(<VaultProvider><Dashboard /></VaultProvider>);
+
+    const specifications = within(screen.getByTestId("vehicle-specifications-accordion"));
+    expect(specifications.getByText("Odometer")).toBeInTheDocument();
+    expect(specifications.getByText("Engine Specs")).toBeInTheDocument();
+    expect(specifications.getByText("First Registered")).toBeInTheDocument();
+    expect(specifications.getByText("Transmission")).toBeInTheDocument();
+    expect(specifications.getByText("VIN Provenance")).toBeInTheDocument();
+    expect(within(screen.getByTestId("vehicle-health-cards")).getByText("Brakes")).toBeInTheDocument();
   });
 
   it("attaches a looked-up vehicle from the yellow plate modal", async () => {

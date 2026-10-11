@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { ModalHeader } from "@/components/vault/ModalHeader";
 import { DocumentPrivacyNotice, ImagePicker, ModalField, ModalFieldGroup, MODAL_INPUT_CLASS, MODAL_SELECT_CLASS, MODAL_TEXTAREA_CLASS } from "@/components/vault/ui-bits";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
-import { SERVICE_CATEGORIES, can, today, useVault, type ServiceCategory } from "@/lib/vault-store";
-import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
+import { SERVICE_CATEGORIES, today, useVault, type ServiceCategory } from "@/lib/vault-store";
 
 const QUICK_WORK_ITEMS = ["Oil & filter", "Brakes", "Tyres", "Battery", "Coolant", "Inspection"];
 
@@ -17,7 +16,7 @@ export function BasicDiyServiceDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { vehicle, addService, role } = useVault();
+  const { vehicle, addService } = useVault();
   const [date, setDate] = useState(today());
   const [mileage, setMileage] = useState("");
   const [category, setCategory] = useState<ServiceCategory>("Servicing");
@@ -97,13 +96,6 @@ export function BasicDiyServiceDialog({
         <form onSubmit={(event) => void submit(event)} className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-p-1 p-1">
             <DocumentPrivacyNotice />
-            <AIScanButton canScan={can.diy(role)} isAdmin={role === "superadmin"} onScanned={(fields, scannedImage) => {
-              setDate(isoDateFromUkDate(fields.date) ?? date);
-              if (fields.mileage) setMileage(String(fields.mileage));
-              setDescription(fields.workSummary);
-              if (fields.totalCost > 0) setTotalCost(String(fields.totalCost));
-              if (scannedImage) setImage(scannedImage);
-            }} />
             <div className="grid w-full min-w-0 grid-cols-2 gap-3">
               <ModalField label="Date">{(id) => (
                 <input id={id} type="date" max={today()} required value={date} onChange={(event) => setDate(event.target.value)} className={`${MODAL_INPUT_CLASS} text-base`} />

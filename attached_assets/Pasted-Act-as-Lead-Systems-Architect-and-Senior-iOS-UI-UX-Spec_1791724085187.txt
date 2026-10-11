@@ -1,0 +1,57 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute a targeted refactoring of the Service Entry Modals, Vehicle Timeline, and Form Fields to eliminate feature duplications, streamline input grouping, and optimize modal hierarchy across Easy and Detailed view modes.
+
+---
+
+### 1. Eliminate Duplicate AI Banner in DIY Entry (`BasicDIYEntryModal.tsx`)
+
+- Clean Up Manual DIY Form Header:
+  * REMOVE the `AI Auto-Scan (Receipt, Invoice, Logbook)` unlocked banner from `BasicDIYEntryModal.tsx`.
+  * Rationale: "Snap Receipt" is the designated AI OCR processing tool. "Basic DIY Service Entry" is for manual user logging. Removing the AI banner from DIY Entry eliminates functional duplication and frees up 50px of top modal space.
+
+---
+
+### 2. Group Financial Input Fields in Snap Receipt (`ReceiptUploadModal.tsx`)
+
+- Consolidated Monetary Row:
+  * Move `PARTS (£)` and `LABOUR (£)` up to sit directly alongside `INVOICE TOTAL (£)` in a unified 3-column financial grid: `grid grid-cols-3 gap-2.5 my-3`.
+  * Column 1: `INVOICE TOTAL (£)`
+  * Column 2: `PARTS (£)`
+  * Column 3: `LABOUR (£)`
+  * Style: `bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 text-xs font-medium`.
+
+---
+
+### 3. Condense Empty Timeline Placeholder Cards (`VehicleDashboard.tsx`)
+
+- Streamlined Empty History Card:
+  * When zero service entries and zero MOT records exist, combine `Service History` and `MOT History` into a single, high-contrast placeholder card:
+    - Container: `p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl my-3 text-center`.
+    - Title: `No Maintenance Records Saved Yet`
+    - Subtext: `Use "Snap Receipt" above to auto-extract an invoice or tap "Add DIY Entry" to log manual work.`
+    - Chip Bar: `flex items-center justify-center gap-2 mt-2 text-[11px] text-slate-400 font-medium`.
+
+---
+
+### 4. Condense Privacy Banner in Form Modals
+
+- 1-Line Inline Privacy Notice:
+  * Standardize privacy warnings across `ReceiptUploadModal.tsx` and `BasicDIYEntryModal.tsx` into a compact 1-line alert:
+    - Style: `flex items-center gap-2 p-2 px-3 mb-3 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-200/90 text-[11px] leading-snug`.
+    - Content: `🔒 Privacy Tip: Blur address & 11-digit V5C reference before uploading.`
+
+---
+
+### 5. Layout & View Mode Verification
+
+- Easy View Verification:
+  * Confirm Easy View renders ONLY the `SERVICING` and `MOT STATUS` cards, hiding `BRAKES` and keeping specs collapsed under `View Full Specifications ˅`.
+- Detailed View Verification:
+  * Confirm Detailed View automatically renders the full $2\times2$ spec grid (`ODOMETER`, `ENGINE SPECS`, `FIRST REGISTERED`, `TRANSMISSION`), `VIN PROVENANCE`, and granular component cards (`BRAKES`, `SERVICING`, `MOT STATUS`).
+
+---
+
+### 6. Build, Type & Test Verification
+
+- Run `npm test` to verify all 168+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

@@ -103,7 +103,7 @@ export function ModalFieldGroup({ label, children }: { label: string; children: 
 
 export function DocumentPrivacyNotice() {
   return (
-    <aside role="note" className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 px-3 text-[11px] text-amber-200/90">
+    <aside role="note" className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2 px-3 text-[11px] leading-snug text-amber-200/90">
       <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-300" />
       <span>🔒 Privacy Tip: Blur address &amp; 11-digit V5C reference number before uploading.</span>
     </aside>

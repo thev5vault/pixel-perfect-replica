@@ -222,7 +222,7 @@ export function Dashboard() {
           : <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin} className="btn-ghost mt-3 min-h-11 w-full border-amber-200/20 text-amber-50 disabled:opacity-50">Update Logbook / Plate Details</button>}
       </section>}
 
-      <section className={`grid grid-cols-1 gap-3 ${easyView ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
+      <section data-testid="vehicle-health-cards" className={`grid grid-cols-1 gap-3 ${easyView ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
         <HealthCard
           icon={<Wrench className="h-5 w-5" />}
           title="Servicing"
@@ -257,31 +257,44 @@ export function Dashboard() {
         {easyView && <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full">➕ Add New Repair / Service Record</button>}
       </div>
 
-      <section>
-        <h2 className="mb-3 text-lg font-bold">Service History</h2>
-        {history.length > 0
-          ? <ol className="relative space-y-4 border-l border-primary/30 pl-5">{history.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
-          : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
-              <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
-            </div>}
-      </section>
+      {history.length === 0 && motReadings.length === 0 ? (
+        <section role="status" className="my-3 rounded-xl border border-slate-800/80 bg-slate-900/60 p-4 text-center">
+          <h2 className="font-bold text-slate-100">No Maintenance Records Saved Yet</h2>
+          <p className="mt-1 text-sm text-slate-400">Use "Snap Receipt" above to auto-extract an invoice or tap "Add DIY Entry" to log manual work.</p>
+          <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-slate-400">
+            <button type="button" onClick={() => setReceiptOpen(true)} className="min-h-10 rounded-full border border-slate-700 px-3 hover:border-cyan-500/50 hover:text-cyan-300">📷 Snap Receipt</button>
+            <button type="button" onClick={() => setDiyOpen(true)} className="min-h-10 rounded-full border border-slate-700 px-3 hover:border-cyan-500/50 hover:text-cyan-300">➕ Add DIY Entry</button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section>
+            <h2 className="mb-3 text-lg font-bold">Service History</h2>
+            {history.length > 0
+              ? <ol className="relative space-y-4 border-l border-primary/30 pl-5">{history.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
+              : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
+                  <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
+                </div>}
+          </section>
 
-      <section className="vault-card p-4">
-        <h2 className="flex items-center justify-between font-bold">
-          MOT History <span className="text-xs font-semibold text-success">{vehicle.source === "official" ? "Official API lookup" : "Sample history"}</span>
-        </h2>
-        <ul className="mt-3 divide-y text-sm">
-          {[...motReadings].reverse().map((m, i) => (
-            <li key={`${m.date}-${i}`} className="flex flex-wrap justify-between gap-3 py-2">
-              <span>{fmtDate(m.date)}</span>
-              <span className="text-muted-foreground">{m.mileage !== undefined ? fmtMiles(m.mileage) : "Mileage unavailable"}</span>
-              <span className={m.result === "Pass" ? "text-success" : "text-warning"}>{m.result}</span>
-              {m.advisories?.length ? <ul className="w-full list-disc pl-4 text-xs text-muted-foreground">{m.advisories.map((a, j) => <li key={j}>{a}</li>)}</ul> : null}
-            </li>
-          ))}
-        </ul>
-        {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
-      </section>
+          <section className="vault-card p-4">
+            <h2 className="flex items-center justify-between font-bold">
+              MOT History <span className="text-xs font-semibold text-success">{vehicle.source === "official" ? "Official API lookup" : "Sample history"}</span>
+            </h2>
+            <ul className="mt-3 divide-y text-sm">
+              {[...motReadings].reverse().map((m, i) => (
+                <li key={`${m.date}-${i}`} className="flex flex-wrap justify-between gap-3 py-2">
+                  <span>{fmtDate(m.date)}</span>
+                  <span className="text-muted-foreground">{m.mileage !== undefined ? fmtMiles(m.mileage) : "Mileage unavailable"}</span>
+                  <span className={m.result === "Pass" ? "text-success" : "text-warning"}>{m.result}</span>
+                  {m.advisories?.length ? <ul className="w-full list-disc pl-4 text-xs text-muted-foreground">{m.advisories.map((a, j) => <li key={j}>{a}</li>)}</ul> : null}
+                </li>
+              ))}
+            </ul>
+            {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
+          </section>
+        </>
+      )}
 
       <VehicleDataTools/>
       {!easyView && <button className="btn-ghost w-full" onClick={()=>setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>}
@@ -546,9 +559,29 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <ModalField label="Work Description">{(id) => (
             <textarea id={id} rows={2} maxLength={1000} value={form.description} onChange={set("description")} placeholder={"Front tyres replaced\nMichelin Pilot Sport 4 x2"} className={MODAL_TEXTAREA_CLASS} />
           )}</ModalField>
-          <ModalField label="Invoice total (£) · optional">{(id) => (
-            <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.totalCost} onChange={set("totalCost")} placeholder="0.00" className={MODAL_INPUT_CLASS} />
-          )}</ModalField>
+          {pro ? (
+            <div className="my-3 grid grid-cols-3 gap-2.5">
+              <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-900/80 p-2.5 text-xs font-medium focus-within:ring-2 focus-within:ring-cyan-500/50">
+                <ModalField label="Invoice total (£)">{(id) => (
+                  <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.totalCost} onChange={set("totalCost")} placeholder="0.00" className="h-11 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-base font-medium text-slate-100 focus:outline-none focus:ring-0" />
+                )}</ModalField>
+              </div>
+              <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-900/80 p-2.5 text-xs font-medium focus-within:ring-2 focus-within:ring-cyan-500/50">
+                <ModalField label="Parts (£)">{(id) => (
+                  <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.partsCost} onChange={set("partsCost")} placeholder="0.00" className="h-11 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-base font-medium text-slate-100 focus:outline-none focus:ring-0" />
+                )}</ModalField>
+              </div>
+              <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-900/80 p-2.5 text-xs font-medium focus-within:ring-2 focus-within:ring-cyan-500/50">
+                <ModalField label="Labour (£)">{(id) => (
+                  <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.labourCost} onChange={set("labourCost")} placeholder="0.00" className="h-11 w-full min-w-0 appearance-none border-0 bg-transparent p-0 text-base font-medium text-slate-100 focus:outline-none focus:ring-0" />
+                )}</ModalField>
+              </div>
+            </div>
+          ) : (
+            <ModalField label="Invoice total (£) · optional">{(id) => (
+              <input id={id} type="number" min={0} max={1_000_000} step="0.01" inputMode="decimal" value={form.totalCost} onChange={set("totalCost")} placeholder="0.00" className={`${MODAL_INPUT_CLASS} text-base`} />
+            )}</ModalField>
+          )}
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Quick add work items</p>
             <div className="flex flex-wrap gap-2">
@@ -575,14 +608,6 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <ModalField label="Fluid Specs">{(id) => (
                 <input id={id} maxLength={120} value={form.fluids} onChange={set("fluids")} placeholder="Castrol Edge 5W-30 LL, 4.6L" className={MODAL_INPUT_CLASS} />
               )}</ModalField>
-              <div className="grid w-full min-w-0 grid-cols-2 gap-3">
-                <ModalField label="Parts (£)">{(id) => (
-                  <input id={id} inputMode="decimal" placeholder="0.00" value={form.partsCost} onChange={set("partsCost")} className={MODAL_INPUT_CLASS} />
-                )}</ModalField>
-                <ModalField label="Labour (£)">{(id) => (
-                  <input id={id} inputMode="decimal" placeholder="0.00" value={form.labourCost} onChange={set("labourCost")} className={MODAL_INPUT_CLASS} />
-                )}</ModalField>
-              </div>
             </>
           ) : (
             <div className="space-y-2">

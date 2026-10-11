@@ -77,6 +77,9 @@ describe("Pro DIY entitlements", () => {
     expect(await screen.findByRole("heading", { name: "Snap Receipt" })).toBeInTheDocument();
     expect(screen.getByText("RECEIPT PHOTO")).toBeInTheDocument();
     expect(screen.getByText("INVOICE PDF")).toBeInTheDocument();
+    expect(screen.getByText("Invoice total (£) · optional")).toBeInTheDocument();
+    expect(screen.queryByText("Parts (£)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Labour (£)")).not.toBeInTheDocument();
     expect(screen.getByText("Photo / Image")).toBeInTheDocument();
     expect(screen.getByText("PDF Document")).toBeInTheDocument();
     expect(screen.getByText("RECEIPT PHOTO").closest(".grid")).toHaveClass("grid-cols-2");
@@ -94,6 +97,7 @@ describe("Pro DIY entitlements", () => {
     expect(await screen.findByRole("heading", { name: "Add a Basic DIY Service Entry" })).toBeInTheDocument();
     const workField = screen.getByLabelText("Work performed");
     expect(workField).toBeEnabled();
+    expect(screen.queryByText(/AI Auto-Scan \(Receipt, Invoice, Logbook\)/)).not.toBeInTheDocument();
     expect(screen.getByText("Optional receipt photo")).toBeInTheDocument();
     expect(screen.getByText("Optional invoice PDF")).toBeInTheDocument();
     expect(screen.getByLabelText("Photo / Image").closest(".grid")).toHaveClass("grid-cols-2", "gap-3");
@@ -101,6 +105,22 @@ describe("Pro DIY entitlements", () => {
     fireEvent.click(screen.getByRole("button", { name: "Oil & filter" }));
     expect(workField).toHaveValue("Oil & filter");
     expect(screen.queryByText(/OEM part numbers/i)).not.toBeInTheDocument();
+  });
+
+  it("groups all Pro DIY invoice costs in a three-column row", async () => {
+    localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY" }));
+    render(<VaultProvider><Dashboard /></VaultProvider>);
+
+    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
+    await screen.findByRole("heading", { name: "Snap Receipt" });
+
+    const total = screen.getByText("Invoice total (£)");
+    const parts = screen.getByText("Parts (£)");
+    const labour = screen.getByText("Labour (£)");
+    const grid = total.closest(".grid");
+    expect(grid).toHaveClass("grid-cols-3", "gap-2.5");
+    expect(grid).toContainElement(parts);
+    expect(grid).toContainElement(labour);
   });
 
   it("does not treat imported client-side verified flags as a workshop stamp", () => {
