@@ -1,0 +1,75 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Execute a complete visual, layout, and functional UI polish across all views in V5Vault (Main Dashboard, Service Modals, Modder's Vault, Workshop Terminal, Vehicle Passport, Admin Console, and Account Settings) to ensure a super clean, tidy, high-contrast, and airy user interface.
+
+---
+
+### 1. Verification Alert Banner Condensation (`VehicleDashboard.tsx`)
+
+- Slim Re-Verification Alert:
+  * Condense the tall, multi-line "Vehicle logbook verification required" banner into a compact 1-line inline alert pill: `flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl my-2.5 text-xs text-amber-200/90`.
+  * Left Side: `⚠️ V5C Logbook Re-verification Required` (with subtle detail expander).
+  * Right Side: `[ Re-Verify V5C ]` (compact action button: `px-2.5 py-1 text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg hover:bg-amber-500/30`).
+
+---
+
+### 2. Frameless Close 'X' Buttons (Global Modal Rule)
+
+- Borderless Modal Close Buttons (`SharePassportModal.tsx`, `ReceiptUploadModal.tsx`, `BasicDIYEntryModal.tsx`, `AddModificationModal.tsx`, `ConnectVehicleModal.tsx`):
+  * Strip all container borders (`border border-slate-700`), background fill boxes (`bg-slate-800`), and outline rings from modal close buttons.
+  * Style: `p-1 text-slate-400 hover:text-white bg-transparent border-none outline-none focus:outline-none transition-colors cursor-pointer`.
+  * Position the 'X' icon flush in the top-right corner of modal headers.
+
+---
+
+### 3. Service Timeline & Financial Field Standardization
+
+- Financial Input Grouping (`ReceiptUploadModal.tsx`):
+  * Combine `INVOICE TOTAL (£)`, `PARTS (£)`, and `LABOUR (£)` into a unified 3-column row: `grid grid-cols-3 gap-2.5 my-3`.
+- Timeline Spend Summary Chip Row (`VehicleDashboard.tsx`):
+  * Style the bottom timeline spend numbers into a clean 3-pill chip bar:
+    - Container: `flex items-center justify-center gap-2 p-2 bg-slate-900/60 border border-slate-800 rounded-xl my-3 text-xs text-slate-300 font-medium`.
+    - Pills: `[ 💰 Total: £931.00 ] · [ ⚙️ Parts: £622.00 ] · [ 🛠️ Labour: £309.00 ]`.
+
+---
+
+### 4. Global Document Dropzone Standardization
+
+- Side-by-Side 2-Column Upload Dropzones:
+  * Force ALL photo and PDF upload controls across `ReceiptUploadModal`, `BasicDIYEntryModal`, `WorkshopFastLog`, and `AddModificationModal` into a uniform 2-column grid (`grid grid-cols-2 gap-3`).
+  * Column 1: `Camera` + "Photo / Image".
+  * Column 2: `FileText` + "PDF Document".
+  * Style: `flex flex-col items-center justify-center p-3 min-h-[72px] rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 text-center cursor-pointer hover:bg-slate-800/60`.
+
+---
+
+### 5. Admin Console Metric Dashboard (`AdminConsole.tsx`)
+
+- Compact 2-Column Investor Metrics Matrix:
+  * Restructure stacked full-width metric cards (`REGISTERED USERS`, `ACTIVE PASSPORTS`, `WORKSHOP ADOPTION`, `PAYING ACCOUNTS`, `MONTHLY RECURRING REVENUE`, `PROJECTED MRR`) into a tight 2-column grid: `grid grid-cols-2 gap-2.5 mb-4`.
+  * Card Style: `p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex flex-col justify-between`.
+  * Label: `text-[10px] text-slate-400 font-semibold uppercase tracking-wider`.
+  * Value: `text-xl font-bold text-white mt-1`.
+
+---
+
+### 6. Account Settings & Pricing Tier Polish (`AccountSettings.tsx`)
+
+- Pricing Tier Cards Alignment:
+  * Ensure membership tier cards (`Basic Driver`, `Pro DIY`, `Pro Modder`, `Verified Workshop`) have aligned card heights and call-to-action buttons (`Choose Plan` / `Current Plan`).
+  * Add safe area inset padding at the bottom of settings: `pb-[calc(2rem+env(safe-area-inset-bottom))]`.
+
+---
+
+### 7. Visual Breathability & Touch Safety Guard
+
+- Ergonomics & Spacing Rules:
+  * Internal Card Padding: Maintain `p-3.5 sm:p-4` on all dashboard cards and pop-up modals.
+  * Minimum Touch Target Height: All form inputs and buttons must maintain `min-h-[44px]` with `px-3` internal padding.
+  * Boundary Lines: Use `bg-slate-900/60 border border-slate-800/80 rounded-xl` for clean visual separation.
+
+---
+
+### 8. Verification & Build Integrity Tests
+
+- Run `npm test` to verify all 168+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

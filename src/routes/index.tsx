@@ -98,6 +98,7 @@ export function Dashboard() {
   const [diyOpen, setDiyOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [verificationDetailsOpen, setVerificationDetailsOpen] = useState(false);
   const [verificationState, setVerificationState] = useState(vehicle.verification_state ?? "PENDING_VERIFICATION");
   useEffect(() => {
     setVerificationState(vehicle.verification_state ?? "PENDING_VERIFICATION");
@@ -109,6 +110,11 @@ export function Dashboard() {
     () => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)),
     [services, vehicle.vrm],
   );
+  const spendTotals = useMemo(() => history.reduce((totals, service) => ({
+    total: totals.total + (service.cost ?? ((service.partsCost ?? 0) + (service.labourCost ?? 0))),
+    parts: totals.parts + (service.partsCost ?? 0),
+    labour: totals.labour + (service.labourCost ?? 0),
+  }), { total: 0, parts: 0, labour: 0 }), [history]);
   const lastOf = (c: ServiceCategory) => history.find((s) => s.category === c);
   const lastService = lastOf("Servicing");
   const lastBrakes = lastOf("Brakes");
@@ -214,12 +220,20 @@ export function Dashboard() {
         </button>}
       </section>
 
-      {!registrationVerified && <section role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/20 p-4">
-        <p className="font-semibold text-amber-100">Vehicle logbook verification required</p>
-        <p className="mt-2 text-sm leading-relaxed text-amber-100/80">{REVERIFICATION_NOTICE}</p>
-        {vehicle.is_sample
-          ? <p className="mt-3 text-xs text-amber-100/70">This is development sample data and cannot be verified as a live vehicle.</p>
-          : <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin} className="btn-ghost mt-3 min-h-11 w-full border-amber-200/20 text-amber-50 disabled:opacity-50">Update Logbook / Plate Details</button>}
+      {!registrationVerified && <section role="status" className="my-2.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200/90">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span aria-hidden="true">⚠️</span>
+          <span className="min-w-0 font-semibold">V5C Logbook Re-verification Required</span>
+          <button type="button" aria-label="Show V5C verification details" aria-expanded={verificationDetailsOpen} onClick={() => setVerificationDetailsOpen((open) => !open)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-amber-200 hover:bg-amber-500/15">
+            <span aria-hidden="true">{verificationDetailsOpen ? "−" : "+"}</span>
+          </button>
+        </div>
+        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-11 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
+          Re-Verify V5C
+        </button>
+        {verificationDetailsOpen && <div className="basis-full text-xs leading-relaxed text-amber-100/80">
+          {REVERIFICATION_NOTICE}{vehicle.is_sample ? " This development sample cannot be verified as a live vehicle." : ""}
+        </div>}
       </section>}
 
       <section data-testid="vehicle-health-cards" className={`grid grid-cols-1 gap-3 ${easyView ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
@@ -272,6 +286,11 @@ export function Dashboard() {
                   <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
                 </div>}
           </section>
+          {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-2 text-xs font-medium text-slate-300">
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">💰 Total: £{spendTotals.total.toFixed(2)}</span>
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">⚙️ Parts: £{spendTotals.parts.toFixed(2)}</span>
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">🛠️ Labour: £{spendTotals.labour.toFixed(2)}</span>
+          </section>}
 
           <section className="vault-card p-4">
             <h2 className="flex items-center justify-between font-bold">
@@ -588,7 +607,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
                   if (existing >= 0) lines.splice(existing, 1);
                   else lines.push(item);
                   return { ...current, description: lines.join("\n").slice(0, 1000) };
-                })} className={`min-h-10 rounded-full border px-3 text-xs font-medium transition-colors ${selected ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                })} className={`min-h-[44px] rounded-full border px-3 text-xs font-medium transition-colors ${selected ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
                   {item}
                 </button>;
               })}

@@ -5,7 +5,7 @@ export function PdfReceiptPicker({ onChange,onReadingChange, label = "PDF Docume
   const inputId = useId();
   const [fileName,setFileName]=useState("");
   return <div className="min-w-0 space-y-2 text-sm">
-    <label htmlFor={inputId} className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3.5 text-center text-slate-300 transition-colors hover:bg-slate-800/60 focus-within:ring-2 focus-within:ring-cyan-500/50">
+    <label htmlFor={inputId} className="relative flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-slate-300 transition-colors hover:bg-slate-800/60 focus-within:ring-2 focus-within:ring-cyan-500/50">
       <FileText aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
       <span className="min-w-0 break-words text-center text-xs font-medium">{fileName || label}</span>
     </label>

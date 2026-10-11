@@ -30,10 +30,10 @@ export function InvestorMetricsPanel() {
       <div className="flex gap-2"><button type="button" className="btn-ghost min-h-11" onClick={() => window.print()}><Printer className="h-4 w-4"/>Print</button><button type="button" className="btn-primary min-h-11" onClick={() => void grant()} disabled={busy}>{busy ? <LoaderCircle className="h-4 w-4 animate-spin"/> : <Download className="h-4 w-4"/>}Grant report</button></div>
     </header>
     {error && <div className="m-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm" role="alert"><p>{error}</p><button className="mt-2 inline-flex min-h-10 items-center gap-2 underline" type="button" onClick={() => void load()}><RefreshCw className="h-4 w-4"/>Retry</button></div>}
-    {!metrics && !error && <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3" role="status">{[0,1,2,3,4,5].map((x) => <div key={x} className="h-28 animate-pulse rounded-xl bg-muted/60"/>)}</div>}
+    {!metrics && !error && <div className="mb-4 grid grid-cols-2 gap-2.5 p-4" role="status">{[0,1,2,3,4,5].map((x) => <div key={x} className="h-24 animate-pulse rounded-xl bg-muted/60"/>)}</div>}
     {metrics && <>
       <div className="border-b border-border px-5 py-3 text-xs text-muted-foreground">{metrics.is_sample ? "Development sample metrics · not live financial data" : "Live data"} · snapshot {formatDate(metrics.as_of)}</div>
-      <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">{cards.map(([label, value, note], index) => <article key={label} className="bg-card p-5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className={`mt-2 font-display text-3xl font-bold ${index > 3 ? "text-primary" : ""}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></article>)}</div>
+       <div className="mb-4 grid grid-cols-2 gap-2.5 p-4">{cards.map(([label, value, note]) => <article key={label} className="flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-900/80 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p><p className="mt-1 text-xl font-bold text-white">{value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></article>)}</div>
       <div className="px-5 py-4 text-xs leading-relaxed text-muted-foreground">Projected MRR is a server-provided estimate, not a revenue guarantee. Export includes the same sample status as this panel.</div>
     </>}
   </section>;

@@ -94,19 +94,22 @@ export function TierPlans({ vrm, compact = false }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-semibold">Billing period</p>
           <div className="inline-flex rounded-xl border border-border bg-background/50 p-1" role="group" aria-label="Billing period">
-            <button type="button" aria-pressed={interval === "month"} onClick={() => setInterval("month")} className={`min-h-10 rounded-lg px-3 text-sm font-medium ${interval === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Monthly</button>
-            <button type="button" aria-pressed={interval === "year"} onClick={() => setInterval("year")} className={`min-h-10 rounded-lg px-3 text-sm font-medium ${interval === "year" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Yearly (Save ~16%)</button>
+            <button type="button" aria-pressed={interval === "month"} onClick={() => setInterval("month")} className={`min-h-11 rounded-lg px-3 text-sm font-medium ${interval === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Monthly</button>
+            <button type="button" aria-pressed={interval === "year"} onClick={() => setInterval("year")} className={`min-h-11 rounded-lg px-3 text-sm font-medium ${interval === "year" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>Yearly (Save ~16%)</button>
           </div>
         </div>
-        <div className={`grid min-w-0 gap-3 ${compact ? "" : "md:grid-cols-2"}`}>
-          <article className="rounded-xl border border-primary/35 bg-primary/5 p-4">
+        <div className={`grid auto-rows-fr min-w-0 items-stretch gap-3 ${compact ? "" : "md:grid-cols-2"}`}>
+          <article className="flex h-full flex-col rounded-xl border border-primary/35 bg-primary/5 p-4">
             <div className="flex items-start justify-between gap-2">
               <div><p className="text-xs uppercase tracking-wider text-muted-foreground">01 / Included</p><h3 className="mt-1 text-lg font-bold">Basic Driver (Free)</h3></div>
               <span className="rounded-lg bg-primary/15 p-2 text-primary"><Check className="h-5 w-5" /></span>
             </div>
             <p className="mt-2 font-display text-2xl font-bold">£0</p>
             <p className="mt-1 text-sm text-muted-foreground">One active vehicle</p>
-            <ul className="mt-4 space-y-2 text-sm"><li>Basic DIY service logging</li><li>Service and MOT timeline</li><li>Receipt photos and PDFs for proof storage</li><li>Owner-controlled public sharing</li></ul>
+            <ul className="mt-4 flex-1 space-y-2 text-sm"><li>Basic DIY service logging</li><li>Service and MOT timeline</li><li>Receipt photos and PDFs for proof storage</li><li>Owner-controlled public sharing</li></ul>
+            <button type="button" disabled className="btn-secondary mt-4 min-h-12 w-full" aria-label={account?.state?.user.subscription_tier === "free" ? "Current Plan: Basic Driver" : "Basic Driver is included"}>
+              {account?.state?.user.subscription_tier === "free" ? "Current Plan" : "Basic access included"}
+            </button>
           </article>
           {TIERS.map((tier, index) => {
             const key = interval === "year" ? tier.yearly : tier.monthly;
@@ -114,8 +117,9 @@ export function TierPlans({ vrm, compact = false }: Props) {
             const configured = catalog.preview || v1.preview || Boolean(price);
             const amount = price?.amount_pence ?? PLAN_DEFINITIONS[key].amount;
             const isLifetimeProModderPlan = tier.monthly === "pro_monthly" && lifetimeProModder;
+            const isCurrentPlan = account?.state?.user.subscription_tier === PLAN_DEFINITIONS[key].tier;
             const unavailable = !configured && !isLifetimeProModderPlan;
-            return <article key={tier.title} className="min-w-0 rounded-xl border border-border bg-background/35 p-4">
+            return <article key={tier.title} className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-background/35 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div><p className="text-xs uppercase tracking-wider text-muted-foreground">{index === 0 ? "02 / Membership" : "Membership"}</p><h3 className="mt-1 font-bold">{tier.title}</h3></div>
                 {tier.monthly === "workshop_monthly" ? <ShieldCheck className="h-5 w-5 shrink-0 text-primary" /> : null}
@@ -125,13 +129,13 @@ export function TierPlans({ vrm, compact = false }: Props) {
                 <span className="ml-1 text-sm font-medium text-muted-foreground">/{isLifetimeProModderPlan ? "lifetime" : interval === "year" ? "year" : "month"}</span>
               </p>
               {isLifetimeProModderPlan && <p className="mt-1 text-xs font-medium text-emerald-300">Lifetime access · no monthly charge</p>}
-              <ul className="my-4 space-y-2 text-sm text-muted-foreground">
+              <ul className="my-4 flex-1 space-y-2 text-sm text-muted-foreground">
                 {tier.features.map((feature) => <li className="flex gap-2" key={feature}><Check className="h-4 w-4 shrink-0 text-primary" />{feature}</li>)}
               </ul>
               {unavailable && <p className="mb-3 text-xs text-amber-300">Stripe price not configured yet. Add the matching V5Vault lookup price before checkout is enabled.</p>}
-              <button type="button" className="btn-primary min-h-12 w-full" onClick={() => void start(key)} disabled={busy !== null || unavailable || isLifetimeProModderPlan}>
+              <button type="button" className="btn-primary mt-auto min-h-12 w-full" onClick={() => void start(key)} disabled={busy !== null || unavailable || isLifetimeProModderPlan || isCurrentPlan}>
                 {busy === key ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
-                {busy === key ? "Opening checkout…" : isLifetimeProModderPlan ? "Included for life" : "Choose plan"}
+                {busy === key ? "Opening checkout…" : isLifetimeProModderPlan ? "Included for life" : isCurrentPlan ? "Current Plan" : "Choose plan"}
               </button>
             </article>;
           })}

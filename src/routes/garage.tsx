@@ -516,7 +516,7 @@ function GaragePage() {
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work performed / components</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-            className={`min-h-10 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+            className={`min-h-[44px] rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
             {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{component}
           </button>)}
         </div>
@@ -530,16 +530,16 @@ function GaragePage() {
        <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
        <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
         <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3.5">
-          <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
+         <div className="min-w-0 space-y-2">
+           <label className="flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
              <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Photo / Image
             <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
           </label>
           <p className="text-xs text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Available on all account tiers; stored privately."}</p>
           {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="text-xs text-muted-foreground underline">Remove photo</button>}
         </div>
-        <div className="space-y-2 rounded-xl border border-slate-700/70 p-3.5">
-          <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/50 p-4 text-center text-sm text-slate-200 hover:bg-slate-800/50">
+         <div className="min-w-0 space-y-2">
+           <label className="flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
              <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> PDF Document
             <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
           </label>
@@ -558,7 +558,7 @@ function GaragePage() {
        {queueStatus && <p role="status" className="rounded-lg border border-cyan-400/40 bg-cyan-950/50 p-3 text-sm text-cyan-50">{queueStatus}</p>}
       {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
       <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
-      <button type="submit" disabled={busy || fileBusy} className="btn-primary w-full py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+      <button type="submit" disabled={busy || fileBusy} className="btn-primary min-h-[44px] w-full px-3 py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
     </form>}
   </div>;
 }

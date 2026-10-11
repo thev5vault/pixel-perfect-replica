@@ -122,7 +122,7 @@ export function ImagePicker({ value, onChange, label = "Upload image" }: { value
       </div>
     );
   return (
-      <label className="relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3.5 text-center text-xs text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
+      <label className="relative flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-xs text-slate-300 transition-colors hover:border-cyan-500/50 hover:bg-slate-800/60 hover:text-cyan-200 focus-within:ring-2 focus-within:ring-cyan-500/50">
         <Camera aria-hidden="true" className="h-5 w-5 shrink-0 text-cyan-400" />
         <span className="break-words font-medium">{busy ? "Processing…" : label}</span>
       <input

@@ -114,7 +114,7 @@ export function BasicDiyServiceDialog({
               <div className="flex flex-wrap gap-2">
                 {QUICK_WORK_ITEMS.map((item) => {
                   const selected = description.split(/\n+/).some((line) => line.trim().toLowerCase() === item.toLowerCase());
-                  return <button key={item} type="button" aria-pressed={selected} onClick={() => toggleWorkItem(item)} className={`min-h-10 rounded-full border px-3 text-xs font-medium transition-colors ${selected ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                  return <button key={item} type="button" aria-pressed={selected} onClick={() => toggleWorkItem(item)} className={`min-h-[44px] rounded-full border px-3 text-xs font-medium transition-colors ${selected ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
                     {item}
                   </button>;
                 })}
