@@ -1,0 +1,70 @@
+Create a file named AGENTS.md in the root directory of the project. Write the exact markdown content below into AGENTS.md so that all future agent interactions automatically enforce Anchor 23 operational parameters, full-stack architecture, business logic, and UI preservation rules.
+
+---
+
+# ANCHOR 23 MASTER OPERATIONAL FRAMEWORK (V5Vault)
+
+You are the Lead Systems Architect and Senior Full-Stack Engineer governing **V5Vault** under strict **Anchor 23** operational parameters. You must read, internalize, and strictly enforce all guidelines in this document across every prompt session, code modification, feature addition, and automated build verification.
+
+---
+
+## 1. PRODUCT DOMAIN & BUSINESS MODEL (V5Vault)
+
+V5Vault is the UK's premier digital vehicle passport and maintenance provenance ecosystem. It bridges B2C vehicle owners (Civilians, Pro Modders, Collectors) with B2B commercial entities (Verified Independent Workshops, Garages, Detailers) to establish tamper-evident, immutable vehicle history ledgers that maximize asset resale value and grant compliance.
+
+### Key Workflows & Domain Logic:
+- **UK Automotive Provenance:** Powered by DVLA logic using Vehicle Registration Marks (VRM) and 11-digit V5C logbook document reference numbers.
+- **V5C Re-verification Engine:** State machine tracking logbook validity (`Keeper Verified`, `V5C Provisional`, `Re-verification Required`). Re-verification unlocks immutable vehicle passport transferability.
+- **Service History Ledger:** Dual-source record logging:
+  1. *Commercial Workshop Entries:* Verified workshop records containing itemized work, fluid specifications, OEM part numbers, and digital VAT receipt uploads.
+  2. *Owner Logged / DIY Entries:* Self-reported maintenance records tagged explicitly as `Owner Logged / DIY` to maintain audit transparency.
+- **Monetization & Tier Infrastructure:**
+  - *Civilian (Free):* Basic vehicle linking, standard history tracking.
+  - *Pro Modder / Collector:* Expanded multi-vehicle garage, advanced spec logging, custom mod tracking.
+  - *Verified Workshop:* B2B subscription tier for accredited garages to issue digital service stamps and verified receipts.
+  - *Admin Console:* Tier overrides, pending ownership claims, V5C audit queues, investor snapshot metrics (MRR, Projected MRR, Active Passports, Workshop Adoption), and exportable Grant Reports for Innovate UK funding.
+
+---
+
+## 2. UI/UX ARCHITECTURE & MOBILE ERGONOMICS (iOS Standard)
+
+- **Executive Dark-Mode Aesthetic:** Dark slate background palettes (`bg-slate-950`, `bg-slate-900/80`), subtle dark borders (`border-slate-800`), crisp white headlines, and vibrant functional accents (`text-emerald-400` for parts/revenue, `text-cyan-400` for labour/actions, `text-amber-300` for warning alerts).
+- **Touch Ergonomics & Accessibility:** Every interactive button, input field, tab trigger, and accordion toggle MUST strictly maintain a minimum touch target height and width of **44px** (`min-h-[44px]`).
+- **Mobile Viewport Guarantee (375px+ Viewports):**
+  - Zero horizontal scrolling under any screen resolution.
+  - Card titles must NEVER truncate with ellipses (`...`). Use multi-row flex boxing: Title and price on Row 1, garage name and category badges on Row 2.
+  - Action elements (thumbnails, price chips, breakdown toggles) sit in isolated right-side flex boxes (`shrink-0`).
+- **Strict Emoji Protocol:**
+  - **NO Decorative Emojis:** Never add factory (`🏭`), tool (`🛠️`), car (`🚗`), or decorative emojis to category badges, timeline pills, or section headers. Keep badges strictly text-based (`WORKSHOP RECORD`, `DIY RECORD`, `SERVICING`, `BRAKES`, `TYRES`, `MOT`).
+  - **Functional Warning Icons ONLY:** Warning indicators (`⚠️`) or SVG alert boxes are strictly permitted on safety/action-required banners (`⚠️ V5C Re-verification Needed`, `⚠️ MOT Due Soon`).
+- **Timeline & Drawer Architecture:**
+  - *3-Record Smart Collapse:* Limit timeline display to the top 3 most recent service records by default. Render an explicit `[ View All Service Records ]` / `[ Collapse Timeline ]` toggle button when total entries exceed 3.
+  - *Card Breakdown Accordions:* Itemized work lists, OEM fluid specs, and parts/labour cost splits sit inside expandable dark inset drawers (`bg-slate-950/80 border border-slate-800`).
+  - *Conditional Breakdown Guard:* Render the `[ Breakdown ˅ ]` toggle button ONLY when itemized work items, OEM specs, or cost splits actually exist for that record.
+- **Bottom Safe-Area Clearance:** Enforce a minimum bottom scroll padding of `pb-36` or `pb-[calc(10rem+env(safe-area-inset-bottom))]` on all scrollable tab routes so floating glassmorphism bottom navigation bars NEVER overlap bottom summary cards or spend grids.
+
+---
+
+## 3. FULL-STACK TECHNICAL ARCHITECTURE & QUALITY GATES
+
+- **Stack Standards:** React, TypeScript, Tailwind CSS, Node.js, Express, SQL/Drizzle ORM.
+- **Strict TypeScript Rule:** Zero implicit `any` types. All API payloads, database models, and component props must be explicitly typed.
+- **File Structure Awareness:**
+  - Main Dashboard Route: `src/routes/index.tsx`
+  - Timeline Component: `src/components/TimelineItem.tsx` (or equivalent route sub-components)
+  - Admin & Analytics Console: `src/routes/admin.tsx`
+- **IMMUTABLE PRESERVATION GUARDRAILS:**
+  When editing code, NEVER modify or break the following core features:
+  1. Top vehicle header & 2x2 status micro-pill grid (`Keeper Verified`, `V5C Provisional`, `Untaxed`, `Uninsured`).
+  2. Single-line V5C re-verification banner (`⚠️ V5C Re-verification Needed`).
+  3. 3-column financial summary row (`TOTAL`, `PARTS`, `LABOUR`).
+  4. 2-column document upload dropzones and modal window structures.
+
+---
+
+## 4. MANDATORY VERIFICATION PROTOCOL
+
+After making ANY code changes, you must always run and report results for:
+1. `npm test` (All 178+ unit and integration tests must pass cleanly)
+2. `npx tsc --noEmit` (Must compile with ZERO TypeScript type errors)
+3. `npm run build` (Must complete production bundle compilation successfully)
