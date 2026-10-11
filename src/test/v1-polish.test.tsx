@@ -94,6 +94,32 @@ describe("V1 polish", () => {
     expect(calendar).toHaveClass("bg-slate-900", "z-[100]");
   });
 
+  it("shows a clear empty service state without zero-value spend metadata", () => {
+    localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services: [] }));
+    render(<VaultProvider><Dashboard /></VaultProvider>);
+
+    expect(screen.getByText("No service records saved yet.")).toBeInTheDocument();
+    expect(screen.getByText('Tap "Scan Receipt" above to auto-extract your first invoice or logbook page.')).toBeInTheDocument();
+    expect(screen.queryByText("Recorded spend")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Engine size not returned|Tax status not returned/)).not.toBeInTheDocument();
+
+    const scan = screen.getByRole("button", { name: /scan receipt or logbook page/i });
+    const repair = screen.getByRole("button", { name: /add new repair \/ service record/i });
+    expect(scan.parentElement).toHaveClass("flex", "flex-col", "gap-3");
+    expect(scan).toHaveClass("min-h-[44px]");
+    expect(repair).toHaveClass("min-h-[44px]");
+  });
+
+  it("animates the Easy View specifications accordion", () => {
+    render(<VaultProvider><Dashboard /></VaultProvider>);
+    const toggle = screen.getByRole("button", { name: /view full specifications/i });
+    const accordion = screen.getByTestId("vehicle-specifications-accordion");
+    expect(accordion).toHaveClass("duration-300", "ease-in-out", "grid-rows-[0fr]");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: /hide full specifications/i })).toHaveAttribute("aria-expanded", "true");
+    expect(accordion).toHaveClass("grid-rows-[1fr]");
+  });
+
   it("attaches a looked-up vehicle from the yellow plate modal", async () => {
     function Probe() {
       const { vehicle } = useVault();

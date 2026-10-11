@@ -1,0 +1,45 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Perform a targeted UI cleanup on the Vehicle Dashboard view (`src/components/vehicle/*` and `VehicleDashboard.tsx`) to eliminate duplicate metadata strings, streamline empty history states, and maintain pixel-perfect card layouts.
+
+---
+
+### 1. Remove Duplicate Metadata Line & Clean Spend Summary (`VehicleDashboard.tsx`)
+
+- Eliminate Redundant Metadata Banner:
+  * Locate and remove the unstyled raw string rendered at the bottom of the vehicle view: `"Petrol · Engine size not returned · Tax status not returned"`.
+  * Rationale: Fuel type (`Petrol`) is already rendered in the vehicle header (`2007 · Petrol · Silver`), and Tax status is covered by the status micro-pills (`Taxed` / `Untaxed`).
+
+- Empty State Financial Stat Clean-Up:
+  * Hide or conditionally render the financial breakdown row (`Recorded spend £0.00 · Parts £0.00 · Labour £0.00`) when a vehicle has zero service records.
+  * Instead, render a clean, high-contrast empty state card for Service History:
+    - Text: `No service records saved yet.`
+    - Subtext: `Tap "Scan Receipt" above to auto-extract your first invoice or logbook page.`
+
+---
+
+### 2. Retain & Protect Vehicle Header Card Layout (`VehicleHeader.tsx`)
+
+- Preserve Pixel-Perfect VRM Plate:
+  * Retain the current UK VRM plate dimensions (`h-9 sm:h-10 px-3 bg-[#FFD500]`), bold text (`LG57 VYF`), and edge-to-edge blue UK strip (`bg-[#003399]`).
+
+- Preserve 2x2 Micro-Pill Matrix:
+  * Retain the fixed 2x2 status grid (`max-w-[320px]`):
+    - Top Row: `Keeper Verified` | `V5C Provisional` (or `V5C Verified`).
+    - Bottom Row: `Taxed` / `Untaxed` | `Insured` / `Uninsured`.
+  * Ensure pill text labels are clean, concise, and glow according to status (`emerald` for positive, `rose` for negative, `amber` for pending).
+
+---
+
+### 3. Vertical Spacing & Touch Ergonomics
+
+- Action Button Spacing:
+  * Ensure `📷 Scan Receipt or Logbook Page` (primary gradient button) and `➕ Add New Repair / Service Record` (outlined button) have uniform 12px vertical spacing (`gap-3`) and 44px minimum touch target heights (`min-h-[44px]`).
+- Prevent Page Shift:
+  * Ensure smooth accordion animation when toggling `View Full Specifications ˅` / `Hide Full Specifications ^` in Easy View.
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to verify production bundle success.

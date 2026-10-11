@@ -194,15 +194,23 @@ export function Dashboard() {
           </div>
           {vehicle.is_scrapped && <p className="text-xs font-semibold text-amber-300">Scrapped · read-only</p>}
         </div>
-        {(!easyView || specificationsExpanded) && <div className="relative my-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
-          <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
-          <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
-          <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
-          <VehicleSpecification label="Transmission" value={vehicle.transmission || "Not recorded"} />
-        </div>}
-        {(!easyView || specificationsExpanded) && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
+        <div
+          data-testid="vehicle-specifications-accordion"
+          className={`grid overflow-hidden transition-[grid-template-rows,margin] duration-300 ease-in-out motion-reduce:transition-none ${!easyView || specificationsExpanded ? "my-2 grid-rows-[1fr]" : "my-0 grid-rows-[0fr]"}`}
+          aria-hidden={easyView && !specificationsExpanded}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
+              <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
+              <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
+              <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
+              <VehicleSpecification label="Transmission" value={vehicle.transmission || "Not recorded"} />
+              {vehicle.vin && <div className="col-span-2"><VehicleSpecification label="VIN Provenance" value={vehicle.vin} /></div>}
+            </div>
+          </div>
+        </div>
         {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setExpandedSpecificationKey(specificationsExpanded ? null : specificationViewKey)} className="mt-2 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:underline">
-          {specificationsExpanded ? "Hide Full Specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "⌃" : "⌄"}</span>
+          {specificationsExpanded ? "Hide Full Specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "^" : "˅"}</span>
         </button>}
       </section>
 
@@ -242,19 +250,21 @@ export function Dashboard() {
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
-      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className={`btn-primary w-full ${easyView ? "min-h-12 py-3 text-base" : "py-4 text-base"}`}>
-        <Camera className="h-5 w-5 shrink-0" /> {easyView ? "Scan Receipt or Logbook Page" : "Snap Receipt"}
-      </button>
-      {easyView && <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-12 w-full">➕ Add New Repair / Service Record</button>}
+      <div className="flex flex-col gap-3">
+        <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className={`btn-primary min-h-[44px] w-full ${easyView ? "min-h-12 py-3 text-base" : "py-4 text-base"}`}>
+          <Camera className="h-5 w-5 shrink-0" /> {easyView ? "Scan Receipt or Logbook Page" : "Snap Receipt"}
+        </button>
+        {easyView && <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full">➕ Add New Repair / Service Record</button>}
+      </div>
 
       <section>
         <h2 className="mb-3 text-lg font-bold">Service History</h2>
-        <ol className="relative space-y-4 border-l border-primary/30 pl-5">
-          {history.map((s) => (
-            <TimelineItem key={s.id} s={s} bookable />
-          ))}
-          {history.length === 0 && <p className="text-sm text-muted-foreground">No records yet. Snap your first receipt.</p>}
-        </ol>
+        {history.length > 0
+          ? <ol className="relative space-y-4 border-l border-primary/30 pl-5">{history.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
+          : <div role="status" className="vault-card border-cyan-500/30 bg-slate-900/90 p-5">
+              <p className="font-semibold text-slate-100">No service records saved yet.</p>
+              <p className="mt-2 text-sm text-slate-300">Tap "Scan Receipt" above to auto-extract your first invoice or logbook page.</p>
+            </div>}
       </section>
 
       <section className="vault-card p-4">

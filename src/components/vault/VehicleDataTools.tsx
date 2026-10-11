@@ -12,10 +12,13 @@ export function VehicleDataTools() {
   },[vehicle.vrm,vehicle.source,vehicle.access,v1]);
   const entries=services.filter(s=>s.vrm===vehicle.vrm);
   const sum=(key:"cost"|"partsCost"|"labourCost")=>entries.reduce((n,s)=>n+(s[key]??0),0);
+  const showSpend=can.diy(role)&&entries.length>0;
+  const canRefresh=vehicle.source==="official"&&vehicle.access!=="archived";
+  const showDemoNotice=vehicle.source==="demo";
+  if(!showSpend&&!canRefresh&&!showDemoNotice)return null;
   return <section className="vault-card space-y-3 p-4">
-    <p className="text-sm text-muted-foreground">{vehicle.fuelType??"Fuel not returned"} · {vehicle.engineCapacity?`${vehicle.engineCapacity} cc`:"Engine size not returned"} · {vehicle.taxStatus??"Tax status not returned"}{vehicle.taxDueDate?` · tax due ${vehicle.taxDueDate}`:""}</p>
-    {can.diy(role)&&<div className="grid grid-cols-3 gap-2 text-center">{(["cost","partsCost","labourCost"] as const).map((key,i)=><div key={key}><p className="text-xs text-muted-foreground">{["Recorded spend","Parts","Labour"][i]}</p><p className="mt-1 font-semibold text-cyan-300">{gbp(Math.round(sum(key)*100))}</p></div>)}</div>}
-    {vehicle.source==="official"&&vehicle.access!=="archived"&&<button className="btn-ghost w-full" onClick={()=>void v1.refreshVehicle(vehicle.vrm).then(r=>toast.success(r.message)).catch(e=>toast.error(e instanceof Error?e.message:"Refresh failed"))}>Refresh official MOT & tax details</button>}
-    {vehicle.source==="demo"&&<p className="text-xs text-amber-300">Development sample. These are not live DVLA readings.</p>}
+    {showSpend&&<div className="grid grid-cols-3 gap-2 text-center">{(["cost","partsCost","labourCost"] as const).map((key,i)=><div key={key}><p className="text-xs text-muted-foreground">{["Recorded spend","Parts","Labour"][i]}</p><p className="mt-1 font-semibold text-cyan-300">{gbp(Math.round(sum(key)*100))}</p></div>)}</div>}
+    {canRefresh&&<button className="btn-ghost w-full" onClick={()=>void v1.refreshVehicle(vehicle.vrm).then(r=>toast.success(r.message)).catch(e=>toast.error(e instanceof Error?e.message:"Refresh failed"))}>Refresh official MOT & tax details</button>}
+    {showDemoNotice&&<p className="text-xs text-amber-300">Development sample. These are not live DVLA readings.</p>}
   </section>;
 }
