@@ -542,8 +542,8 @@ function AdminPage() {
 function Summary({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="rounded-lg border border-slate-800/80 bg-slate-900/60 p-2 text-center text-[10px] font-medium text-slate-400">
-      <p className="font-semibold uppercase tracking-wide">{label}</p>
-      <p className="mt-1 text-sm font-bold text-white">{value === null ? "—" : value}</p>
+      <p className="break-words font-semibold uppercase leading-tight tracking-wide [overflow-wrap:anywhere]">{label}</p>
+      <p className="mt-1 break-words text-sm font-bold text-white [overflow-wrap:anywhere]">{value === null ? "—" : value}</p>
     </div>
   );
 }
