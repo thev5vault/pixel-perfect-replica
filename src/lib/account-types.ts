@@ -4,6 +4,7 @@ export type AccountRole = "civilian" | "modder" | "verified_garage" | "dev_admin
 export type SubscriptionTier = "free" | "pro_diy" | "pro_modder" | "verified_garage" | "god_mode";
 export type SubscriptionStatus = "inactive" | "trialing" | "active" | "past_due" | "canceled" | "expired";
 export type TierOverride = "pro_modder_lifetime";
+export type DisplayPreference = "easy" | "detailed";
 export const ADMIN_PERMISSIONS = ["all_access", "approve_garages", "view_all_users", "edit_vehicles", "stamp_all_workshops"] as const;
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export interface UserAccount {
@@ -29,6 +30,7 @@ export interface UserAccount {
   tier_override?: TierOverride | null;
   /** Server-derived workshop entitlement; this never grants garage identity or approval. */
   workshop_access_active?: boolean;
+  display_preference?: DisplayPreference;
 }
 export interface AccountNotification { id: string; message: string; read: boolean; created_at: string }
 export interface Booking { id: string; vrm: string; date: string; notes: string; status: "booked" | "completed" | "cancelled" }

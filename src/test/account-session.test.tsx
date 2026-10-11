@@ -18,6 +18,7 @@ beforeEach(()=>{
   vi.clearAllMocks();
   setPreviewEnabled(false);
   sessionStorage.clear();
+  localStorage.clear();
   mocks.auth={isLoaded:true,isSignedIn:false,user:null};
   mocks.getState.mockRejectedValue(new Error("Sign in to continue."));
 });
@@ -68,6 +69,17 @@ describe("Session continuity and isolated developer preview",()=>{
 
     expect(mocks.saveProfile).toHaveBeenCalledWith({full_name:"Updated Name"});
     expect(result.current?.state?.user.full_name).toBe("Updated Name");
+  });
+  it("persists the selected display mode locally and to the signed-in profile",async()=>{
+    mocks.auth={isLoaded:true,isSignedIn:true,user:{id:"owner"}};
+    mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"owner",full_name:"Owner"}});
+    mocks.saveProfile.mockResolvedValue(undefined);
+    const {result}=renderHook(useAccount,{wrapper});
+    await waitFor(()=>expect(result.current?.state?.user.id).toBe("owner"));
+    await act(async()=>{await result.current?.setDisplayPreference("detailed");});
+    expect(localStorage.getItem("v5vault_display_mode")).toBe("detailed");
+    expect(mocks.saveProfile).toHaveBeenCalledWith({full_name:"Owner",display_preference:"detailed"});
+    expect(result.current?.displayPreference).toBe("detailed");
   });
   it("hydrates a valid native passkey session when Clerk is signed out",async()=>{
     mocks.getState.mockResolvedValue({...sampleAccount(),user:{...sampleAccount().user,id:"passkey-owner"}});

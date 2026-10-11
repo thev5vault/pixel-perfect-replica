@@ -73,7 +73,7 @@ describe("Pro DIY entitlements", () => {
       </VaultProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /snap receipt/i }));
+    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
     expect(await screen.findByRole("heading", { name: "Snap Receipt" })).toBeInTheDocument();
     expect(screen.getByText("RECEIPT PHOTO")).toBeInTheDocument();
     expect(screen.getByText("INVOICE PDF")).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe("Pro DIY entitlements", () => {
       </VaultProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /add a basic diy service entry/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add new repair \/ service record/i }));
     expect(await screen.findByRole("heading", { name: "Add a Basic DIY Service Entry" })).toBeInTheDocument();
     const workField = screen.getByLabelText("Work performed");
     expect(workField).toBeEnabled();

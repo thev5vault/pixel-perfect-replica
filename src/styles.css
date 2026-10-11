@@ -542,3 +542,28 @@ button > svg {
     animation: none !important;
   }
 }
+
+/* Easy View keeps app actions easy to find and keeps text legible without
+   changing the detailed technical layout or disabling browser zoom. */
+html[data-display-mode="easy"] .app-viewport main :is(h1, h2, h3) {
+  color: #f8fafc;
+}
+
+html[data-display-mode="easy"] .app-viewport main p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+html[data-display-mode="easy"] .app-viewport main p.text-xs {
+  font-size: 0.875rem;
+}
+
+html[data-display-mode="easy"] .app-viewport main .text-muted-foreground,
+html[data-display-mode="easy"] .app-viewport main .text-slate-400 {
+  color: #cbd5e1;
+}
+
+html[data-display-mode="easy"] .app-viewport main :is(button, [role="button"]),
+html[data-display-mode="easy"] body [role="dialog"] :is(button, [role="button"]) {
+  min-height: 48px;
+}

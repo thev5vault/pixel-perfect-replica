@@ -191,7 +191,7 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
     || input.garage_registration !== undefined
     || input.workshop_type !== undefined;
   if (!hasWorkshopDetails) {
-    await pool.query("UPDATE user_accounts SET full_name=$1 WHERE id=$2", [input.full_name, user.id]);
+    await pool.query("UPDATE user_accounts SET full_name=$1,display_preference=COALESCE($2,display_preference) WHERE id=$3", [input.full_name,input.display_preference ?? null,user.id]);
     return {ok:true};
   }
   if (!canEditWorkshopProfile(user)) throw new WorkshopProfileAccessError();
@@ -209,8 +209,8 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
     status=CASE WHEN (garage_name=$2 AND garage_registration=$3 AND workshop_type=$6) OR (is_sample AND $4) THEN status ELSE 'pending' END,
     subscription_status=CASE WHEN $7 AND trial_expires_at IS NULL THEN 'trialing' ELSE subscription_status END,
     trial_expires_at=CASE WHEN $7 AND trial_expires_at IS NULL THEN now()+interval '30 days' ELSE trial_expires_at END,
-    workshop_type=$6 WHERE id=$5`,
-    [input.full_name,garageName,garageRegistration,development,user.id,workshopType,startsWorkshopTrial]);
+     workshop_type=$6,display_preference=COALESCE($8,display_preference) WHERE id=$5`,
+    [input.full_name,garageName,garageRegistration,development,user.id,workshopType,startsWorkshopTrial,input.display_preference ?? null]);
   return {ok:true};
 }
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {

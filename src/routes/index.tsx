@@ -61,9 +61,29 @@ function VehicleSpecification({ icon, label, value }: { icon?: ReactNode; label:
   );
 }
 
+function DisplayPreferenceSetup({ account }: { account: ReturnType<typeof useAccount> }) {
+  if (!account?.signedIn || account.hasChosenDisplayPreference) return null;
+  return <section className="vault-card border-cyan-500/30 bg-cyan-950/20 p-4" aria-label="Choose your display preference">
+    <h2 className="text-lg font-bold text-white">Choose your V5Vault view</h2>
+    <p className="mt-1 text-sm text-slate-200">Easy View uses larger text and clear summaries. Detailed View opens the full technical record.</p>
+    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {(["easy", "detailed"] as const).map((mode) => <button key={mode} type="button" onClick={() => void account.setDisplayPreference(mode).catch((error) => toast.error(error instanceof Error ? error.message : "Preference could not be saved"))} className="flex min-h-12 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-slate-800">
+        {mode === "easy" ? "⚡ Easy View" : "🛠️ Detailed View"}
+      </button>)}
+    </div>
+  </section>;
+}
+
 export function Dashboard() {
   const { vehicle, services, role } = useVault();
   const account = useAccount();
+  const easyView = account?.displayPreference !== "detailed";
+  const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
+  const insuranceKey = `v5vault_insurance_expiry:${vehicle.vin || vehicle.vrm}`;
+  const [insuranceExpiry, setInsuranceExpiry] = useState("");
+  useEffect(() => {
+    setInsuranceExpiry(window.localStorage.getItem(insuranceKey) ?? "");
+  }, [insuranceKey]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [diyOpen, setDiyOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -83,13 +103,16 @@ export function Dashboard() {
   const lastService = lastOf("Servicing");
   const lastBrakes = lastOf("Brakes");
   const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage));
-  const motMonths = vehicle.motExpiry ? monthsBetween(new Date(), new Date(vehicle.motExpiry)) : -1;
+  const motDate = vehicle.motExpiry ? new Date(`${vehicle.motExpiry.slice(0, 10)}T00:00:00`) : undefined;
+  const motDays = motDate ? Math.ceil((motDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : -1;
+  const insuranceDays = insuranceExpiry ? Math.ceil((new Date(`${insuranceExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
   const serviceOk = lastService && monthsBetween(new Date(lastService.date), new Date()) < 24;
 
   if (account?.signedIn && account.state && account.state.vehicles.length === 0) {
     return <section className="vault-card relative overflow-hidden p-6 sm:p-8">
       <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
       <div className="relative">
+        <DisplayPreferenceSetup account={account} />
         <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary">Your keeper record</p>
         <h1 className="mt-3 max-w-lg text-3xl font-bold">Your passport starts with a vehicle.</h1>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">Connect a vehicle with the reference printed on your V5C logbook. This links your account to its existing history; it does not trigger a live DVLA check.</p>
@@ -101,7 +124,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="vault-card relative overflow-hidden p-5">
+      <DisplayPreferenceSetup account={account} />
+      <section className="vault-card relative mb-3 overflow-hidden p-3.5 sm:p-4">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -110,7 +134,7 @@ export function Dashboard() {
               {vehicle.make} {vehicle.model}
             </h1>
             <p className="mt-1 break-words text-xs font-medium text-slate-400">
-              {[vehicle.year, vehicle.colour, vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : undefined, vehicle.fuelType].filter(Boolean).join(" · ") || "Vehicle specifications not recorded"}
+              {[vehicle.year, vehicle.fuelType, vehicle.engineCapacity ? `${(vehicle.engineCapacity / 1000).toFixed(1)}L` : undefined].filter(Boolean).join(" · ") || "Vehicle specifications not recorded"}
             </p>
           </div>
           <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:justify-end">
@@ -124,12 +148,16 @@ export function Dashboard() {
             {vehicle.is_scrapped && <Pill tone="warning"><AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />Scrapped · read-only</Pill>}
           </div>
         </div>
-        <div className="relative my-3 grid grid-cols-2 gap-2.5 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 sm:grid-cols-3">
+        {(!easyView || specificationsExpanded) && <div className="relative my-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
           <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
           <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
           <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
           <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
-        </div>
+        </div>}
+        {!easyView && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
+        {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setSpecificationsExpanded((open) => !open)} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-slate-700/70 px-3 text-sm font-semibold text-cyan-200 hover:bg-slate-900/70">
+          🛠️ {specificationsExpanded ? "Hide full specifications" : "View Full Specifications"}
+        </button>}
       </section>
 
       {!registrationVerified && <section role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/20 p-4">
@@ -140,35 +168,58 @@ export function Dashboard() {
           : <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin} className="btn-ghost mt-3 min-h-11 w-full border-amber-200/20 text-amber-50 disabled:opacity-50">Update Logbook / Plate Details</button>}
       </section>}
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <section className={`grid grid-cols-1 gap-3 ${easyView ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
         <HealthCard
           icon={<Wrench className="h-5 w-5" />}
           title="Servicing"
           ok={!!serviceOk}
           status={serviceOk ? "Up to Date" : "Service Overdue"}
-          meta={lastService ? `Last done: ${fmtDate(lastService.date)}` : "No record"}
+          meta={lastService ? `Last service ${fmtDate(lastService.date)} · ${fmtMiles(lastService.mileage)}` : "No service record yet"}
+          easy={easyView}
         />
-        <HealthCard
+        {!easyView && <HealthCard
           icon={<Disc3 className="h-5 w-5" />}
           title="Brakes"
           ok={!!lastBrakes}
           status={lastBrakes ? "Good Condition" : "Check Needed"}
           meta={lastBrakes ? `Checked: ${fmtDate(lastBrakes.date)}` : "No record"}
-        />
+        />}
         <HealthCard
           icon={<AlertTriangle className="h-5 w-5" />}
           title="MOT Status"
-          ok={motMonths > 2}
-          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motMonths < 0 ? "MOT Expired" : motMonths > 2 ? "MOT Valid" : "MOT Due Soon"}
-          meta={vehicle.motExpiry ? `Expires ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}${motMonths >= 0 ? ` · ${motMonths} mo left` : ""}` : "Expiry date unavailable"}
+          ok={motDays > 42}
+          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "MOT Due Soon"}
+          meta={vehicle.motExpiry ? motDays >= 0 ? `Passes on ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · Due in ${motDays} days` : `Expired ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB")}` : "Expiry date unavailable"}
           forceWarn
+          easy={easyView}
         />
+        <HealthCard
+          icon={<ShieldCheck className="h-5 w-5" />}
+          title="Vehicle Tax"
+          ok={/taxed/i.test(vehicle.taxStatus ?? "")}
+          status={vehicle.taxStatus ?? "Not recorded"}
+          meta={vehicle.taxDueDate ? `Due ${fmtDate(vehicle.taxDueDate)}` : "Expiry date unavailable"}
+          easy={easyView}
+        />
+        <div className="vault-card min-w-0 p-4">
+          <p className={`${easyView ? "text-base text-white" : "text-xs text-muted-foreground"} font-semibold uppercase tracking-wider`}>Insurance</p>
+          <p className="mt-1 text-sm font-semibold text-slate-100">{insuranceExpiry ? insuranceDays !== undefined && insuranceDays < 0 ? "Expiry passed" : `Due in ${insuranceDays} days` : "Expiry not recorded"}</p>
+          <label className="mt-2 block text-xs text-slate-300" htmlFor="insurance-expiry">Insurance expiry date</label>
+          <input id="insurance-expiry" type="date" value={insuranceExpiry} onChange={(event) => {
+            const value=event.target.value;
+            setInsuranceExpiry(value);
+            if(value) window.localStorage.setItem(insuranceKey,value);
+            else window.localStorage.removeItem(insuranceKey);
+          }} className="field mt-1 w-full min-w-0 text-base" />
+          <p className="mt-1 text-xs text-slate-400">Reminder saved on this device.</p>
+        </div>
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
-      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className="btn-primary w-full py-4 text-base">
-        <Plus className="h-5 w-5" /> Snap Receipt
+      <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className={`btn-primary w-full ${easyView ? "min-h-12 py-3 text-base" : "py-4 text-base"}`}>
+        <Camera className="h-5 w-5 shrink-0" /> {easyView ? "Scan Receipt or Logbook Page" : "Snap Receipt"}
       </button>
+      {easyView && <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-12 w-full">➕ Add New Repair / Service Record</button>}
 
       <section>
         <h2 className="mb-3 text-lg font-bold">Service History</h2>
@@ -198,7 +249,7 @@ export function Dashboard() {
       </section>
 
       <VehicleDataTools/>
-      <button className="btn-ghost w-full" onClick={()=>setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>
+      {!easyView && <button className="btn-ghost w-full" onClick={()=>setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"}>Add a basic DIY service entry</button>}
       {vehicle.access==="plan_locked"&&<p className="text-sm text-amber-300">Read-only vehicle · your current plan includes one active vehicle. Collector includes three.</p>}
       {vehicle.access==="archived"&&<p className="text-sm text-amber-300">Archived keeper history · read-only</p>}
       <SnapReceiptDialog open={receiptOpen} onOpenChange={setReceiptOpen} />
@@ -224,6 +275,7 @@ function HealthCard({
   status,
   meta,
   forceWarn,
+  easy = false,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -231,18 +283,19 @@ function HealthCard({
   status: string;
   meta: string;
   forceWarn?: boolean;
+  easy?: boolean;
 }) {
   const warn = !ok || (forceWarn && status.includes("Soon"));
   return (
-    <div className="vault-card flex items-center gap-3 p-4 sm:flex-col sm:items-start">
+    <div className={`vault-card flex items-center gap-3 p-4 sm:flex-col sm:items-start ${easy ? "text-white" : ""}`}>
       <div className={warn ? "rounded-lg bg-warning/15 p-2 text-warning" : "rounded-lg bg-success/15 p-2 text-success"}>{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+          <p className={`${easy ? "text-base text-white" : "text-xs text-muted-foreground"} font-semibold uppercase tracking-wider`}>{title}</p>
         <Pill tone={warn ? "warning" : "success"} className="mt-1">
           {warn ? <AlertTriangle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
           {status}
         </Pill>
-        <p className="mt-1 text-xs text-muted-foreground">{meta}</p>
+        <p className={`mt-1 ${easy ? "text-sm text-slate-200" : "text-xs text-muted-foreground"}`}>{meta}</p>
       </div>
     </div>
   );

@@ -80,7 +80,7 @@ describe("V1 polish", () => {
   it("keeps the receipt header and Save footer outside the padded scrolling form", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY" }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
-    fireEvent.click(screen.getByRole("button", { name: /snap receipt/i }));
+    fireEvent.click(screen.getByRole("button", { name: /scan receipt or logbook page/i }));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog.querySelector("header")).toHaveClass("sticky", "top-0");

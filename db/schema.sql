@@ -17,8 +17,10 @@ CREATE TABLE IF NOT EXISTS user_accounts (
   subscription_status TEXT NOT NULL DEFAULT 'inactive' CHECK (subscription_status IN ('inactive','trialing','active','past_due','canceled','expired')),
   trial_expires_at TIMESTAMPTZ,
   is_sample BOOLEAN NOT NULL DEFAULT false
-  ,dev_role TEXT
+  ,dev_role TEXT,
+  display_preference TEXT NOT NULL DEFAULT 'easy' CHECK (display_preference IN ('easy','detailed'))
 );
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS display_preference TEXT NOT NULL DEFAULT 'easy' CHECK (display_preference IN ('easy','detailed'));
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist'));
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS garage_verified BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified BOOLEAN NOT NULL DEFAULT false;

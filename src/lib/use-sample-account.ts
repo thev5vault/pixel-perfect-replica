@@ -24,6 +24,12 @@ export function useSampleAccount(exit: () => void): AccountContext {
     const change = (fn: (s: AccountState) => AccountState) => commit(d => ({...d, account: fn(d.account)}));
     return {
       state, preview: true, authLoaded: true, signedIn: true, loading: false, error: null,
+      displayPreference: state.user.display_preference ?? "easy",
+      hasChosenDisplayPreference: typeof window !== "undefined" && window.localStorage.getItem("v5vault_display_mode_confirmed")==="true",
+      setDisplayPreference: async display_preference => {
+        if(typeof window!=="undefined") window.localStorage.setItem("v5vault_display_mode_confirmed","true");
+        change(s=>({...s,user:{...s.user,display_preference}}));
+      },
       refresh: async () => {},
       signOut: async () => exit(),
       switchRole: async role => change(s => ({...s, development_role: role})),

@@ -1,0 +1,83 @@
+Act as Lead Systems Architect, Senior iOS UI/UX Specialist, and Quality Assurance Lead under strict Anchor 23 parameters. Execute an immediate visual cleanup of the Vehicle Header Card and implement the Dual View Mode Engine (`Easy View` vs. `Detailed View`) across the V5Vault application.
+
+---
+
+### 1. Vehicle Header Card Visual Overhaul (`src/components/vehicle/*` or `VehicleHeader.tsx`)
+
+- Sleek & Compact Card Dimensions:
+  * Reduce overall card height and vertical padding (`p-3.5 sm:p-4 mb-3`). The entire vehicle header section must be compact, crisp, and take up ~30% less vertical screen space on mobile viewports.
+
+- Proportioned, Tidier UK VRM Badge:
+  * Refine the UK registration plate (`LG57 VYF`): Make it sleeker, compact, and perfectly proportioned (`h-8 px-2.5 rounded-md text-sm font-bold tracking-wider shadow-sm`).
+  * Ensure the yellow background (`#FFD500`), black font, and blue UK side strip align horizontally with the vehicle title or top badge row without floating awkwardly.
+
+- Deduplicate Subtitle Specs:
+  * Remove duplicate color text: Change subtitle line from `2007 · Silver · Petrol` to `2007 · Petrol · 2.0L` so "Silver" is NOT displayed twice.
+
+- Streamlined 2x2 Spec Grid:
+  * Make the spec grid cards compact and lightweight (`p-2 px-3 bg-slate-900/60 border border-slate-800/80 rounded-lg`):
+    - `ODOMETER`: e.g. `87,420 mi` or `Not recorded` (muted text if unrecorded).
+    - `ENGINE SPECS`: e.g. `1,984 cc (BUL)` or `2.0L Petrol`.
+    - `FIRST REGISTERED`: e.g. `17 Sep 2007`.
+    - `COLOUR`: e.g. `Silver` (single authoritative source).
+
+- Tidy Status Badges:
+  * Align `Keeper Verified` and `V5C Status` badges neatly in a single inline flex row (`gap-2 text-xs font-medium`) below the title.
+
+---
+
+### 2. Dual View Mode State & User Preference Persistence
+- Database & Context Integration (`src/context/ViewModeContext.tsx` or `shared/schema.ts`):
+  * Add `displayPreference` (`'easy'` | `'detailed'`) to user settings schema with default `'easy'`.
+  * Store preference in `localStorage.setItem('v5vault_display_mode', mode)` and sync automatically with the backend on sign-in.
+
+- Integration Locations:
+  1. **Account Setup / Onboarding (`OnboardingFlow.tsx`):**
+     * Add a high-visibility setup card asking users to pick their preferred interface:
+       - `⚡ Easy View`: High-contrast, large touch targets, simplified overview cards.
+       - `🛠️ Detailed View`: Full spec matrix, trade logs, and raw diagnostic parameters.
+  2. **Account Settings (`AccountSettings.tsx`):**
+     * Add a "Display & Accessibility" section with a live segmented preview switcher (`Easy View` / `Detailed View`).
+  3. **Top Navigation Header:**
+     * Render a sleek, compact pill toggle in the top bar: `⚡ Easy` | `🛠️ Detailed`.
+
+---
+
+### 3. "Easy View" Architecture (Senior & OAP High-Legibility Focus)
+
+- Senior/OAP-Friendly Visual Ergonomics:
+  * High-contrast typography (`text-white` headings, `text-slate-200` body), clear 18px+ headings, and 48px minimum touch target heights (`min-h-[48px]`).
+- Clean At-a-Glance Dashboard Cards:
+  * **MOT Status:** Countdown pill (`Passes on 14 Aug 2027` or `Due in 42 Days`).
+  * **Servicing:** Last service date and mileage in plain English.
+  * **Tax & Insurance:** Expiry date with large action buttons.
+- Prominent Primary Action Buttons:
+  * `📷 Scan Receipt or Logbook Page` (Triggers AI Camera Scanner).
+  * `➕ Add New Repair / Service Record`.
+- Zero Feature Removal:
+  * Advanced tools (Vault, Modifications, Diagnostic Specs, Admin) are grouped under clean, single-tap expandable drawers (e.g. `[ 🛠️ View Full Specifications & Engine Code ]`).
+
+---
+
+### 4. "Detailed View" Architecture (Power User Spec Density)
+
+- Complete Technical Layout:
+  * Restores multi-column specification grid (Engine code `BUL`, `1,984 cc`, chassis VIN provenance, trade logs, and raw MOT test histories).
+  * Full-density modification list with power gains, cost tracking, and part numbers.
+
+---
+
+### 5. Anchor 23 Systemic UI Hygiene & Touch Safety Rules
+
+- Icon & Label Locking Rule:
+  * Enforce `flex items-center gap-2 shrink-0` on every icon + label pair across both views so icons NEVER line-wrap onto a separate line.
+- iOS Viewport Safety:
+  * Enforce safe area inset handling (`pb-[calc(1rem+env(safe-area-inset-bottom))]`).
+  * Zero horizontal scrollbar or element overflow (`overflow-x-hidden`) across all mobile screen widths (375px–430px).
+
+---
+
+### 6. Build, Type & Test Verification
+- Run `npm test` to confirm all 167+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

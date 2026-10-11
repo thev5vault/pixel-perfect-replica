@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatVrm, readImage } from "@/lib/vault-store";
 
 export function Plate({ vrm, size = "md" }: { vrm: string; size?: "sm" | "md" | "lg" }) {
-  const s = { sm: "text-xs", md: "text-base", lg: "min-h-10 min-w-[120px] px-3 text-base" }[size];
+  const s = { sm: "text-xs", md: "text-base", lg: "h-8 min-w-[112px] px-2.5 text-sm font-bold tracking-wider shadow-sm" }[size];
   return (
     <span className={cn("uk-plate", s)}>
       <span className="flex items-center bg-blue-700 px-1 text-[0.55em] font-sans font-bold text-white">UK</span>

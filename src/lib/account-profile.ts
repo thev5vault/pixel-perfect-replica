@@ -6,6 +6,7 @@ const tradeProfileFields = ["garage_name", "garage_registration", "workshop_type
 
 export const accountProfileInputSchema = z.object({
   full_name: z.string().trim().min(1).max(100),
+  display_preference: z.enum(["easy", "detailed"]).optional(),
   garage_name: z.string().trim().max(100).optional(),
   garage_registration: z.string().trim().max(40).optional(),
   workshop_type: z.enum(["garage", "specialist"]).optional(),
@@ -22,6 +23,7 @@ export const accountProfileInputSchema = z.object({
 
 export type AccountProfileInput = {
   full_name: string;
+  display_preference?: "easy" | "detailed" | undefined;
   garage_name?: string | undefined;
   garage_registration?: string | undefined;
   workshop_type?: "garage" | "specialist" | undefined;
@@ -31,6 +33,7 @@ export function mergeAccountProfile(user: UserAccount, profile: AccountProfileIn
   return {
     ...user,
     full_name: profile.full_name,
+    ...(profile.display_preference !== undefined ? { display_preference: profile.display_preference } : {}),
     ...(profile.garage_name !== undefined ? { garage_name: profile.garage_name } : {}),
     ...(profile.garage_registration !== undefined ? { garage_registration: profile.garage_registration } : {}),
     ...(profile.workshop_type !== undefined ? { workshop_type: profile.workshop_type } : {}),

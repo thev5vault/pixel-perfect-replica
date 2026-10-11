@@ -86,6 +86,18 @@ export function AccountSettings() {
         <Pill tone={currentRole.isWorkshop ? "success" : "primary"}>{currentRole.badgeName}</Pill>
       </div>
     </section>
+    <section className="vault-card space-y-3 p-4" aria-label="Display and accessibility">
+      <div>
+        <h2 className="text-lg font-bold text-white">Display &amp; Accessibility</h2>
+        <p className="mt-1 text-sm text-slate-300">Choose a simpler, larger-text overview or the full technical detail view.</p>
+      </div>
+      <div role="group" aria-label="Preferred display mode" className="grid grid-cols-2 gap-2">
+        {(["easy", "detailed"] as const).map((mode) => <button key={mode} type="button" aria-pressed={account.displayPreference === mode} onClick={() => void account.setDisplayPreference(mode).then(() => toast.success("Display preference saved")).catch((error) => toast.error(error instanceof Error ? error.message : "Display preference could not be saved"))} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${account.displayPreference === mode ? "border-cyan-400/60 bg-cyan-500/15 text-white" : "border-slate-700 bg-slate-900 text-slate-300"}`}>
+          {mode === "easy" ? "⚡ Easy View" : "🛠️ Detailed View"}
+        </button>)}
+      </div>
+      <p className="text-xs text-slate-400">{account.displayPreference === "easy" ? "Easy View uses clearer summaries and larger touch controls; advanced tools remain available." : "Detailed View keeps specifications and technical history expanded."}</p>
+    </section>
     <form onSubmit={save} className="vault-card space-y-4 p-5">
       <Field label="Display Name"><input required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} className="field" autoComplete="name" /></Field>
       {canEditWorkshopDetails && <section className="space-y-3 border-t border-slate-700 pt-4" aria-label="Workshop and trade details">
