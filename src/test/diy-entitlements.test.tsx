@@ -64,8 +64,8 @@ describe("Pro DIY entitlements", () => {
     expect(screen.getByText("Brembo 09.C401.13")).not.toHaveClass("blur-sm");
     expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).not.toHaveClass("blur-sm");
     expect(container.querySelector("img")?.className).not.toContain("blur-[4px]");
-    expect(screen.getByText("Parts cost").parentElement).toHaveTextContent("£468.00");
-    expect(screen.getByText("Labour cost").parentElement).toHaveTextContent("£174.00");
+    expect(screen.getByText("Parts Cost").parentElement).toHaveTextContent("£468.00");
+    expect(screen.getByText("Labour Cost").parentElement).toHaveTextContent("£174.00");
     expect(screen.getByText("£642.00")).toBeInTheDocument();
   });
 
@@ -131,6 +131,16 @@ describe("Pro DIY entitlements", () => {
     expect(screen.getByText("Owner Logged / DIY Record")).toBeInTheDocument();
     expect(screen.queryByText(/VAT Reg Verified/)).not.toBeInTheDocument();
   });
+
+  it("keeps sample workshop stamps while removing verification debug badges", () => {
+    render(<VaultProvider><TimelineItem s={{...service, is_verified_stamp:true, is_sample:true}} /></VaultProvider>);
+    expect(screen.getByText("Sample Workshop")).toBeInTheDocument();
+    expect(screen.getByText("Brakes")).toBeInTheDocument();
+    expect(screen.queryByText(/Development sample · VAT not live verified/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Verify$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Signed$/)).not.toBeInTheDocument();
+  });
+
   it("shows a locked receipt teaser without exposing a redacted image", () => {
     const {container}=render(<VaultProvider><TimelineItem s={{...service,image:undefined,has_receipt:true}} /></VaultProvider>);
     expect(screen.getByRole("button",{name:/upgrade to pro diy to view receipt photo/i})).toBeInTheDocument();

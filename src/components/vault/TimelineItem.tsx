@@ -81,14 +81,12 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             <Pill>{s.category}</Pill>
           </div>
         </div>
-        {isExpanded && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-3 border-t border-slate-800 pt-3">
+        {isExpanded && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-2.5 rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 text-xs text-slate-300">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Itemized Work &amp; OEM Specs</p>
           {s.items.length > 0 && (
-            <ul className="space-y-1 text-sm text-muted-foreground">
+            <ul className="list-inside list-disc space-y-1 text-[11px] leading-relaxed text-slate-300">
               {s.items.map((it, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  {it}
-                </li>
+                <li key={i}>{it}</li>
               ))}
             </ul>
           )}
@@ -133,9 +131,9 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             </div>
           )}
           {(s.partsCost != null || s.labourCost != null) && (
-            pro ? <div className="space-y-1 border-t border-slate-800 pt-2 text-xs text-muted-foreground">
-              {s.partsCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Parts cost</span><span>£{s.partsCost.toFixed(2)}</span></p>}
-              {s.labourCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Labour cost</span><span>£{s.labourCost.toFixed(2)}</span></p>}
+            pro ? <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-slate-800/80 pt-2.5 text-[11px]">
+              {s.partsCost != null && <div className="rounded-lg border border-slate-800/60 bg-slate-900/60 p-2 text-center"><span className="block text-[9px] font-semibold uppercase text-slate-400">Parts Cost</span><strong className="text-xs font-bold text-emerald-400">£{s.partsCost.toFixed(2)}</strong></div>}
+              {s.labourCost != null && <div className="rounded-lg border border-slate-800/60 bg-slate-900/60 p-2 text-center"><span className="block text-[9px] font-semibold uppercase text-slate-400">Labour Cost</span><strong className="text-xs font-bold text-cyan-400">£{s.labourCost.toFixed(2)}</strong></div>}
             </div> : !hasOemSection && <button type="button" onClick={() => setUpsell("cost")} className="text-xs font-semibold text-cyan-400 hover:text-cyan-300">Unlock itemized cost breakdown</button>
           )}
           {pro && s.invoice_data && <a href={s.invoice_data} download={s.invoice_name || "workshop-invoice.pdf"} className="block rounded-lg border border-slate-700 px-3 py-2 text-xs text-cyan-300">Download invoice · {s.invoice_name || "PDF"}</a>}

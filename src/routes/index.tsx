@@ -228,9 +228,12 @@ export function Dashboard() {
         </button>}
       </section>
 
-      {!registrationVerified && <section role="status" className="my-2.5 flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-2.5 px-3">
-        <span className="min-w-0 truncate text-xs font-semibold text-amber-200">⚠️ V5C Re-verification Needed</span>
-        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-[36px] shrink-0 whitespace-nowrap rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
+      {!registrationVerified && <section role="status" className="my-3 flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 px-4 shadow-sm">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="shrink-0 text-sm">⚠️</span>
+          <span className="truncate text-xs font-semibold text-amber-200">V5C Re-verification Needed</span>
+        </div>
+        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-[36px] shrink-0 whitespace-nowrap rounded-lg border border-amber-500/40 bg-amber-500/20 px-3.5 py-1.5 text-[11px] font-bold text-amber-300 transition-colors hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
           Re-Verify V5C
         </button>
       </section>}

@@ -1,0 +1,74 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute targeted visual updates in VehicleDataTools.tsx (Vehicle Dashboard) strictly following the preservation guardrails below. Do NOT alter, refactor, or delete any existing working components outside the explicit scope.
+
+---
+
+### 0. IMMUTABLE SCOPE & PRESERVATION GUARDRAILS (DO NOT MODIFY)
+
+1. DO NOT TOUCH the top vehicle header or the 2x2 status micro-pill grid (Keeper Verified, V5C Provisional, Untaxed, Uninsured).
+2. DO NOT TOUCH the 3-column financial summary row below MOT History (Total £931 / Parts £622 / Labour £309).
+3. DO NOT TOUCH the 3-record service timeline collapse state mechanism or button logic.
+4. DO NOT TOUCH any modal components, 2-column upload dropzones, or Account Settings view switches.
+
+---
+
+### 1. TARGETED FIX: V5C Banner Left Edge Squashing & Padding (`VehicleDataTools.tsx`)
+
+- Refactor V5C Alert Banner Padding & Spacing:
+  * LOCATE the yellow V5C re-verification alert container (`⚠️ V5C Re-verification Needed`).
+  * REPLACE ONLY its outer container padding and flex alignment with this exact structure:
+    `<div className="flex items-center justify-between gap-3 p-3 px-4 bg-amber-500/10 border border-amber-500/30 rounded-xl my-3 shadow-sm">`
+    `  <div className="flex items-center gap-2.5 min-w-0 flex-1">`
+    `    <span className="text-sm shrink-0">⚠️</span>`
+    `    <span className="text-xs font-semibold text-amber-200 truncate">V5C Re-verification Needed</span>`
+    `  </div>`
+    `  <button onClick={handleOpenV5CModal} className="min-h-[36px] px-3.5 py-1.5 text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg hover:bg-amber-500/30 shrink-0 whitespace-nowrap transition-colors">`
+    `    Re-Verify V5C`
+    `  </button>`
+    `</div>`
+
+---
+
+### 2. TARGETED FIX: Purge Residual Debug Badges (`VehicleDataTools.tsx`)
+
+- Service Card Badges Cleanup:
+  * LOCATE the service record rendering loop in `VehicleDataTools.tsx`.
+  * REMOVE ONLY the following debug string and badge renderings:
+    - Text string: `"Development sample · VAT not live verified"`
+    - Badge element: `"Verify"`
+    - Badge element: `"Signed"`
+  * PRESERVE all legitimate production badges (`Servicing`, `Brakes`, `Tyres`, `MOT`, `Repairs`, `Sample Workshop`).
+
+---
+
+### 3. TARGETED FIX: High-Contrast Inner Breakdown Box (`VehicleDataTools.tsx`)
+
+- Style Expanded Service Details:
+  * LOCATE the expanded card details block `{isExpanded && (...)}`.
+  * WRAP the expanded content inside a distinct dark inset container:
+    `<div className="mt-3 p-3.5 bg-slate-950/80 border border-slate-800/90 rounded-xl space-y-2.5 text-xs text-slate-300">`
+    `  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Itemized Work & OEM Specs</p>`
+    `  <ul className="space-y-1 text-slate-300 list-disc list-inside text-[11px] leading-relaxed">`
+    `    {/* Existing itemized list items remain unchanged here */}`
+    `  </ul>`
+    `  <div className="grid grid-cols-2 gap-2 pt-2.5 mt-2.5 border-t border-slate-800/80 text-[11px]">`
+    `    <div className="p-2 bg-slate-900/60 border border-slate-800/60 rounded-lg text-center"><span className="text-slate-400 block text-[9px] uppercase font-semibold">Parts Cost</span><strong className="text-emerald-400 font-bold text-xs">£{partsCost}</strong></div>`
+    `    <div className="p-2 bg-slate-900/60 border border-slate-800/60 rounded-lg text-center"><span className="text-slate-400 block text-[9px] uppercase font-semibold">Labour Cost</span><strong className="text-cyan-400 font-bold text-xs">£{labourCost}</strong></div>`
+    `  </div>`
+    `</div>`
+
+---
+
+### 4. TARGETED FIX: Bottom Safe-Area Scroll Clearance (`VehicleDataTools.tsx`)
+
+- Prevent Bottom Floating Navigation Overlay:
+  * LOCATE the main outer container wrapper of the Vehicle Dashboard tab.
+  * UPDATE the bottom padding class to: `pb-[calc(8rem+env(safe-area-inset-bottom))]` (or `pb-32`).
+  * This ensures the bottom financial summary card (`TOTAL £931 · PARTS £622 · LABOUR £309`) scrolls completely clear of the floating bottom navigation bar.
+
+---
+
+### 5. VERIFICATION & TEST CHECKS
+
+- Run `npm test` to verify all 175+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build compilation success.
