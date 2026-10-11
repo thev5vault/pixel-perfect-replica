@@ -228,12 +228,9 @@ export function Dashboard() {
         </button>}
       </section>
 
-      {!registrationVerified && <section role="status" className="my-2.5 flex min-h-16 items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200/90">
-        <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-amber-200">
-          <span aria-hidden="true" className="shrink-0">⚠️</span>
-          <span className="truncate">V5C Logbook Re-verification Required</span>
-        </div>
-        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-11 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
+      {!registrationVerified && <section role="status" className="my-2.5 flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-2.5 px-3">
+        <span className="min-w-0 truncate text-xs font-semibold text-amber-200">⚠️ V5C Re-verification Needed</span>
+        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-[36px] shrink-0 whitespace-nowrap rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
           Re-Verify V5C
         </button>
       </section>}
@@ -286,7 +283,7 @@ export function Dashboard() {
               ? <>
                   <ol className="relative space-y-4 border-l border-primary/30 pl-5">{visibleHistory.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
                   {history.length > 3 && <button type="button" aria-expanded={showAllServiceRecords} onClick={() => setShowAllServiceRecords((expanded) => !expanded)} className="my-3 flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-cyan-400 transition-colors hover:bg-slate-800">
-                    {showAllServiceRecords ? "📂 Collapse Service Records ˄" : `📂 View All Service Records (Showing 3 of ${history.length}) ˅`}
+                    {showAllServiceRecords ? "📂 Collapse Timeline ˄" : `📂 View All Service Records (${history.length}) ˅`}
                   </button>}
                 </>
               : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">

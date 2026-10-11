@@ -184,10 +184,10 @@ describe("V1 polish", () => {
     const { container } = render(<VaultProvider><Dashboard /></VaultProvider>);
 
     expect(container.querySelectorAll("ol > li")).toHaveLength(3);
-    const expand = screen.getByRole("button", { name: /View All Service Records \(Showing 3 of 4\)/ });
+    const expand = screen.getByRole("button", { name: /View All Service Records \(4\)/ });
     fireEvent.click(expand);
     expect(container.querySelectorAll("ol > li")).toHaveLength(4);
-    expect(screen.getByRole("button", { name: /Collapse Service Records/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Collapse Timeline/ })).toHaveAttribute("aria-expanded", "true");
 
     const summaries = screen.getAllByRole("region", { name: "Timeline spend summary" });
     expect(summaries).toHaveLength(1);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarPlus, LockKeyhole } from "lucide-react";
+import { CalendarPlus, ChevronDown, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { can, fmtDate, fmtMiles, useVault, type ServiceRecord } from "@/lib/vault-store";
 import { useAccount } from "@/lib/account-store";
@@ -11,6 +11,7 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
   const account = useAccount();
   const pro = can.diy(role);
   const [upsell, setUpsell] = useState<"parts" | "receipt" | "cost" | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingDate, setBookingDate] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
@@ -31,10 +32,23 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
             <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
               <span>{fmtDate(s.date)}</span>·<span>{fmtMiles(s.mileage)}</span>
             </div>
-            <h3 className="mt-0.5 font-bold">{s.description}</h3>
-            <p className="text-sm text-muted-foreground">{s.garage}</p>
+            <h3 className="mt-0.5 break-words font-bold">{s.description}</h3>
+            <span className="mt-1 inline-flex max-w-full truncate rounded-md border border-slate-700/70 bg-slate-800/60 px-2 py-0.5 text-xs text-slate-300">{s.garage}</span>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
+            <div className="flex items-center gap-1.5">
+              {s.cost != null && <Pill>£{s.cost.toFixed(2)}</Pill>}
+              <button
+                type="button"
+                aria-expanded={isExpanded}
+                aria-controls={`service-breakdown-${s.id}`}
+                onClick={() => setIsExpanded((expanded) => !expanded)}
+                className="flex cursor-pointer items-center gap-1 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300"
+              >
+                {isExpanded ? "Hide Breakdown" : "Breakdown"}
+                <ChevronDown aria-hidden="true" className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              </button>
+            </div>
             {!pro && (hasOemSection || s.partsCost != null || s.labourCost != null || s.cost != null) && (
               <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY</Pill>
             )}
@@ -57,77 +71,75 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
               ))}
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {s.is_verified_stamp === true
-            ? s.stamp_authority==="administrator"
-              ? <Pill tone="primary">{s.is_sample?"Sample administrator stamp":"Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
-              : <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
-            : <Pill><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Owner Logged / DIY Record</Pill>}
-          <Pill>{s.category}</Pill>
-          {s.cost != null && pro && <Pill>£{s.cost.toFixed(2)}</Pill>}
-          {s.cost != null && !pro && !hasOemSection && (
-            <button type="button" onClick={() => setUpsell("cost")} className="rounded-full">
-              <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY cost breakdown</Pill>
-            </button>
-          )}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {s.is_verified_stamp === true
+              ? s.stamp_authority==="administrator"
+                ? <Pill tone="primary">{s.is_sample?"Sample administrator stamp":"Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
+                : <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
+              : <Pill><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Owner Logged / DIY Record</Pill>}
+            <Pill>{s.category}</Pill>
+          </div>
         </div>
-        {pro && s.invoice_data && <a href={s.invoice_data} download={s.invoice_name || "workshop-invoice.pdf"} className="mt-3 block rounded-lg border border-slate-700 px-3 py-2 text-xs text-cyan-300">Download invoice · {s.invoice_name || "PDF"}</a>}
-        {s.items.length > 0 && (
-          <ul className="mt-3 space-y-1 border-t pt-3 text-sm text-muted-foreground">
-            {s.items.map((it, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-primary">•</span>
-                {it}
-              </li>
-            ))}
-          </ul>
-        )}
-        {hasOemSection && (
-          <div className="mt-3 border-t pt-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OEM Parts &amp; Fluid Specs</p>
-            <button
-              type="button"
-              disabled={pro}
-              onClick={() => !pro && setUpsell("parts")}
-              aria-label={pro ? undefined : "Unlock itemized OEM parts and fluid specifications"}
-              className="mt-1 block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-default"
-            >
-              <ul className="space-y-1 text-xs" aria-label="Itemized parts">
-                {(s.parts ?? []).map((p, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
-                    <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
-                    <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-primary" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
-                      {p.partNo || "Part number unavailable"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {s.fluids && (
-                <div className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
-                  <span className="min-w-0 flex-1 text-muted-foreground">Fluid specs</span>
-                  <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-muted-foreground" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
-                    {s.fluids}
-                  </span>
-                </div>
-              )}
-            </button>
-            {!pro && (
+        {isExpanded && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-3 border-t border-slate-800 pt-3">
+          {s.items.length > 0 && (
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {s.items.map((it, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-primary">•</span>
+                  {it}
+                </li>
+              ))}
+            </ul>
+          )}
+          {hasOemSection && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">OEM Parts &amp; Fluid Specs</p>
               <button
                 type="button"
-                onClick={() => setUpsell("parts")}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-2 text-xs font-medium text-cyan-400 shadow-sm transition-colors hover:bg-cyan-900/50"
+                disabled={pro}
+                onClick={() => !pro && setUpsell("parts")}
+                aria-label={pro ? undefined : "Unlock itemized OEM parts and fluid specifications"}
+                className="mt-1 block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:cursor-default"
               >
-                Unlock Itemized Parts &amp; Fluid Specs (£0.99/mo)
+                <ul className="space-y-1 text-xs" aria-label="Itemized parts">
+                  {(s.parts ?? []).map((p, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
+                      <span className="min-w-0 flex-1 text-muted-foreground">{p.name}</span>
+                      <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-primary" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                        {p.partNo || "Part number unavailable"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {s.fluids && (
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-800/50 py-1 text-xs">
+                    <span className="min-w-0 flex-1 text-muted-foreground">Fluid specs</span>
+                    <span className={`min-w-0 max-w-[60%] break-words text-right font-mono ${pro ? "text-muted-foreground" : "select-none text-slate-400 opacity-40 blur-sm"}`}>
+                      {s.fluids}
+                    </span>
+                  </div>
+                )}
               </button>
-            )}
-            {pro && (s.partsCost != null || s.labourCost != null) && (
-              <div className="mt-2 space-y-1 border-t border-slate-800 pt-2 text-xs text-muted-foreground">
-                {s.partsCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Parts cost</span><span>£{s.partsCost.toFixed(2)}</span></p>}
-                {s.labourCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Labour cost</span><span>£{s.labourCost.toFixed(2)}</span></p>}
-              </div>
-            )}
-          </div>
-        )}
+              {!pro && (
+                <button
+                  type="button"
+                  onClick={() => setUpsell("parts")}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/40 px-3 py-2 text-xs font-medium text-cyan-400 shadow-sm transition-colors hover:bg-cyan-900/50"
+                >
+                  Unlock Itemized Parts &amp; Fluid Specs (£0.99/mo)
+                </button>
+              )}
+            </div>
+          )}
+          {(s.partsCost != null || s.labourCost != null) && (
+            pro ? <div className="space-y-1 border-t border-slate-800 pt-2 text-xs text-muted-foreground">
+              {s.partsCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Parts cost</span><span>£{s.partsCost.toFixed(2)}</span></p>}
+              {s.labourCost != null && <p className="flex items-center justify-between gap-3 py-1"><span>Labour cost</span><span>£{s.labourCost.toFixed(2)}</span></p>}
+            </div> : !hasOemSection && <button type="button" onClick={() => setUpsell("cost")} className="text-xs font-semibold text-cyan-400 hover:text-cyan-300">Unlock itemized cost breakdown</button>
+          )}
+          {pro && s.invoice_data && <a href={s.invoice_data} download={s.invoice_name || "workshop-invoice.pdf"} className="block rounded-lg border border-slate-700 px-3 py-2 text-xs text-cyan-300">Download invoice · {s.invoice_name || "PDF"}</a>}
+        </div>}
         {bookable && s.is_verified_stamp === true && s.is_sample !== true && account?.signedIn && (
           <div className="mt-3">
             {!bookingOpen ? <button type="button" onClick={() => setBookingOpen(true)} className="btn-ghost w-full text-sm"><CalendarPlus className="h-4 w-4" /> Book with {s.garage}</button> :

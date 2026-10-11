@@ -32,6 +32,8 @@ describe("Pro DIY entitlements", () => {
       </VaultProvider>,
     );
 
+    expect(screen.queryByText("Brembo 09.C401.13")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Breakdown/ }));
     expect(screen.getByText("Brembo 09.C401.13")).toHaveClass("blur-sm", "select-none", "opacity-40", "text-slate-400");
     expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).toHaveClass("blur-sm", "font-mono");
     expect(screen.getByText("Fluid specs")).not.toHaveClass("blur-sm");
@@ -58,6 +60,7 @@ describe("Pro DIY entitlements", () => {
     );
 
     await waitFor(() => expect(screen.getByRole("button", { name: "View Brake replacement receipt" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Breakdown/ }));
     expect(screen.getByText("Brembo 09.C401.13")).not.toHaveClass("blur-sm");
     expect(screen.getByText("Castrol Edge 5W-30 LL 4.6L")).not.toHaveClass("blur-sm");
     expect(container.querySelector("img")?.className).not.toContain("blur-[4px]");
