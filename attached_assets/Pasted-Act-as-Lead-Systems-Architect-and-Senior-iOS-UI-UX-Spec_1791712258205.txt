@@ -1,0 +1,56 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute a precise visual refactoring of the Vehicle Header component (`src/components/vehicle/VehicleHeader.tsx` or `VehicleCard.tsx`) to fix the UK VRM plate proportions and convert all status badges into slim, glowing micro-pills with simple text labels.
+
+---
+
+### 1. Hardcoded Simple Text Mappings & Slim Micro-Pill Styling
+
+Replace long status strings with concise, high-impact terms and slim down the pill dimensions:
+
+- Micro-Pill Sizing & Base Styling:
+  * Apply: `inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none`.
+  * Do NOT use thick outline rings or large padding (`py-2`). Keep them slim, compact, and perfectly legible.
+
+- Explicit Text & Color-Glow Rules:
+  1. **Tax Status:**
+     * If Taxed: Display string `"Taxed"` with Emerald Green Glow: `bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]`.
+     * If Not Taxed / Unrecorded: Display string `"Untaxed"` with Rose Red Glow: `bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.25)]`.
+
+  2. **Insurance Status:**
+     * If Insured: Display string `"Insured"` with Emerald Green Glow: `bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]`.
+     * If Not Insured / Unverified: Display string `"Uninsured"` with Rose Red Glow: `bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.25)]`.
+
+  3. **Keeper Verification:**
+     * If Verified: Display string `"Keeper Verified"` with Emerald Green Glow: `bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]`.
+     * If Unverified / Pending: Display string `"Keeper Unverified"` with Amber Gold Glow: `bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.25)]`.
+
+- Micro-Pill Layout Row:
+  * Container: `flex flex-wrap items-center gap-2 mt-2 mb-1`.
+  * Ensure all micro-pills sit on a single neat line (or wrap cleanly on narrow 375px screens) without taking up vertical card height.
+
+---
+
+### 2. Authentic UK VRM Registration Plate Styling (`VehicleHeader.tsx`)
+
+- Re-architect the UK Number Plate (`LG57 VYF`):
+  * Container: `inline-flex items-center h-8 bg-[#FFD500] border border-yellow-500/60 rounded-md overflow-hidden shadow-sm shrink-0 select-none mb-1.5`.
+  * Left Blue UK Flag/Band: `flex flex-col items-center justify-center w-4 h-full bg-[#003399] text-white text-[8px] font-black px-1 rounded-l-md shrink-0 mr-1.5`.
+  * Registration Text: `px-2 text-xs sm:text-sm font-mono font-black text-black tracking-widest uppercase leading-none`.
+  * Ensure the plate has crisp rectangular plate proportions (not an oval pill) and sits neatly above the vehicle title (`Audi A4`).
+
+---
+
+### 3. Header Card Space Optimization
+
+- Title & Subtitle:
+  * Title: `text-xl sm:text-2xl font-bold text-white tracking-tight leading-snug` (`Audi A4`).
+  * Subtitle: `text-xs text-slate-400 font-medium` (`2007 · Petrol`).
+- Collapsible Link:
+  * `text-xs text-cyan-400 font-medium hover:underline inline-flex items-center gap-1 mt-2` (`View Full Specifications ˅`).
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit/integration tests pass (updating status string assertions to `"Taxed"`, `"Untaxed"`, `"Insured"`, `"Uninsured"` where required).
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

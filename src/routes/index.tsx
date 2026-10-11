@@ -31,6 +31,8 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
+const STATUS_PILL_BASE = "inline-flex items-center px-2.5 py-0.5 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -118,11 +120,11 @@ export function Dashboard() {
   const taxDays = effectiveTaxExpiry ? Math.ceil((new Date(`${effectiveTaxExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
   const recordedTaxStatus = vehicle.taxStatus ?? "";
   const taxBadge = taxDays !== undefined
-    ? taxDays < 0 ? "Not Taxed" : taxDays <= 30 ? "Tax Due" : "Taxed"
-    : /not taxed|untaxed|sorn/i.test(recordedTaxStatus) ? "Not Taxed"
+    ? taxDays < 0 ? "Untaxed" : taxDays <= 30 ? "Tax Due" : "Taxed"
+    : /not taxed|untaxed|sorn/i.test(recordedTaxStatus) ? "Untaxed"
       : /due/i.test(recordedTaxStatus) ? "Tax Due"
-        : /taxed/i.test(recordedTaxStatus) ? "Taxed" : "Tax Unrecorded";
-  const insuranceBadge = insuranceDays === undefined ? "Insurance Unverified" : insuranceDays < 0 ? "Not Insured" : "Insured";
+        : /taxed/i.test(recordedTaxStatus) ? "Taxed" : "Untaxed";
+  const insuranceBadge = insuranceDays === undefined || insuranceDays < 0 ? "Uninsured" : "Insured";
   const openStatusEditor = () => {
     setDraftTaxExpiry(effectiveTaxExpiry);
     setDraftInsuranceExpiry(insuranceExpiry);
@@ -166,23 +168,24 @@ export function Dashboard() {
         <div className="relative flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <Plate vrm={vehicle.vrm} size="lg" />
-            <h1 className="mt-3 break-words text-2xl font-bold tracking-tight">
+            <h1 className="mt-0 break-words text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl">
               {vehicle.make} {vehicle.model}
             </h1>
             <p className="mt-1 break-words text-xs font-medium text-slate-400">
               {vehicleSubtitle}
             </p>
           </div>
-          <div className="my-2 flex max-w-full flex-wrap items-center gap-2 sm:justify-end">
-            <Pill className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide shadow-sm backdrop-blur-sm transition-all ${registrationVerified ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]" : "border-amber-500/50 bg-amber-500/20 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.35)]"}`}>
-              {vehicle.is_sample ? "Sample · " : ""}{registrationVerified ? "Keeper Verified" : "Keeper Unverified"}
-            </Pill>
-            <Pill className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-300 shadow-sm backdrop-blur-sm">
+          <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
+            {vehicle.is_sample && <span className={`${STATUS_PILL_BASE} border-slate-700 bg-slate-900/80 text-slate-300`}>Sample</span>}
+            <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]"}`}>
+              {registrationVerified ? "Keeper Verified" : "Keeper Unverified"}
+            </span>
+            <span className={`${STATUS_PILL_BASE} border-slate-700 bg-slate-900/80 text-slate-300`}>
               V5C · {vehicle.verification_tier === "government_data" ? "Government Data" : vehicle.verification_tier === "workshop_checked" ? "Workshop Checked" : "Provisional"}
-            </Pill>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide shadow-sm backdrop-blur-sm transition-all ${taxBadge === "Taxed" ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]" : taxBadge === "Tax Due" || taxBadge === "Tax Unrecorded" ? "border-amber-500/50 bg-amber-500/20 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.35)]" : "border-rose-500/50 bg-rose-500/20 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.35)]"}`}>{taxBadge}</button>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wide shadow-sm backdrop-blur-sm transition-all ${insuranceBadge === "Insured" ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]" : insuranceBadge === "Insurance Unverified" ? "border-amber-500/50 bg-amber-500/20 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.35)]" : "border-rose-500/50 bg-rose-500/20 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.35)]"}`}>{insuranceBadge}</button>
-            {vehicle.is_scrapped && <Pill tone="warning"><AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />Scrapped · read-only</Pill>}
+            </span>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className={`${STATUS_PILL_BASE} cursor-pointer ${taxBadge === "Taxed" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : taxBadge === "Tax Due" ? "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.25)]"}`}>{taxBadge}</button>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className={`${STATUS_PILL_BASE} cursor-pointer ${insuranceBadge === "Insured" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_10px_rgba(244,63,94,0.25)]"}`}>{insuranceBadge}</button>
+            {vehicle.is_scrapped && <span className={`${STATUS_PILL_BASE} border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]`}>Scrapped · read-only</span>}
           </div>
         </div>
         {(!easyView || specificationsExpanded) && <div className="relative my-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
@@ -192,8 +195,8 @@ export function Dashboard() {
           <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
         </div>}
         {(!easyView || specificationsExpanded) && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
-        {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setExpandedSpecificationKey(specificationsExpanded ? null : specificationViewKey)} className="mt-1 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:text-cyan-300">
-          {specificationsExpanded ? "Hide full specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "⌃" : "⌄"}</span>
+        {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setExpandedSpecificationKey(specificationsExpanded ? null : specificationViewKey)} className="mt-2 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:underline">
+          {specificationsExpanded ? "Hide Full Specifications" : "View Full Specifications"} <span aria-hidden="true">{specificationsExpanded ? "⌃" : "⌄"}</span>
         </button>}
       </section>
 
