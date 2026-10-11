@@ -215,7 +215,7 @@ describe("V1 polish", () => {
 
   it("shows the latest passed MOT date and a grammatical due countdown", () => {
     render(<VaultProvider><Dashboard /></VaultProvider>);
-    expect(screen.getByText("⚠️ MOT Due Soon")).toBeInTheDocument();
+    expect(screen.getByText("MOT Due Soon")).toBeInTheDocument();
     expect(screen.getByText(/Passed on 18 Nov 2025 · Due in \d+ days/)).toBeInTheDocument();
   });
 

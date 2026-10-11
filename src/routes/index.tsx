@@ -266,7 +266,7 @@ export function Dashboard() {
           icon={<AlertTriangle className="h-5 w-5" />}
           title="MOT Status"
           ok={motDays > 42}
-          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "⚠️ MOT Due Soon"}
+          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "MOT Due Soon"}
           meta={motDetail}
           forceWarn
           easy={easyView}
