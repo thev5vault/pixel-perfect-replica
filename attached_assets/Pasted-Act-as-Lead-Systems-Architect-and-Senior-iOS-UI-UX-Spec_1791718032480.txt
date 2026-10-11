@@ -1,0 +1,47 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Refine the Vehicle Header component (`src/components/vehicle/VehicleHeader.tsx` or `VehicleCard.tsx`) to fix the UK VRM plate blue band alignment, lock status badges into a clean 2x2 grid, move Colour to the subtitle line, and replace Colour in the specification grid with Transmission.
+
+---
+
+### 1. Edge-to-Edge UK VRM Blue Strip Alignment (`VehicleHeader.tsx`)
+
+- Fix Blue Strip Offset & Border Alignment:
+  * Fix the vertical and left-side alignment of the blue UK strip so it sits completely flush against the yellow plate container without gaps or clipping.
+  * Plate Container: `inline-flex items-center h-9 sm:h-10 bg-[#FFD500] border border-yellow-500/60 rounded-md overflow-hidden shadow-sm shrink-0 select-none mb-2`.
+  * Left Blue UK Band: `flex flex-col items-center justify-center w-5 h-full bg-[#003399] text-white text-[8px] sm:text-[9px] font-black px-1 shrink-0 rounded-l-[5px] border-r border-yellow-500/40`.
+  * Registration Text: `px-2 text-sm sm:text-base font-mono font-black text-black tracking-wider uppercase leading-none flex items-center h-full`.
+
+---
+
+### 2. Structured 2x2 Micro-Pill Matrix (`VehicleHeader.tsx`)
+
+- Implement Balanced 2x2 Grid Layout:
+  * Replace wrapping flex rows with a fixed 2-column grid container: `grid grid-cols-2 gap-2 my-2.5 max-w-[340px]`.
+  * Micro-Pill Sizing: `flex items-center justify-center px-2.5 py-1 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none text-center whitespace-nowrap min-h-[28px]`.
+
+- Fixed Grid Position & Ambient Glow Classes:
+  * **Top Left (Cell 1):** `Keeper Verified` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]`) or `Keeper Unverified` (`bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.25)]`).
+  * **Top Right (Cell 2):** `V5C Verified` or `V5C Provisional` (`bg-slate-800/80 text-slate-300 border-slate-700/60`).
+  * **Bottom Left (Cell 3):** `Taxed` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]`) or `Untaxed` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.25)]`).
+  * **Bottom Right (Cell 4):** `Insured` (`bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]`) or `Uninsured` (`bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.25)]`).
+
+---
+
+### 3. Subtitle & 2x2 Specification Matrix Refactoring
+
+- Header Subtitle Line:
+  * Update subtitle text to include Colour: `2007 · Petrol · Silver` (`text-xs text-slate-400 font-medium`).
+
+- Detailed Spec Grid (`viewMode === 'detailed'`):
+  * Replace the `COLOUR` card in the $2\times2$ grid with `TRANSMISSION` (e.g. `Manual 6-Speed` or `Automatic`):
+    1. **ODOMETER:** e.g., `87,420 mi` or `Not recorded`.
+    2. **ENGINE SPECS:** e.g., `1,984 cc (BUL)`.
+    3. **FIRST REGISTERED:** e.g., `17 Sep 2007`.
+    4. **TRANSMISSION:** e.g., `Manual` or `6-Speed Manual`.
+
+---
+
+### 4. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.

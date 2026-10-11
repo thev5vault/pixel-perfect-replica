@@ -31,7 +31,7 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
-const STATUS_PILL_BASE = "inline-flex items-center px-2 py-0.5 text-[10px] sm:text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none whitespace-nowrap";
+const STATUS_PILL_BASE = "flex w-fit items-center justify-center px-2.5 py-1 text-[11px] font-bold tracking-wide rounded-full border shrink-0 transition-all select-none text-center whitespace-nowrap min-h-[28px]";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -120,10 +120,8 @@ export function Dashboard() {
   const taxDays = effectiveTaxExpiry ? Math.ceil((new Date(`${effectiveTaxExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
   const recordedTaxStatus = vehicle.taxStatus ?? "";
   const taxBadge = taxDays !== undefined
-    ? taxDays < 0 ? "Untaxed" : taxDays <= 30 ? "Tax Due" : "Taxed"
-    : /not taxed|untaxed|sorn/i.test(recordedTaxStatus) ? "Untaxed"
-      : /due/i.test(recordedTaxStatus) ? "Tax Due"
-        : /taxed/i.test(recordedTaxStatus) ? "Taxed" : "Untaxed";
+    ? taxDays < 0 ? "Untaxed" : "Taxed"
+    : /\btaxed\b/i.test(recordedTaxStatus) && !/not taxed|untaxed|sorn|due/i.test(recordedTaxStatus) ? "Taxed" : "Untaxed";
   const insuranceBadge = insuranceDays === undefined || insuranceDays < 0 ? "Uninsured" : "Insured";
   const openStatusEditor = () => {
     setDraftTaxExpiry(effectiveTaxExpiry);
@@ -143,6 +141,7 @@ export function Dashboard() {
   const vehicleSubtitle = [
     vehicle.year,
     vehicle.fuelType,
+    vehicle.colour,
     !easyView && vehicle.engineCapacity ? `${(vehicle.engineCapacity / 1000).toFixed(1)}L` : undefined,
   ].filter(Boolean).join(" · ") || "Vehicle specifications not recorded";
 
@@ -175,31 +174,31 @@ export function Dashboard() {
               {vehicleSubtitle}
             </p>
           </div>
-          <div data-testid="vehicle-status-pills" className="mt-2 mb-1 flex w-full flex-wrap items-center gap-1.5">
-            <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]"}`}>
+          <div data-testid="vehicle-status-pills" className="my-2.5 grid w-full max-w-[340px] grid-cols-2 gap-2">
+            <span className={`${STATUS_PILL_BASE} ${registrationVerified ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]" : "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.25)]"}`}>
               {registrationVerified ? "Keeper Verified" : "Keeper Unverified"}
             </span>
             <span
-              aria-label={`${vehicle.is_sample ? "Development sample. " : ""}V5C verification: ${vehicle.verification_tier === "government_data" ? "Government data" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional"}`}
-              title={`${vehicle.is_sample ? "Development sample · " : ""}V5C verification: ${vehicle.verification_tier === "government_data" ? "Government data" : vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional"}`}
+              aria-label={`${vehicle.is_sample ? "Development sample. " : ""}V5C ${vehicle.verification_tier === "government_data" ? "Verified" : "Provisional"}`}
+              title={`${vehicle.is_sample ? "Development sample · " : ""}V5C ${vehicle.verification_tier === "government_data" ? "Verified" : "Provisional"}`}
               className={`${STATUS_PILL_BASE} border-slate-700/60 bg-slate-800/80 text-slate-300`}
             >
-              V5C
+              V5C {vehicle.verification_tier === "government_data" ? "Verified" : "Provisional"}
             </span>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center border-0 bg-transparent p-0">
-              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${taxBadge === "Taxed" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : taxBadge === "Tax Due" ? "border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.2)]"}`}>{taxBadge}</span>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle tax reminder. Current status: ${taxBadge}`} className="flex min-h-11 w-full items-center justify-center border-0 bg-transparent p-0">
+              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${taxBadge === "Taxed" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.25)]"}`}>{taxBadge}</span>
             </button>
-            <button type="button" onClick={openStatusEditor} aria-label={`Edit insurance reminder. Current status: ${insuranceBadge}`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center border-0 bg-transparent p-0">
-              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${insuranceBadge === "Insured" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.2)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.2)]"}`}>{insuranceBadge}</span>
+            <button type="button" onClick={openStatusEditor} aria-label={`Edit vehicle insurance reminder. Current status: ${insuranceBadge}`} className="flex min-h-11 w-full items-center justify-center border-0 bg-transparent p-0">
+              <span aria-hidden="true" className={`${STATUS_PILL_BASE} ${insuranceBadge === "Insured" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]" : "border-rose-500/40 bg-rose-500/15 text-rose-300 shadow-[0_0_8px_rgba(244,63,94,0.25)]"}`}>{insuranceBadge}</span>
             </button>
-            {vehicle.is_scrapped && <span className={`${STATUS_PILL_BASE} border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]`}>Scrapped · read-only</span>}
           </div>
+          {vehicle.is_scrapped && <p className="text-xs font-semibold text-amber-300">Scrapped · read-only</p>}
         </div>
         {(!easyView || specificationsExpanded) && <div className="relative my-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
           <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
           <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
           <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
-          <VehicleSpecification label="Colour" value={vehicle.colour || "Not recorded"} />
+          <VehicleSpecification label="Transmission" value={vehicle.transmission || "Not recorded"} />
         </div>}
         {(!easyView || specificationsExpanded) && vehicle.vin && <VehicleSpecification label="VIN Provenance" value={vehicle.vin} />}
         {easyView && <button type="button" aria-expanded={specificationsExpanded} onClick={() => setExpandedSpecificationKey(specificationsExpanded ? null : specificationViewKey)} className="mt-2 inline-flex min-h-9 items-center gap-1 px-1 text-xs font-medium text-cyan-400 hover:underline">

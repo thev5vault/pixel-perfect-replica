@@ -112,6 +112,7 @@ export interface Vehicle {
   vin?: string | undefined;
   physically_inspected_vin?: boolean | undefined;
   engineCapacity?: number | undefined;
+  transmission?: string | undefined;
   taxStatus?: string | undefined;
   taxDueDate?: string | undefined;
   public_enabled?: boolean;

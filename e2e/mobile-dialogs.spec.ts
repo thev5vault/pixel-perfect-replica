@@ -235,7 +235,7 @@ test("browser Back closes the active dialog before leaving its route", async ({ 
   await expect(page).toHaveURL(/\/vehicle$/);
 });
 
-test("vehicle header plate and status pills fit on one line at 375px", async ({ page }) => {
+test("vehicle header plate and status matrix fit at 375px", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await startSamplePreview(page);
   await checkPageHasNoHorizontalOverflow(page, "vehicle header at 375px");
@@ -245,21 +245,19 @@ test("vehicle header plate and status pills fit on one line at 375px", async ({ 
   await expect(plate).toHaveCSS("height", "36px");
   const pillRow = page.getByTestId("vehicle-status-pills");
   await expect(pillRow.getByText("Keeper Unverified", { exact: true })).toBeVisible();
-  await expect(pillRow.getByText("V5C", { exact: true })).toBeVisible();
+  await expect(pillRow.getByText(/V5C (Verified|Provisional)/)).toBeVisible();
   const pillRects = await pillRow.locator(":scope > *").evaluateAll((items) =>
     items.map((item) => {
       const { top, left, width, height } = item.getBoundingClientRect();
       return { label: item.textContent?.trim(), top, left, width, centerY: top + height / 2 };
     }),
   );
-  const rowBounds = await pillRow.evaluate((row) => {
-    const { left, right, width } = row.getBoundingClientRect();
-    return { left, right, width };
-  });
-  expect(
-    Math.max(...pillRects.map((item) => item.centerY)) - Math.min(...pillRects.map((item) => item.centerY)),
-    JSON.stringify({ rowBounds, pillRects }),
-  ).toBeLessThanOrEqual(1);
+  expect(pillRects).toHaveLength(4);
+  expect(Math.abs(pillRects[0].centerY - pillRects[1].centerY)).toBeLessThanOrEqual(1);
+  expect(Math.abs(pillRects[2].centerY - pillRects[3].centerY)).toBeLessThanOrEqual(1);
+  expect(pillRects[2].top).toBeGreaterThan(pillRects[0].top);
+  expect(pillRects[0].left).toBeLessThan(pillRects[1].left);
+  expect(pillRects[2].left).toBeLessThan(pillRects[3].left);
 });
 
 for (const viewport of viewports) {
