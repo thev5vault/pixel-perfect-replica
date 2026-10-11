@@ -17,6 +17,14 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingBusy, setBookingBusy] = useState(false);
   const hasOemSection = Boolean((s.parts?.length ?? 0) > 0 || s.fluids);
+  const hasBreakdownData = s.items.length > 0
+    || (s.parts?.length ?? 0) > 0
+    || Boolean(s.fluids)
+    || (s.partsCost ?? 0) > 0
+    || (s.labourCost ?? 0) > 0;
+  const garageName = s.garage.trim() && !/^(?:owner logged )?diy$/i.test(s.garage.trim()) ? s.garage.trim() : "";
+  const isAdminStamp = s.is_verified_stamp === true && s.stamp_authority === "administrator";
+  const isSampleWorkshopStamp = s.is_sample === true && s.is_verified_stamp === true && !isAdminStamp;
   const upsellCopy = {
     parts: "Upgrade to Pro DIY (£0.99/mo) for itemized parts and fluid specifications.",
     receipt: "Upgrade to Pro DIY (£0.99/mo) to view receipt photos.",
@@ -27,27 +35,25 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
     <li className="relative">
       <span className="absolute -left-[27px] top-4 h-3 w-3 rounded-full border-2 border-background bg-primary glow" />
       <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-              <span>{fmtDate(s.date)}</span>·<span>{fmtMiles(s.mileage)}</span>
+        <div className="flex w-full min-w-0 flex-col gap-1.5">
+          <div className="flex w-full items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                <span>{fmtDate(s.date)}</span>·<span>{fmtMiles(s.mileage)}</span>
+              </div>
+              <h3 className="mt-0.5 truncate text-sm font-bold text-white">{s.description}</h3>
             </div>
-            <h3 className="mt-0.5 break-words font-bold">{s.description}</h3>
-            <span className="mt-1 inline-flex max-w-full truncate rounded-md border border-slate-700/70 bg-slate-800/60 px-2 py-0.5 text-xs text-slate-300">{s.garage}</span>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <div className="flex items-center gap-1.5">
-              {s.cost != null && <Pill>£{s.cost.toFixed(2)}</Pill>}
-              <button
+            <div className="flex shrink-0 items-center gap-2">
+              {s.cost != null && s.cost > 0 && <span className="rounded-lg border border-slate-700/80 bg-slate-800/90 px-2 py-0.5 text-xs font-bold text-slate-200">£{s.cost.toFixed(2)}</span>}
+              {hasBreakdownData && <button
                 type="button"
                 aria-expanded={isExpanded}
-                aria-controls={`service-breakdown-${s.id}`}
+                aria-controls={isExpanded ? `service-breakdown-${s.id}` : undefined}
                 onClick={() => setIsExpanded((expanded) => !expanded)}
-                className="flex cursor-pointer items-center gap-1 rounded-md border border-slate-700/60 bg-slate-800/60 px-2 py-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300"
+                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-slate-700/80 bg-slate-800/80 px-2 py-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300"
               >
-                {isExpanded ? "Hide Breakdown" : "Breakdown"}
-                <ChevronDown aria-hidden="true" className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-              </button>
+                {isExpanded ? "Hide Breakdown ˄" : "Breakdown ˅"}
+              </button>}
             </div>
             {!pro && (hasOemSection || s.partsCost != null || s.labourCost != null || s.cost != null) && (
               <Pill><LockKeyhole className="h-3 w-3" /> Pro DIY</Pill>
@@ -70,18 +76,21 @@ export function TimelineItem({ s, bookable = false }: { s: ServiceRecord; bookab
                 </button>
               ))}
           </div>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5">
-            {s.is_verified_stamp === true
-              ? s.stamp_authority==="administrator"
-                ? <Pill tone="primary">{s.is_sample?"Sample administrator stamp":"Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
-                : <VerifiedBadge sample={s.is_sample === true} garage={s.garage} signature={s.stamp_signature} recordId={s.id} />
-              : <Pill><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Owner Logged / DIY Record</Pill>}
-            <Pill>{s.category}</Pill>
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-slate-400">
+            {isSampleWorkshopStamp
+              ? <VerifiedBadge sample />
+              : garageName
+                ? <span title={garageName} className="max-w-full break-words whitespace-normal rounded-md border border-slate-800 bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-slate-300">{garageName}</span>
+                : <Pill><span aria-hidden="true">🛠️</span> Owner Logged / DIY</Pill>}
+            {s.is_verified_stamp === true && (
+              isAdminStamp
+                ? <Pill tone="primary">{s.is_sample ? "Sample administrator stamp" : "Administrator-signed record"} · <a className="underline" href={`/verify/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">Verify signature</a></Pill>
+                : !s.is_sample && <VerifiedBadge sample={false} />
+            )}
+            <Pill>{s.category || "Servicing"}</Pill>
           </div>
         </div>
-        {isExpanded && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-2.5 rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 text-xs text-slate-300">
+        {isExpanded && hasBreakdownData && <div id={`service-breakdown-${s.id}`} className="mt-3 space-y-2.5 rounded-xl border border-slate-800/90 bg-slate-950/80 p-3.5 text-xs text-slate-300">
           <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Itemized Work &amp; OEM Specs</p>
           {s.items.length > 0 && (
             <ul className="list-inside list-disc space-y-1 text-[11px] leading-relaxed text-slate-300">

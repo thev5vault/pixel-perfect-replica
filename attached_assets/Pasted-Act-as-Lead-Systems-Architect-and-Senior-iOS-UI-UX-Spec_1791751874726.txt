@@ -1,0 +1,111 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute the final visual layout fixes in VehicleDataTools.tsx and TimelineItem.tsx to resolve garage badge truncation, remove ONLY the factory emoji (🏭) while keeping all other category emojis, hide empty breakdown drawers, fix badge logic mismatches, correct MOT grammar, and enforce bottom scroll clearance. Follow the preservation guardrails below.
+
+---
+
+### 0. IMMUTABLE PRESERVATION GUARDRAILS (DO NOT MODIFY)
+
+1. DO NOT TOUCH the top vehicle header or the 2x2 status micro-pill grid (Keeper Verified, V5C Provisional, Untaxed, Uninsured).
+2. DO NOT TOUCH the 1-line V5C re-verification banner text layout structure.
+3. DO NOT TOUCH the 3-column financial summary row below MOT History (TOTAL £931 / PARTS £622 / LABOUR £309).
+4. DO NOT TOUCH any modal components, 2-column upload dropzones, or Account Settings switches.
+
+---
+
+### 1. EMOJI SPECIFICITY DIRECTIVE
+
+- Remove ONLY Factory Emoji (🏭):
+  * DO NOT add the factory emoji (🏭) to garage badges. Render garage names as clean text pills: `{item.garageName}`.
+  * PRESERVE warning icons (⚠️) on critical alert banners: `⚠️ V5C Re-verification Needed` and `⚠️ MOT Due Soon`.
+  * PRESERVE the DIY tool emoji (🛠️) on DIY badges: `🛠️ Owner Logged / DIY`.
+
+---
+
+### 2. TARGETED FIX: Garage Badge Sub-Row Layout & Prevent Truncation (`TimelineItem.tsx`)
+
+- Sub-Row Flex Isolation for Garage Badge:
+  * LOCATE the service card header structure in TimelineItem.tsx.
+  * Move the garage badge pill onto a dedicated, full-width second row directly below the title and price chip to prevent truncation when toggles expand:
+    `<div className="flex flex-col gap-1.5 w-full min-w-0">`
+    `  {/* Row 1: Title, Price Chip, and Breakdown Toggle */}`
+    `  <div className="flex items-center justify-between gap-2 w-full">`
+    `    <h4 className="text-sm font-bold text-white truncate">{item.title}</h4>`
+    `    <div className="flex items-center gap-2 shrink-0">`
+    `      {item.totalCost > 0 && (`
+    `        <span className="px-2 py-0.5 text-xs font-bold text-slate-200 bg-slate-800/90 border border-slate-700/80 rounded-lg">`
+    `          £{item.totalCost.toFixed(2)}`
+    `        </span>`
+    `      )}`
+    `      {hasBreakdownData && (`
+    `        <button onClick={() => setIsExpanded(!isExpanded)} className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 cursor-pointer py-1 px-2 rounded-md bg-slate-800/80 border border-slate-700/80 shrink-0">`
+    `          {isExpanded ? 'Hide Breakdown ˄' : 'Breakdown ˅'}`
+    `        </button>`
+    `      )}`
+    `    </div>`
+    `  </div>`
+    `  {/* Row 2: Dedicated Full-Width Badge Row (No 🏭 Emoji, Zero Truncation) */}`
+    `  <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">`
+    `    {item.garageName ? (`
+    `      <span className="px-2 py-0.5 text-[10px] font-semibold text-slate-300 bg-slate-900/80 border border-slate-800 rounded-md truncate max-w-full">`
+    `        {item.garageName}`
+    `      </span>`
+    `    ) : (`
+    `      <span className="px-2 py-0.5 text-[10px] font-semibold text-slate-400 bg-slate-900/60 border border-slate-800 rounded-md">`
+    `        🛠️ Owner Logged / DIY`
+    `      </span>`
+    `    )}`
+    `    <span className="px-2 py-0.5 text-[10px] font-semibold text-cyan-300/90 bg-cyan-950/40 border border-cyan-800/40 rounded-md uppercase">`
+    `      {item.category || 'Servicing'}`
+    `    </span>`
+    `  </div>`
+    `</div>`
+
+---
+
+### 3. TARGETED FIX: Hide Breakdown Button When No Data Exists (`TimelineItem.tsx`)
+
+- Conditional Breakdown Button Guard:
+  * LOCATE the service record renderer.
+  * DEFINE data check helper:
+    `const hasBreakdownData = Boolean(`
+    `  (item.workItems && item.workItems.length > 0) ||`
+    `  (item.oemSpecs && item.oemSpecs.length > 0) ||`
+    `  (item.partsCost && item.partsCost > 0) ||`
+    `  (item.labourCost && item.labourCost > 0)`
+    `);`
+  * Ensure the `[ Breakdown ˅ ]` button renders ONLY when `hasBreakdownData` is true.
+
+---
+
+### 4. TARGETED FIX: Remove Duplicate Garage Text (`TimelineItem.tsx`)
+
+- Clean Up Duplicate Sub-Headlines:
+  * REMOVE any standalone text string `{item.garageName}` rendered directly under the service title.
+  * Ensure garage names display strictly once inside the badge container on Row 2.
+
+---
+
+### 5. TARGETED FIX: MOT Card Grammar & Date (`VehicleDataTools.tsx`)
+
+- Update MOT Summary Card:
+  * LOCATE the MOT status summary card in the upper status section.
+  * UPDATE text string:
+    - Status Badge: `⚠️ MOT Due Soon` (or `MOT Valid`)
+    - Detail String: `Passed on 18 Nov 2025 · Due in 39 days`
+
+---
+
+### 6. TARGETED FIX: Expanded Cost Colors & Scroll Clearance (`VehicleDataTools.tsx` & `TimelineItem.tsx`)
+
+- Breakdown Accents & Scroll Space:
+  * Inside expanded breakdown boxes, style cost values:
+    - Parts: `<span className="text-xs font-bold text-emerald-400">£{item.partsCost.toFixed(2)}</span>`
+    - Labour: `<span className="text-xs font-bold text-cyan-400">£{item.labourCost.toFixed(2)}</span>`
+  * Set main page outer wrapper padding: `pb-36` (or `pb-[calc(9rem+env(safe-area-inset-bottom))]`) so the bottom financial summary card (`TOTAL £931 · PARTS £622 · LABOUR £309`) clears the floating navigation bar.
+
+---
+
+### 7. VERIFICATION & TEST CHECKS
+
+- Run `npm test` to verify all 175+ unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build compilation success.

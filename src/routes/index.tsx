@@ -129,6 +129,14 @@ export function Dashboard() {
   const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage));
   const motDate = vehicle.motExpiry ? new Date(`${vehicle.motExpiry.slice(0, 10)}T00:00:00`) : undefined;
   const motDays = motDate ? Math.ceil((motDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : -1;
+  const latestMotPass = [...motReadings]
+    .filter((reading) => /^pass\b/i.test(reading.result))
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const motDetail = vehicle.motExpiry
+    ? motDays >= 0
+      ? `${latestMotPass ? `Passed on ${fmtDate(latestMotPass.date)}` : `MOT due on ${fmtDate(vehicle.motExpiry)}`} · Due in ${motDays} ${motDays === 1 ? "day" : "days"}`
+      : `Expired on ${fmtDate(vehicle.motExpiry)}`
+    : "Expiry date unavailable";
   const insuranceDays = insuranceExpiry ? Math.ceil((new Date(`${insuranceExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
   const effectiveTaxExpiry = taxExpiry || vehicle.taxDueDate?.slice(0, 10) || "";
   const taxDays = effectiveTaxExpiry ? Math.ceil((new Date(`${effectiveTaxExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
@@ -258,8 +266,8 @@ export function Dashboard() {
           icon={<AlertTriangle className="h-5 w-5" />}
           title="MOT Status"
           ok={motDays > 42}
-          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "MOT Due Soon"}
-          meta={vehicle.motExpiry ? motDays >= 0 ? `Passes on ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · Due in ${motDays} days` : `Expired ${new Date(vehicle.motExpiry).toLocaleDateString("en-GB")}` : "Expiry date unavailable"}
+          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "⚠️ MOT Due Soon"}
+          meta={motDetail}
           forceWarn
           easy={easyView}
         />

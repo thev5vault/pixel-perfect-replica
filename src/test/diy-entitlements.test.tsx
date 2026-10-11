@@ -128,8 +128,18 @@ describe("Pro DIY entitlements", () => {
 
   it("does not treat imported client-side verified flags as a workshop stamp", () => {
     render(<VaultProvider><TimelineItem s={{...service, tier3:true}} /></VaultProvider>);
-    expect(screen.getByText("Owner Logged / DIY Record")).toBeInTheDocument();
+    expect(screen.getByText("Apex Performance Ltd")).toBeInTheDocument();
+    expect(screen.queryByText("Verified Workshop Stamp")).not.toBeInTheDocument();
     expect(screen.queryByText(/VAT Reg Verified/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the garage name in its own sub-row and hides empty breakdown controls", () => {
+    const { rerender } = render(<VaultProvider><TimelineItem s={service} /></VaultProvider>);
+    expect(screen.getAllByText("Apex Performance Ltd")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /Breakdown/ })).toBeInTheDocument();
+
+    rerender(<VaultProvider><TimelineItem s={{...service, items:[], parts:[], fluids:undefined, partsCost:0, labourCost:0, cost:undefined, image:undefined, has_receipt:false, has_invoice:false}} /></VaultProvider>);
+    expect(screen.queryByRole("button", { name: /Breakdown/ })).not.toBeInTheDocument();
   });
 
   it("keeps sample workshop stamps while removing verification debug badges", () => {
