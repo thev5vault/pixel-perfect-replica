@@ -191,9 +191,12 @@ describe("V1 polish", () => {
 
     const summaries = screen.getAllByRole("region", { name: "Timeline spend summary" });
     expect(summaries).toHaveLength(1);
-    expect(within(summaries[0]!).getByText("💰 Total: £100.00")).toBeInTheDocument();
-    expect(within(summaries[0]!).getByText("⚙️ Parts: £40.00")).toBeInTheDocument();
-    expect(within(summaries[0]!).getByText("🛠️ Labour: £60.00")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("Total")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("£100")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("Parts")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("£40")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("Labour")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("£60")).toBeInTheDocument();
   });
 
   it("animates the Easy View specifications accordion", () => {

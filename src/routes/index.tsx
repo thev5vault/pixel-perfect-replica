@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Camera, CheckCircle2, ChevronDown, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -28,7 +28,7 @@ import { VehicleDataTools } from "@/components/vault/VehicleDataTools";
 import { PdfReceiptPicker } from "@/components/vault/PdfReceiptPicker";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicleRegistrationDialog";
-import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
+import { hasVerifiedVehicleRegistration } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 
 const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap uppercase transition-all shadow-sm select-none";
@@ -46,6 +46,10 @@ export const Route = createFileRoute("/")({
   }),
   component: PublicLanding,
 });
+
+function formatPounds(amount: number) {
+  return amount.toLocaleString("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
 
 function monthsBetween(a: Date, b: Date) {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
@@ -99,7 +103,6 @@ export function Dashboard() {
   const [showAllServiceRecords, setShowAllServiceRecords] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
-  const [verificationDetailsOpen, setVerificationDetailsOpen] = useState(false);
   const [verificationState, setVerificationState] = useState(vehicle.verification_state ?? "PENDING_VERIFICATION");
   useEffect(() => {
     setVerificationState(vehicle.verification_state ?? "PENDING_VERIFICATION");
@@ -225,20 +228,14 @@ export function Dashboard() {
         </button>}
       </section>
 
-      {!registrationVerified && <section role="status" className="my-2.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200/90">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-300" />
-          <span className="min-w-0 font-semibold">V5C Logbook Re-verification Required</span>
-          <button type="button" aria-label="Show V5C verification details" aria-expanded={verificationDetailsOpen} onClick={() => setVerificationDetailsOpen((open) => !open)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-amber-200 hover:bg-amber-500/15">
-            <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${verificationDetailsOpen ? "rotate-180" : ""}`} />
-          </button>
+      {!registrationVerified && <section role="status" className="my-2.5 flex min-h-16 items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200/90">
+        <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-amber-200">
+          <span aria-hidden="true" className="shrink-0">⚠️</span>
+          <span className="truncate">V5C Logbook Re-verification Required</span>
         </div>
-        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-11 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-11 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
           Re-Verify V5C
         </button>
-        {verificationDetailsOpen && <div className="basis-full text-xs leading-relaxed text-amber-100/80">
-          {REVERIFICATION_NOTICE}{vehicle.is_sample ? " This development sample cannot be verified as a live vehicle." : ""}
-        </div>}
       </section>}
 
       <section data-testid="vehicle-health-cards" className={`grid grid-cols-1 gap-3 ${easyView ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
@@ -288,12 +285,9 @@ export function Dashboard() {
             {history.length > 0
               ? <>
                   <ol className="relative space-y-4 border-l border-primary/30 pl-5">{visibleHistory.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
-                  {history.length > 3 && <div className="my-3 flex w-full justify-center">
-                    <button type="button" aria-expanded={showAllServiceRecords} onClick={() => setShowAllServiceRecords((expanded) => !expanded)} className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-semibold text-cyan-400 transition-colors hover:bg-slate-800/80">
-                      {showAllServiceRecords ? "📂 Collapse Service Records" : `📂 View All Service Records (Showing 3 of ${history.length})`}
-                      <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${showAllServiceRecords ? "rotate-180" : ""}`} />
-                    </button>
-                  </div>}
+                  {history.length > 3 && <button type="button" aria-expanded={showAllServiceRecords} onClick={() => setShowAllServiceRecords((expanded) => !expanded)} className="my-3 flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-cyan-400 transition-colors hover:bg-slate-800">
+                    {showAllServiceRecords ? "📂 Collapse Service Records ˄" : `📂 View All Service Records (Showing 3 of ${history.length}) ˅`}
+                  </button>}
                 </>
               : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
                   <span>📄 No Service Records</span>
@@ -316,10 +310,19 @@ export function Dashboard() {
             </ul>
             {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
           </section>
-          {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 flex flex-wrap items-center justify-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 text-xs font-medium text-slate-300">
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">💰 Total: £{spendTotals.total.toFixed(2)}</span>
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">⚙️ Parts: £{spendTotals.parts.toFixed(2)}</span>
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">🛠️ Labour: £{spendTotals.labour.toFixed(2)}</span>
+          {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 grid w-full grid-cols-3 gap-1.5">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/80 p-2 text-center">
+              <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-slate-400">Total</span>
+              <span className="mt-0.5 whitespace-nowrap text-xs font-bold text-white">£{formatPounds(spendTotals.total)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/80 p-2 text-center">
+              <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-slate-400">Parts</span>
+              <span className="mt-0.5 whitespace-nowrap text-xs font-bold text-emerald-400">£{formatPounds(spendTotals.parts)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/80 p-2 text-center">
+              <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-slate-400">Labour</span>
+              <span className="mt-0.5 whitespace-nowrap text-xs font-bold text-cyan-400">£{formatPounds(spendTotals.labour)}</span>
+            </div>
           </section>}
         </>
       )}

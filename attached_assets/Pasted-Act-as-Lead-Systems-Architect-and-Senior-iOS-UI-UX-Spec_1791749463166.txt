@@ -1,0 +1,71 @@
+Act as Lead Systems Architect and Senior iOS UI/UX Specialist under strict Anchor 23 parameters. Execute a precise cleanup of VehicleDashboard.tsx and AdminConsole.tsx. Follow these exact code replacement rules to fix layout wrapping and remove duplicate UI elements.
+
+---
+
+### 1. Fix Financial Summary Duplication & Mobile Wrapping (`VehicleDashboard.tsx`)
+
+- Old Code Removal:
+  * LOCATE and COMPLETELY DELETE the raw text summary block below MOT History:
+    `Recorded spend £931.00 | Parts £622.00 | Labour £309.00`
+  * LOCATE and REMOVE the sample notice string:
+    `Development sample. These are not live DVLA readings.`
+
+- Replacement Single-Row Pill Bar:
+  * Replace both old blocks with ONE ultra-compact, 3-column grid container directly below MOT History:
+    `grid grid-cols-3 gap-1.5 my-3 w-full`
+  * Column 1: `<div className="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-slate-800 rounded-xl text-center"><span className="text-[10px] text-slate-400 font-semibold uppercase">Total</span><span className="text-xs font-bold text-white mt-0.5">£931</span></div>`
+  * Column 2: `<div className="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-slate-800 rounded-xl text-center"><span className="text-[10px] text-slate-400 font-semibold uppercase">Parts</span><span className="text-xs font-bold text-emerald-400 mt-0.5">£622</span></div>`
+  * Column 3: `<div className="flex flex-col items-center justify-center p-2 bg-slate-900/80 border border-slate-800 rounded-xl text-center"><span className="text-[10px] text-slate-400 font-semibold uppercase">Labour</span><span className="text-xs font-bold text-cyan-400 mt-0.5">£309</span></div>`
+  * Ensure this 3-column grid fits on a single horizontal row on 375px mobile screens with zero text wrapping or horizontal scrolling.
+
+---
+
+### 2. Implement 3-Record Smart Timeline Collapse (`VehicleDashboard.tsx`)
+
+- Service History Limit:
+  * Add a local state variable: `const [showAllServices, setShowAllServices] = useState(false);`
+  * Slice the rendered service records array:
+    `const displayedRecords = showAllServices ? serviceRecords : serviceRecords.slice(0, 3);`
+  * Render `displayedRecords.map(...)` on the timeline.
+
+- Expander Button Trigger:
+  * If `serviceRecords.length > 3`, render an expander button directly below the 3rd service record:
+    `<button onClick={() => setShowAllServices(!showAllServices)} className="w-full min-h-[44px] my-3 py-2.5 px-4 bg-slate-900/80 border border-slate-800 hover:bg-slate-800 rounded-xl text-xs font-bold text-cyan-400 flex items-center justify-center gap-2 transition-colors cursor-pointer">`
+    `  {showAllServices ? '📂 Collapse Service Records ˄' : \`📂 View All Service Records (Showing 3 of \${serviceRecords.length}) ˅\`}`
+    `</button>`
+
+---
+
+### 3. Streamline V5C Re-Verification Alert Bar (`VehicleDashboard.tsx`)
+
+- Compact Inline Layout:
+  * Refactor the V5C banner to maintain a fixed 1-line height when closed:
+    `<div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl my-2.5">`
+    `  <div className="flex items-center gap-2 text-xs font-semibold text-amber-200">`
+    `    <span>⚠️</span> <span>V5C Logbook Re-verification Required</span>`
+    `  </div>`
+    `  <button onClick={handleOpenV5CModal} className="min-h-[36px] px-3 py-1.5 text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg hover:bg-amber-500/30 shrink-0">`
+    `    Re-Verify V5C`
+    `  </button>`
+    `</div>`
+
+---
+
+### 4. Condense Secondary Admin Console Quick-Stats (`AdminConsole.tsx`)
+
+- Replace Secondary Card Stack:
+  * LOCATE the secondary stat cards below "Pending V5C re-verification" (`REGISTERED USERS`, `VEHICLE RECORDS`, `PENDING APPLICATIONS`).
+  * REPLACE the full-width stacked cards with a compact 3-column micro-grid:
+    `<div className="grid grid-cols-3 gap-2 my-3">`
+    `  <div className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-lg text-center"><p className="text-[9px] text-slate-400 uppercase font-semibold">Users</p><p className="text-sm font-bold text-white">5</p></div>`
+    `  <div className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-lg text-center"><p className="text-[9px] text-slate-400 uppercase font-semibold">Vehicles</p><p className="text-sm font-bold text-white">3</p></div>`
+    `  <div className="p-2 bg-slate-900/60 border border-slate-800/80 rounded-lg text-center"><p className="text-[9px] text-slate-400 uppercase font-semibold">Pending</p><p className="text-sm font-bold text-white">0</p></div>`
+    `</div>`
+
+---
+
+### 5. Build, Type & Test Verification
+
+- Run `npm test` to verify all unit and integration tests pass cleanly.
+- Run `npx tsc --noEmit` to confirm zero TypeScript compilation errors.
+- Run `npm run build` to confirm production build success.
