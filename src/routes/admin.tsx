@@ -251,10 +251,10 @@ function AdminPage() {
       <OwnershipClaimsPanel/>
       <VehicleVerificationRequestsPanel/>
 
-      <section className="mb-4 grid grid-cols-2 gap-2.5" aria-label="Directory totals">
-        <Summary icon={<Users className="h-5 w-5" />} label="Registered users" value={adminData ? users.length : null} />
-        <Summary icon={<CarFront className="h-5 w-5" />} label="Vehicle records" value={adminData ? vehicles.length : null} />
-        <Summary icon={<Clock3 className="h-5 w-5" />} label="Pending applications" value={adminData ? applications.length : null} />
+      <section className="my-3 grid grid-cols-3 gap-2" aria-label="Directory totals">
+        <Summary label="Registered users" value={adminData ? users.length : null} />
+        <Summary label="Vehicle records" value={adminData ? vehicles.length : null} />
+        <Summary label="Pending applications" value={adminData ? applications.length : null} />
       </section>
 
       {dataLoading && !adminData ? (
@@ -539,14 +539,11 @@ function AdminPage() {
   );
 }
 
-function Summary({ icon, label, value }: { icon: ReactNode; label: string; value: number | null }) {
+function Summary({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="vault-card flex items-center gap-3 p-4">
-      <div className="rounded-lg bg-primary/15 p-2 text-primary">{icon}</div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="font-display text-2xl font-bold">{value === null ? "—" : value}</p>
-      </div>
+    <div className="rounded-lg border border-slate-800/80 bg-slate-900/60 p-2 text-center text-[10px] font-medium text-slate-400">
+      <p className="font-semibold uppercase tracking-wide">{label}</p>
+      <p className="mt-1 text-sm font-bold text-white">{value === null ? "—" : value}</p>
     </div>
   );
 }

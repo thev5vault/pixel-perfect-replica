@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, ChevronDown, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -96,6 +96,7 @@ export function Dashboard() {
   }, [insuranceKey, taxKey]);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [diyOpen, setDiyOpen] = useState(false);
+  const [showAllServiceRecords, setShowAllServiceRecords] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [verificationDetailsOpen, setVerificationDetailsOpen] = useState(false);
@@ -103,6 +104,9 @@ export function Dashboard() {
   useEffect(() => {
     setVerificationState(vehicle.verification_state ?? "PENDING_VERIFICATION");
   }, [vehicle.vin, vehicle.verification_state]);
+  useEffect(() => {
+    setShowAllServiceRecords(false);
+  }, [vehicle.vin, vehicle.vrm]);
   const registrationVerified = hasVerifiedVehicleRegistration(verificationState);
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
 
@@ -110,6 +114,7 @@ export function Dashboard() {
     () => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)),
     [services, vehicle.vrm],
   );
+  const visibleHistory = showAllServiceRecords ? history : history.slice(0, 3);
   const spendTotals = useMemo(() => history.reduce((totals, service) => ({
     total: totals.total + (service.cost ?? ((service.partsCost ?? 0) + (service.labourCost ?? 0))),
     parts: totals.parts + (service.partsCost ?? 0),
@@ -222,10 +227,10 @@ export function Dashboard() {
 
       {!registrationVerified && <section role="status" className="my-2.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200/90">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span aria-hidden="true">⚠️</span>
+          <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-300" />
           <span className="min-w-0 font-semibold">V5C Logbook Re-verification Required</span>
           <button type="button" aria-label="Show V5C verification details" aria-expanded={verificationDetailsOpen} onClick={() => setVerificationDetailsOpen((open) => !open)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-amber-200 hover:bg-amber-500/15">
-            <span aria-hidden="true">{verificationDetailsOpen ? "−" : "+"}</span>
+            <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${verificationDetailsOpen ? "rotate-180" : ""}`} />
           </button>
         </div>
         <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-11 shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
@@ -281,16 +286,19 @@ export function Dashboard() {
           <section>
             <h2 className="mb-3 text-lg font-bold">Service History</h2>
             {history.length > 0
-              ? <ol className="relative space-y-4 border-l border-primary/30 pl-5">{history.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
+              ? <>
+                  <ol className="relative space-y-4 border-l border-primary/30 pl-5">{visibleHistory.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
+                  {history.length > 3 && <div className="my-3 flex w-full justify-center">
+                    <button type="button" aria-expanded={showAllServiceRecords} onClick={() => setShowAllServiceRecords((expanded) => !expanded)} className="flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-semibold text-cyan-400 transition-colors hover:bg-slate-800/80">
+                      {showAllServiceRecords ? "📂 Collapse Service Records" : `📂 View All Service Records (Showing 3 of ${history.length})`}
+                      <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${showAllServiceRecords ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>}
+                </>
               : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
-                  <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
+                  <span>📄 No Service Records</span>
                 </div>}
           </section>
-          {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-2 text-xs font-medium text-slate-300">
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">💰 Total: £{spendTotals.total.toFixed(2)}</span>
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">⚙️ Parts: £{spendTotals.parts.toFixed(2)}</span>
-            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">🛠️ Labour: £{spendTotals.labour.toFixed(2)}</span>
-          </section>}
 
           <section className="vault-card p-4">
             <h2 className="flex items-center justify-between font-bold">
@@ -308,6 +316,11 @@ export function Dashboard() {
             </ul>
             {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
           </section>
+          {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 flex flex-wrap items-center justify-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900/70 p-2.5 text-xs font-medium text-slate-300">
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">💰 Total: £{spendTotals.total.toFixed(2)}</span>
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">⚙️ Parts: £{spendTotals.parts.toFixed(2)}</span>
+            <span className="rounded-full border border-slate-700/80 bg-slate-950/50 px-2.5 py-1">🛠️ Labour: £{spendTotals.labour.toFixed(2)}</span>
+          </section>}
         </>
       )}
 

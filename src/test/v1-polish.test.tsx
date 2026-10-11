@@ -116,12 +116,12 @@ describe("V1 polish", () => {
     expect(calendar).toHaveClass("bg-slate-900", "z-[100]");
   });
 
-  it("shows a clear empty service state without zero-value spend metadata", () => {
+  it("shows a clear empty service state without a duplicate zero-value spend row", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services: [] }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
 
     expect(screen.getByText("📄 No Service Records")).toBeInTheDocument();
-    expect(screen.getByText("💰 Recorded Spend: £0.00")).toBeInTheDocument();
+    expect(screen.queryByText(/Recorded Spend: £0\.00/)).not.toBeInTheDocument();
     expect(screen.queryByText("Recorded spend")).not.toBeInTheDocument();
     expect(screen.queryByText(/Engine size not returned|Tax status not returned/)).not.toBeInTheDocument();
 
@@ -162,6 +162,38 @@ describe("V1 polish", () => {
     expect(screen.getByRole("button", { name: /Add DIY Service Entry/ })).toHaveClass("min-h-[44px]");
     expect(screen.queryByRole("heading", { name: "Service History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /MOT History/ })).not.toBeInTheDocument();
+  });
+
+  it("collapses service history after three records and shows one end-of-timeline spend summary", () => {
+    const services = [0, 1, 2, 3].map((index) => ({
+      id: `service-${index}`,
+      vrm: "AB14CDE",
+      date: `2026-10-0${4 - index}`,
+      mileage: 87000 + index * 100,
+      category: "Servicing",
+      description: `Service record ${index + 1}`,
+      items: [],
+      garage: "Owner logged DIY",
+      verified: false,
+      is_verified_stamp: false,
+      cost: 25,
+      partsCost: 10,
+      labourCost: 15,
+    }));
+    localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services }));
+    const { container } = render(<VaultProvider><Dashboard /></VaultProvider>);
+
+    expect(container.querySelectorAll("ol > li")).toHaveLength(3);
+    const expand = screen.getByRole("button", { name: /View All Service Records \(Showing 3 of 4\)/ });
+    fireEvent.click(expand);
+    expect(container.querySelectorAll("ol > li")).toHaveLength(4);
+    expect(screen.getByRole("button", { name: /Collapse Service Records/ })).toHaveAttribute("aria-expanded", "true");
+
+    const summaries = screen.getAllByRole("region", { name: "Timeline spend summary" });
+    expect(summaries).toHaveLength(1);
+    expect(within(summaries[0]!).getByText("💰 Total: £100.00")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("⚙️ Parts: £40.00")).toBeInTheDocument();
+    expect(within(summaries[0]!).getByText("🛠️ Labour: £60.00")).toBeInTheDocument();
   });
 
   it("animates the Easy View specifications accordion", () => {
