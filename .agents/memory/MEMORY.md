@@ -17,3 +17,4 @@
 - [Account profile refresh races](account-profile-refresh-races.md) — merge successfully saved fields after async refreshes so stale account data cannot overwrite them.
 - [Display preference sync](display-preference-sync.md) — initialize view mode from device storage, then sync that explicit choice to the signed-in account.
 - [VIN history after account deletion](vin-history-after-account-deletion.md) — remove keeper identity without deleting VIN-linked service, modification, or receipt history.
+- [Share modal testing](share-passport-modal-testing.md) — prefer provider-backed or browser tests; mocked account and preview hooks made consent-state tests brittle.
