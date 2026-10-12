@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, FileText, Info, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Camera, Check, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
@@ -103,6 +103,7 @@ function GaragePage() {
   const [draftStatus, setDraftStatus] = useState("");
   const [lookupDetails, setLookupDetails] = useState("");
   const [lookupSource, setLookupSource] = useState<"official" | "unverified" | null>(null);
+  const [boundVin, setBoundVin] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
   const [fileBusy, setFileBusy] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -110,6 +111,7 @@ function GaragePage() {
   const [scanMessage, setScanMessage] = useState("");
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
   const [showMoreComponents, setShowMoreComponents] = useState(false);
+  const [showVinRequired, setShowVinRequired] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [queuedCount, setQueuedCount] = useState(0);
@@ -126,6 +128,8 @@ function GaragePage() {
     }
     let active = true;
     setForm(emptyForm());
+    setBoundVin("");
+    setShowVinRequired(false);
     setReadyDraftKey(null);
     setDraftStatus("");
     void readGarageDraft<GarageForm>(draftKey).then((draft) => {
@@ -243,6 +247,22 @@ function GaragePage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function changeRegistration(value: string) {
+    const vrm = formatVrm(value).slice(0, 8);
+    setForm((current) => {
+      const registrationChanged = formatVrm(current.vrm) !== vrm;
+      return {
+        ...current,
+        vrm,
+        ...(registrationChanged ? { vin: "", physicalVinInspected: false } : {}),
+      };
+    });
+    if (formatVrm(form.vrm) !== vrm) {
+      setBoundVin("");
+      setShowVinRequired(false);
+    }
+  }
+
   async function lookupVehicle() {
     if (lookupBusy || !form.vrm.trim()) return;
     setLookupBusy(true);
@@ -256,12 +276,18 @@ function GaragePage() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Vehicle lookup failed.");
       const vehicle = payload.vehicle;
+      const lookedUpVin = typeof vehicle.vin === "string" && validateVIN(vehicle.vin)
+        ? vehicle.vin.trim().toUpperCase()
+        : "";
       setForm((current) => ({
         ...current,
         vrm: vehicle.vrm,
-        vin: vehicle.vin ?? current.vin,
+        vin: lookedUpVin,
+        physicalVinInspected: false,
         mileage: vehicle.odometerAvailable === false ? current.mileage : String(vehicle.odometer ?? current.mileage),
       }));
+      setBoundVin(lookedUpVin);
+      setShowVinRequired(false);
       const detail = [
         vehicle.year,
         vehicle.make,
@@ -382,9 +408,11 @@ function GaragePage() {
     }
     if (!validateVIN(form.vin)) {
       setShowDetailedBreakdown(true);
-      setError("Enter a valid 17-character VIN. VINs do not contain I, O or Q.");
+      setShowVinRequired(true);
+      setError("");
       return;
     }
+    setShowVinRequired(false);
     if (!form.physicalVinInspected) {
       setShowDetailedBreakdown(true);
       setError("Confirm that you physically inspected and matched the VIN on the vehicle.");
@@ -482,10 +510,19 @@ function GaragePage() {
           <button type="button" title="Blur addresses and 11-digit V5C reference numbers before uploading." aria-label="Document privacy tip" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
         </div>
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-3">
             <div className="min-w-0">
-              <Field label="Vehicle registration"><input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /></Field>
-              <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary mt-2 min-h-[44px] w-full px-2 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
+              <Field label="Vehicle registration">
+                <div className="flex min-w-0 items-center gap-2">
+                  <input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => changeRegistration(event.target.value)} placeholder="AB14 CDE" className={`${GARAGE_INPUT_CLASS} min-h-[44px] flex-1 font-mono uppercase`} />
+                  <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 gap-1 px-2 text-[11px] whitespace-nowrap"><Search className="h-4 w-4" />{lookupBusy ? "Looking…" : "Fetch specs"}</button>
+                </div>
+              </Field>
+              {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-2 py-1.5 text-[10px] font-semibold text-cyan-200">
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0" />
+                <span className="break-all">✓ VIN Bound: {form.vin}</span>
+              </div>}
+              {showVinRequired && !validateVIN(form.vin) && <p role="alert" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required to stamp permanent record.</p>}
             </div>
             <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className={`${GARAGE_INPUT_CLASS} min-h-[44px]`} /></Field>
           </div>
@@ -516,8 +553,8 @@ function GaragePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className={GARAGE_INPUT_CLASS} /></Field>
-            <Field label="Invoice total (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className={GARAGE_INPUT_CLASS} /></Field>
+            <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className={`${GARAGE_INPUT_CLASS} min-w-0`} /></Field>
+            <Field label="Invoice total (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className={`${GARAGE_INPUT_CLASS} min-w-0`} /></Field>
           </div>
         </section>
 
@@ -540,7 +577,7 @@ function GaragePage() {
                 ...(scannedImage ? { receipt: scannedImage } : {}),
               }));
             }} />
-            <Field label="17-character VIN"><input minLength={17} maxLength={17} value={form.vin} onChange={(event) => change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17))} placeholder="VIN / chassis number" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
+            <Field label="17-character VIN"><input minLength={17} maxLength={17} value={form.vin} onChange={(event) => { change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17)); setBoundVin(""); setShowVinRequired(false); }} placeholder="VIN / chassis number" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
             <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
               <input type="checkbox" checked={form.physicalVinInspected} onChange={(event) => change("physicalVinInspected", event.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
               <span>I physically inspected the VIN on the vehicle and matched it to the registration and service record.</span>
