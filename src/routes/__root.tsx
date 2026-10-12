@@ -16,6 +16,7 @@ import { VaultProvider } from "@/lib/vault-store";
 import { AppShell } from "@/components/vault/AppShell";
 import { AppErrorBoundary } from "@/components/vault/AppErrorBoundary";
 import { AuthProviders } from "@/components/vault/AuthProviders";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -145,6 +146,7 @@ function RootComponent() {
       <AppErrorBoundary>
       <AuthProviders>
       <VaultProvider>
+        <ScrollToTop />
         <AppShell>
           <Outlet />
         </AppShell>
