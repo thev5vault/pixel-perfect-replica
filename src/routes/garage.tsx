@@ -483,9 +483,12 @@ function GaragePage() {
           ...(scannedImage ? { receipt: scannedImage } : {}),
         }));
       }} />
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <Field label="Vehicle registration"><input required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field font-mono uppercase" /></Field>
-        <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-11 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
+      <div className="w-full min-w-0">
+        <label htmlFor="garage-vehicle-registration" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vehicle registration</label>
+        <div className="flex items-center gap-2">
+          <input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field min-h-[44px] w-full min-w-0 flex-1 font-mono uppercase" />
+          <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
+        </div>
       </div>
       {lookupDetails && <p role="status" className={`rounded-lg border p-3 text-xs leading-relaxed ${lookupSource === "official" ? "border-emerald-400/30 bg-emerald-950/25 text-emerald-100" : "border-amber-400/25 bg-amber-950/20 text-amber-100"}`}>
         {lookupSource === "official" ? "Government source · " : "Unverified sample/supplied data · "}{lookupDetails}
@@ -517,26 +520,28 @@ function GaragePage() {
       <Field label="Work performed / notes"><textarea rows={3} maxLength={2000} value={form.notes} onChange={(event) => change("notes", event.target.value)} placeholder="Describe the work carried out" className="field" /></Field>
       <Field label="Advisories (optional)"><textarea rows={2} maxLength={2000} value={form.advisories} onChange={(event) => change("advisories", event.target.value)} placeholder="One advisory per line" className="field" /></Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className="field" /></Field>
+        <div className="col-span-2 min-w-0 sm:col-span-1">
+          <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className="w-full min-w-0 appearance-none [-webkit-appearance:none] bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" /></Field>
+        </div>
         <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className="field" /></Field>
       </div>
        <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
        <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-         <div className="min-w-0 space-y-2">
-           <label className="flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
+         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="min-w-0 space-y-2">
+            <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
              <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Photo / Image
             <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
           </label>
-          <p className="text-xs text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Available on all account tiers; stored privately."}</p>
+          <p className="text-xs leading-snug text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Image stored privately on all tiers."}</p>
           {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="inline-flex min-h-[44px] min-w-[44px] items-center text-xs text-muted-foreground underline">Remove photo</button>}
         </div>
          <div className="min-w-0 space-y-2">
-           <label className="flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
+            <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
              <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> PDF Document
             <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
           </label>
-          <p className="break-all text-xs text-muted-foreground">{form.invoiceName ?? "PDF invoices up to 5 MB are stored privately."}</p>
+          <p className="break-words text-xs leading-snug text-muted-foreground">{form.invoiceName ?? "PDF stored privately · 5 MB max."}</p>
           {form.invoiceData && <button type="button" onClick={() => setForm((current) => {
             const { invoiceName: _invoiceName, invoiceData: _invoiceData, ...remaining } = current;
             return remaining;
