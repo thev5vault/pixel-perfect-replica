@@ -19,3 +19,4 @@
 - [VIN history after account deletion](vin-history-after-account-deletion.md) — remove keeper identity without deleting VIN-linked service, modification, or receipt history.
 - [Share modal testing](share-passport-modal-testing.md) — prefer provider-backed or browser tests; mocked account and preview hooks made consent-state tests brittle.
 - [Owner and workshop separation](owner-workshop-separation.md) — keep consumer navigation and profile features separate from the verified B2B workshop terminal.
+- [Route scroll restoration](route-scroll-restoration.md) — keep router position restoration disabled when every route transition must start at the top.

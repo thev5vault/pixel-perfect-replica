@@ -8,7 +8,9 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    scrollRestoration: true,
+    // This app resets its shared scroll container on every navigation. Router
+    // restoration would otherwise restore the previous tab's scroll position.
+    scrollRestoration: false,
     defaultPreloadStaleTime: 0,
   });
 
