@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Camera, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Camera, Car, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -665,22 +665,130 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 }
 
 function PublicLanding() {
+  const account = useAccount();
+  const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
+  const [roleChoiceSource, setRoleChoiceSource] = useState<"driver" | "workshop">("driver");
+
+  const openRoleChoices = (source: "driver" | "workshop") => {
+    setRoleChoiceSource(source);
+    setRoleChoiceOpen(true);
+  };
+
+  const onPublicRoleChoice = (role: "vehicle-owner" | "verified-workshop") => {
+    const intent = role === "vehicle-owner" ? "owner" : "workshop";
+    const destination = role === "vehicle-owner" ? "/vehicle" : "/workshop/setup";
+    if (account?.signedIn) {
+      window.location.assign(destination);
+      return;
+    }
+    window.location.assign(`/sign-up?intent=${intent}`);
+  };
+
   return (
     <main className="min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
       {import.meta.env.DEV && <div className="mx-auto max-w-md px-5"><DevPreviewButton /></div>}
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-5 sm:px-8">
-        <div className="flex items-center gap-3"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold">V5Vault</span></div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2"><a href="/sign-in" className="shrink-0 whitespace-nowrap rounded-full px-2 py-2 text-xs text-slate-300 hover:bg-slate-800 sm:px-4 sm:text-sm">Sign in</a><a href="/sign-up" className="btn-primary shrink-0 whitespace-nowrap px-2 py-2 text-xs sm:px-4 sm:text-sm">Create account</a></div>
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <div className="flex items-center gap-3" aria-label="V5Vault home"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold tracking-tight">V5Vault</span></div>
+        <a href="/sign-in" className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</a>
       </header>
-      <section className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-24 md:grid-cols-[1.1fr_.9fr] md:items-center">
-        <div className="absolute -left-40 top-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="relative"><p className="font-mono text-[11px] uppercase tracking-[.24em] text-cyan-300">The vehicle history passport</p><h1 className="mt-5 max-w-3xl font-display text-5xl font-extrabold leading-[1.02] tracking-[-.055em] sm:text-7xl">Every mile has a <span className="text-cyan-300">record.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">A useful, portable history for the people who know a car best: its keeper, the hands-on builder, and the independent workshop.</p><div className="mt-8 flex flex-wrap gap-3"><a href="/sign-up" className="btn-primary px-6 py-3">Start a vehicle passport</a><a href="/sign-in" className="btn-ghost px-6 py-3">Sign in to your account</a></div><p className="mt-4 text-xs text-slate-500">Connect your vehicle using the 11-digit reference on its V5C logbook. Sample approvals are clearly labelled.</p></div>
-        <div className="relative mx-auto w-full max-w-md"><div className="absolute inset-5 rounded-full bg-cyan-400/10 blur-3xl" /><div className="vault-card relative rotate-1 border-cyan-400/20 p-5 sm:p-7"><div className="flex items-center justify-between border-b border-slate-700 pb-4"><span className="font-mono text-[10px] uppercase tracking-[.2em] text-slate-400">Vehicle passport · preview</span><span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">Keeper linked</span></div><div className="mt-6 rounded-md border-2 border-slate-950 bg-[#facc15] px-4 py-2 text-center font-plate text-3xl tracking-widest text-slate-950">AB14 CDE</div><h2 className="mt-5 text-2xl font-bold">Your car. Its whole story.</h2><p className="mt-1 text-sm text-slate-400">A record that travels with the vehicle history.</p><div className="mt-6 space-y-3"><div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3"><span className="mt-1 h-2 w-2 rounded-full bg-cyan-300" /><div><p className="text-sm font-semibold">Workshop stamp · Service</p><p className="mt-1 text-xs text-slate-400">Signed record · mileage and date retained</p></div></div><div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /><div><p className="text-sm font-semibold">Owner record · Brake fluid</p><p className="mt-1 text-xs text-slate-400">Your own maintenance notes, clearly identified</p></div></div></div><div className="mt-5 flex justify-between border-t border-slate-700 pt-4 font-mono text-[10px] uppercase tracking-widest text-slate-500"><span>History with provenance</span><span>01 / 04</span></div></div></div>
+
+      <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-16">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-16 h-[28rem] w-[28rem] rounded-full bg-cyan-400/[0.07] blur-3xl" />
+        <div className="relative grid gap-12 md:grid-cols-[1.08fr_.92fr] md:items-center md:gap-10">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[.24em] text-cyan-300">A history that stays with the vehicle</p>
+            <h1 className="mt-5 max-w-3xl font-display text-[3.25rem] font-extrabold leading-[.98] tracking-[-.055em] sm:text-7xl">Every mile has a record.</h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">The immutable digital history for vehicle owners and verified workshops.</p>
+            <div className="mt-8 grid gap-3 sm:max-w-xl sm:grid-cols-2">
+              <button type="button" onClick={() => openRoleChoices("driver")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-cyan-300/45 bg-slate-900 px-5 text-left font-semibold text-slate-100 shadow-[0_14px_40px_rgba(34,211,238,.12)] transition-transform hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <span className="flex items-center gap-3"><Car aria-hidden="true" className="mr-2 h-4 w-4 text-cyan-400" />Driver Passport</span>
+                <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-cyan-300" />
+              </button>
+              <button type="button" onClick={() => openRoleChoices("workshop")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-amber-400/40 bg-slate-900/80 px-5 text-left font-semibold text-slate-100 transition-colors hover:border-amber-300/70 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+                <span className="flex items-center gap-3"><Wrench aria-hidden="true" className="mr-2 h-4 w-4 text-amber-400" />Workshop Terminal</span>
+                <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-amber-300" />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-md md:justify-self-end">
+            <div aria-hidden="true" className="absolute inset-7 rounded-full bg-cyan-400/[0.08] blur-3xl" />
+            <div className="vault-card relative border-cyan-400/20 bg-slate-900/90 p-5 sm:p-7">
+              <div className="flex items-center justify-between border-b border-slate-700 pb-4">
+                <span className="font-mono text-[10px] uppercase tracking-[.2em] text-slate-400">Vehicle passport · live record</span>
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">VIN bound</span>
+              </div>
+              <div className="mt-6 rounded-md border-2 border-slate-950 bg-[#facc15] px-4 py-2 text-center font-plate text-3xl tracking-widest text-slate-950">AB14 CDE</div>
+              <h2 className="mt-5 text-2xl font-bold tracking-tight">One vehicle. Its whole story.</h2>
+              <p className="mt-1 text-sm text-slate-400">A record designed to travel with the car.</p>
+              <div className="mt-6 space-y-3">
+                <div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3.5">
+                  <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cyan-300" />
+                  <div><p className="text-sm font-semibold">Verified workshop stamp</p><p className="mt-1 text-xs leading-5 text-slate-400">Service recorded against the vehicle’s VIN</p></div>
+                </div>
+                <div className="flex gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-3.5">
+                  <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-slate-500" />
+                  <div><p className="text-sm font-semibold">Owner maintenance note</p><p className="mt-1 text-xs leading-5 text-slate-400">Your own records, clearly identified</p></div>
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 font-mono text-[10px] uppercase tracking-widest text-slate-500"><span>History with provenance</span><span>01 / 04</span></div>
+            </div>
+          </div>
+        </div>
       </section>
-      <section className="border-y border-slate-800 bg-slate-900/45"><div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-3"><div><p className="font-mono text-xs text-cyan-300">01 / KEEP</p><h2 className="mt-3 text-xl font-bold">Link with your logbook</h2><p className="mt-2 text-sm leading-6 text-slate-400">Connect a registration and V5C reference. Sample claims are development-only; no live DVLA verification is implied.</p></div><div><p className="font-mono text-xs text-cyan-300">02 / RECORD</p><h2 className="mt-3 text-xl font-bold">Show who did the work</h2><p className="mt-2 text-sm leading-6 text-slate-400">Workshop-signed records stay distinct from owner-entered DIY notes.</p></div><div><p className="font-mono text-xs text-cyan-300">03 / SHARE</p><h2 className="mt-3 text-xl font-bold">Take the history with you</h2><p className="mt-2 text-sm leading-6 text-slate-400">Build a practical passport for a sale, a new workshop, or a long-term project car.</p></div></div></section>
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[.8fr_1.2fr] md:items-center"><div><p className="font-mono text-xs uppercase tracking-[.2em] text-cyan-300">One vehicle, a better handover</p><h2 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">Made for more than the day it changes hands.</h2></div><div className="grid gap-3 sm:grid-cols-2"><article className="vault-card p-5"><Gauge className="h-5 w-5 text-cyan-300" /><h3 className="mt-4 font-bold">For owners</h3><p className="mt-2 text-sm leading-6 text-slate-400">See service chronology, MOT data and your maintenance record in one place.</p></article><article className="vault-card p-5"><Wrench className="h-5 w-5 text-cyan-300" /><h3 className="mt-4 font-bold">For builders</h3><p className="mt-2 text-sm leading-6 text-slate-400">Keep an ordered modification story with provenance where available.</p></article><article className="vault-card p-5 sm:col-span-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h3 className="mt-4 font-bold">For independent workshops</h3><p className="mt-2 text-sm leading-6 text-slate-400">Fast-log jobs to linked passports. Live VAT verification is only stated when server-verified; development samples never imply it.</p></article></div></section>
-      <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8"><div className="rounded-3xl border border-cyan-400/20 bg-slate-900 p-7 sm:p-10"><p className="font-mono text-xs uppercase tracking-[.2em] text-cyan-300">Start with the logbook</p><h2 className="mt-3 text-3xl font-bold">Build a history worth keeping.</h2><p className="mt-2 max-w-xl text-sm text-slate-400">Your vehicle links and records stay attached to your account—not a sample vehicle on a shared device.</p><a href="/sign-up" className="btn-primary mt-5 px-6 py-3">Create your account</a></div></section>
-      <footer className="border-t border-slate-800 px-5 py-6 text-center text-xs text-slate-500">V5Vault · UK vehicle history passport · Development sample data is not live V5C verification.</footer>
+
+      <section aria-label="V5Vault roles" className="border-y border-slate-800 bg-slate-900/45">
+        <div className="mx-auto grid max-w-6xl gap-4 px-5 py-12 sm:px-8 md:grid-cols-2 md:gap-6">
+          <article className="vault-card flex flex-col border-slate-700/80 p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">For vehicle owners</p><h2 className="mt-3 text-2xl font-bold tracking-tight">Digital Glovebox &amp; Provenance</h2></div><Car aria-hidden="true" className="mt-1 h-6 w-6 shrink-0 text-cyan-300" /></div>
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-slate-300">
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />Live MOT &amp; service history timeline</li>
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />Modder&apos;s Vault for ECU maps &amp; build specs</li>
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />1-tap buyer passport share link</li>
+            </ul>
+            <button type="button" onClick={() => openRoleChoices("driver")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-cyan-300/35 px-4 text-sm font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Driver Passport <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
+          </article>
+
+          <article className="vault-card flex flex-col border-cyan-300/25 bg-slate-900/90 p-6 sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">For verified workshops</p><h2 className="mt-3 text-2xl font-bold tracking-tight">Workshop Operating Terminal</h2></div>
+              <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-200">30-Day Free Trial (£9.99/mo)</span>
+            </div>
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-slate-300">
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-400" />15-second VIN-bound service stamping</li>
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-400" />AI invoice scanner (photo-to-stamp)</li>
+              <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-400" />Branded digital seal with VAT &amp; accreditation</li>
+            </ul>
+            <button type="button" onClick={() => openRoleChoices("workshop")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-slate-600 px-4 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-300/50 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Workshop Terminal <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
+          </article>
+        </div>
+      </section>
+
+      <footer className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-7 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <span>V5Vault · The UK vehicle history passport</span>
+        <span>Clear provenance. History that travels.</span>
+      </footer>
+
+      <Dialog open={roleChoiceOpen} onOpenChange={setRoleChoiceOpen}>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-slate-700 bg-slate-950 p-5 text-slate-100 shadow-2xl sm:p-8">
+          <DialogTitle className="font-display text-2xl font-bold tracking-tight">Choose your V5Vault role</DialogTitle>
+          <DialogDescription className="mt-2 text-sm leading-6 text-slate-400">
+            {roleChoiceSource === "driver" ? "Start with a vehicle passport or choose the workshop tools." : "Choose the workshop terminal or continue as a vehicle owner."}
+          </DialogDescription>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button type="button" onClick={() => onPublicRoleChoice("vehicle-owner")} className="flex min-h-[108px] flex-col items-start justify-between rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 text-left transition-colors hover:border-cyan-300/60 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+              <Car aria-hidden="true" className="h-5 w-5 text-cyan-300" />
+              <span className="text-base font-semibold">Vehicle Owner</span>
+              <span className="text-xs text-slate-400">Build a portable vehicle passport</span>
+            </button>
+            <button type="button" onClick={() => onPublicRoleChoice("verified-workshop")} className="flex min-h-[108px] flex-col items-start justify-between rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 text-left transition-colors hover:border-cyan-300/60 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+              <Wrench aria-hidden="true" className="h-5 w-5 text-cyan-300" />
+              <span className="text-base font-semibold">Verified Workshop</span>
+              <span className="text-xs text-slate-400">Record VIN-bound service stamps</span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

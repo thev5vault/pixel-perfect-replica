@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { applyAdminPolicy } from "@/services/server/admin-policy";
 import { ADMIN_PERMISSIONS } from "@/lib/account-types";
 import { sampleAccount } from "@/lib/sample-account";
-import { accountHome, isAuthEntry } from "@/lib/auth-routing";
+import { accountHome, authRedirectForIntent, isAuthEntry } from "@/lib/auth-routing";
 
 const mocks=vi.hoisted(()=>({
   authenticate:vi.fn(),getUser:vi.fn(),query:vi.fn(),connect:vi.fn(),txQuery:vi.fn(),release:vi.fn(),
@@ -172,6 +172,9 @@ describe("Deterministic post-login destinations",()=>{
   it("routes normal users to vehicle and verified workshops to garage",()=>{
     expect(accountHome({...sampleAccount(),user:base(),development_role:null})).toBe("/vehicle");
     expect(accountHome({...sampleAccount(),user:{...base(),role:"verified_garage"},development_role:null})).toBe("/garage");
+    expect(authRedirectForIntent("?intent=owner")).toBe("/vehicle");
+    expect(authRedirectForIntent("?intent=workshop")).toBe("/workshop/setup");
+    expect(authRedirectForIntent("?intent=admin&next=https://example.com")).toBe("/dashboard");
     expect(isAuthEntry("/sign-in/sso-callback")).toBe(true);
     expect(isAuthEntry("/sign-up/verify-email-address")).toBe(true);
     expect(isAuthEntry("/vehicle")).toBe(false);

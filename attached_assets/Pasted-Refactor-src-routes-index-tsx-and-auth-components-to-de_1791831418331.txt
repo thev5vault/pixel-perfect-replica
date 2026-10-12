@@ -1,0 +1,25 @@
+Refactor 'src/routes/index.tsx' and auth components to deliver a sleek, uncluttered, high-conversion landing page and dual-persona onboarding:
+
+1. Minimalist Hero Section:
+   - Headline: "Every mile has a record."
+   - Subhead: "The immutable digital history for vehicle owners and verified workshops."
+   - Render two clean, high-contrast CTA buttons using Lucide React SVG icons:
+     * '[ <Car className="w-4 h-4 mr-2 text-cyan-400" /> Driver Passport ]' -> Opens Owner Sign Up.
+     * '[ <Wrench className="w-4 h-4 mr-2 text-amber-400" /> Workshop Terminal ]' -> Opens B2B Workshop Trial.
+
+2. Sleek Dual-Card Persona Showcase (Zero Copy Bloat):
+   - Render a clean 2-card side-by-side/stacked container below the hero:
+     * Card A (Vehicle Owners):
+       - Header: "Digital Glovebox & Provenance"
+       - 3 Micro-bullets: "<CheckCircle className="w-4 h-4 text-cyan-400 inline mr-2" /> Live MOT & service history timeline", "<CheckCircle className="w-4 h-4 text-cyan-400 inline mr-2" /> Modder's Vault for ECU maps & build specs", "<CheckCircle className="w-4 h-4 text-cyan-400 inline mr-2" /> 1-tap buyer passport share link".
+     * Card B (Verified Workshops):
+       - Header: "Workshop Operating Terminal"
+       - Badge: "30-Day Free Trial (£9.99/mo)"
+       - 3 Micro-bullets: "<CheckCircle className="w-4 h-4 text-amber-400 inline mr-2" /> 15-second VIN-bound service stamping", "<CheckCircle className="w-4 h-4 text-amber-400 inline mr-2" /> AI invoice scanner (photo-to-stamp)", "<CheckCircle className="w-4 h-4 text-amber-400 inline mr-2" /> Branded digital seal with VAT & accreditation".
+
+3. Clean Auth Role Selector Modal:
+   - Tapping either CTA triggers a clean modal presenting a spacious 2-card role choice ('Vehicle Owner' vs 'Verified Workshop').
+   - Post-auth routing: 'Vehicle Owner' routes to '/vehicle'; 'Verified Workshop' routes directly to '/workshop/setup'.
+
+4. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', and 'npm run build' to confirm 100% test passes and clean production compilation.
