@@ -1,0 +1,55 @@
+Act as Lead Systems Architect and Senior Full-Stack Engineer governing V5Vault under AGENTS.md (Anchor 23 parameters). Lock our entire pristine build into Git locally and on GitHub FIRST, then execute the progressive disclosure refactor on an isolated experimental branch.
+
+---
+
+### STEP 1: COMMIT, TAG & SYNC FULL BUILD TO GITHUB (MANDATORY)
+
+Before creating or editing any source files, lock down the entire repository (design, logic, tests, styles, and architecture):
+1. Run `git status` to verify working tree.
+2. Stage and commit all files:
+   - `git add .`
+   - `git commit -m "CHORE: Freeze Anchor 23 golden baseline (Dashboard 5-row stack, full functions, 178 passing tests)"`
+3. Create an immutable baseline tag:
+   - `git tag -a v1-anchor23-golden-master -m "Pristine Anchor 23 Baseline - Verified Build & Design"`
+4. Push complete snapshot and tags to GitHub:
+   - `git push origin main`
+   - `git push origin --tags`
+5. Branch off into an isolated experiment:
+   - `git checkout -b experiment/progressive-disclosure`
+
+Confirm in your response that 'v1-anchor23-golden-master' was tagged and pushed to GitHub, and that active branch is 'experiment/progressive-disclosure'.
+
+---
+
+### STEP 2: REFACOR SECONDARY MODULES TO SINGLE-COLUMN PROGRESSIVE DISCLOSURE
+
+Once active on branch 'experiment/progressive-disclosure':
+
+1. PROTECT BENCHMARK ROUTE (DO NOT MODIFY):
+   - Leave `src/routes/index.tsx` (Vehicle Dashboard) untouched as our master Anchor 23 reference standard.
+
+2. ELIMINATE DUAL VIEWS & SPLIT PANES:
+   - Audit `src/routes/vault.tsx` (Documents), `src/routes/garage.tsx` (Multi-Vehicle), and `src/routes/passport.tsx` (Resale Ledger).
+   - Remove all dual-view toggles, split-pane containers, or secondary view modes on 375px+ viewports.
+
+3. CONVERT TO STACKED PROGRESSIVE CARDS:
+   - Level 0 (Summary Row): Convert document, vehicle, and milestone entries into clean single-column vertical stacked cards.
+     * Line 1: Date / Mileage / Category
+     * Line 2: Card Title (Full width, zero truncation)
+     * Line 3: Text-only Badges (`SERVICING`, `MOT`, `VERIFIED WORKSHOP`) — zero decorative emojis
+     * Line 4: Price / Status Chip (Left) + Action Trigger (Right)
+   - Level 1 (Expanded Drawer): Tapping `Details ˅`, `Preview ˅`, or `Specs ˅` opens a dark inset drawer (`bg-slate-950/80 border border-slate-800 rounded-xl p-3 mt-2`) displaying itemized work, fluid specs, or document previews.
+   - Drawer Depth Rule: Max 1 level of depth. No nested accordions.
+
+4. ANCHOR 23 ERGONOMIC & VISUAL RULES:
+   - Touch Targets: Enforce 44px minimum touch height (`min-h-[44px]`) on all buttons and expand triggers.
+   - Visual Styling: Dark slate palette (`bg-slate-950`, `bg-slate-900/80`), subtle borders (`border-slate-800`), cyan action triggers (`text-cyan-400`), emerald financial values (`text-emerald-400`).
+   - Bottom Clearance: Apply minimum `pb-40` scroll margin on all tab layouts to clear floating navigation bars.
+
+---
+
+### STEP 3: MANDATORY QUALITY GATE VERIFICATION
+
+1. Run `npm test` (Confirm all 178+ tests pass).
+2. Run `npx tsc --noEmit` (Confirm zero TypeScript compilation errors).
+3. Run `npm run build` (Confirm clean production bundle build).
