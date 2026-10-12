@@ -1,0 +1,23 @@
+Fix visual alignment bugs, header double-stacking, search hierarchy, and file input styling across 'src/routes/garage.tsx', 'src/routes/index.tsx', and auth components:
+
+1. Express Core Header Alignment & VIN Badge ('src/routes/garage.tsx'):
+   - Fix Floating (i) Icon: Wrap 'Express Core' title and the Lucide <Info /> icon in a tight inline flex container ('flex items-center gap-2') so the (i) icon sits directly next to the word "Core" instead of floating at the far right margin.
+   - Immediate Express VIN Display: Render the green locked badge '<CheckCircle className="w-4 h-4 text-emerald-400 inline mr-1.5" /> VIN Bound: [17-char VIN]' directly inside Express Core below the Registration input as soon as 'Fetch specs' or REG lookup finishes.
+   - Component Pill Toggle: Right-align or center the '- Fewer components' collapse button at the bottom of the expanded component grid.
+
+2. Header Space Optimization:
+   - Combine the 'Verified Workshop' status badge inline with the Workshop Terminal page title to eliminate double-stacked top header height.
+
+3. Upcoming Jobs Search Hierarchy:
+   - Re-order 'Upcoming Jobs' tab so the Customer Registration Search Bar ('Find a registration') is pinned at the top of the page, above the 'Due Soon' reminder feed.
+
+4. Garage Profile Styling:
+   - Replace default browser file input under 'WORKSHOP LOGO UPLOAD' with a custom-styled button: '[ <Camera className="w-4 h-4 inline mr-2 text-slate-400" /> Upload Workshop Logo ]' with helper text 'PNG or JPG (Max 2MB)'.
+   - Gracefully intercept 'Billing settings' click with a styled toast/modal: "Billing Management: Portal setup will complete during live Stripe onboarding."
+
+5. Landing Page & Auth Polish ('src/routes/index.tsx'):
+   - Freeze background scrolling and apply 'backdrop-blur-md' when the Role Selection modal is active.
+   - Set dynamic sign-up card title when registering as a workshop: "Create Verified Workshop Account — Start 30-Day Free Trial (£9.99/mo)".
+
+6. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', 'npm run build', and 'git diff --check' to confirm 100% test passes across all suites and clean compilation.

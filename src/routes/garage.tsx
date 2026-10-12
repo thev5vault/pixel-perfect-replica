@@ -526,12 +526,12 @@ function GaragePage() {
   </div>;
 
   return <div className="space-y-5 pb-40">
-    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop terminal"} subtitle="Verified workshop · Express service stamp" />
+    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={<span className="flex flex-wrap items-center gap-2"><span>Workshop Terminal</span><span className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">Verified Workshop</span></span>} />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground">Express Core</h2>
-          <button type="button" aria-expanded={showExpressHelp} aria-label="About Express Core" onClick={() => setShowExpressHelp((open) => !open)} className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
+          <button type="button" aria-expanded={showExpressHelp} aria-label="About Express Core" onClick={() => setShowExpressHelp((open) => !open)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
         </div>
         {showExpressHelp && <p role="status" className="rounded-lg border border-cyan-500/20 bg-cyan-950/20 px-3 py-2 text-xs leading-relaxed text-cyan-100">Express Core: High-speed 15-second service stamping bound directly to the chassis VIN.</p>}
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
@@ -559,21 +559,23 @@ function GaragePage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service category</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {CATEGORIES.map((category) => <button key={category} type="button" aria-pressed={form.category === category} onClick={() => change("category", category)}
-                className={`h-9 min-h-9 rounded-lg border px-2 text-xs font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
+                className={`min-h-11 rounded-lg border px-2 text-xs font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
             </div>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work components</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {QUICK_COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-                className={`min-h-9 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                className={`min-h-11 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
                 {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
               </button>)}
               {showMoreComponents && COMPONENTS.filter((component) => !QUICK_COMPONENTS.includes(component as typeof QUICK_COMPONENTS[number])).map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-                className={`min-h-9 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                className={`min-h-11 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
                 {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
               </button>)}
-              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((open) => !open)} className="min-h-9 rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">
+            </div>
+            <div className="mt-2 flex justify-end">
+              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((open) => !open)} className="min-h-[44px] rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">
                 {showMoreComponents ? "− Fewer components" : "+ More components"}
               </button>
             </div>

@@ -669,6 +669,13 @@ function PublicLanding() {
   const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
   const [roleChoiceSource, setRoleChoiceSource] = useState<"driver" | "workshop">("driver");
 
+  useEffect(() => {
+    if (!roleChoiceOpen) return;
+    const previousOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => { document.documentElement.style.overflow = previousOverflow; };
+  }, [roleChoiceOpen]);
+
   const openRoleChoices = (source: "driver" | "workshop") => {
     setRoleChoiceSource(source);
     setRoleChoiceOpen(true);

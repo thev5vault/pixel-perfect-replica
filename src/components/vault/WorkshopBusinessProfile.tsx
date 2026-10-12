@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Building2, Check, Loader2, Save, ShieldCheck, Upload } from "lucide-react";
+import { Building2, Camera, Check, Loader2, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAccount } from "@/lib/account-store";
 import { canUseWorkshopFeatures } from "@/lib/plans";
@@ -65,8 +65,8 @@ export function WorkshopBusinessProfile() {
 
   function uploadLogo(file?: File) {
     if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 900_000) {
-      toast.error("Choose an image file under 900 KB.");
+    if (!["image/png", "image/jpeg"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      toast.error("Choose a PNG or JPG image up to 2 MB.");
       return;
     }
     const reader = new FileReader();
@@ -83,7 +83,11 @@ export function WorkshopBusinessProfile() {
           <h2 className="font-bold">Garage branding</h2>
           <Field label="Trading name"><input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} className="field" /></Field>
           <Field label="Workshop logo upload">
-            <input type="file" accept="image/*" onChange={(event) => uploadLogo(event.target.files?.[0])} className="block min-h-11 w-full text-sm text-muted-foreground file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:text-slate-100" />
+            <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-800 focus-within:ring-2 focus-within:ring-cyan-500/50">
+              <Camera className="mr-2 h-4 w-4 text-slate-400" />Upload Workshop Logo
+              <input type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" onChange={(event) => uploadLogo(event.target.files?.[0])} className="sr-only" />
+            </label>
+            <p className="mt-1 text-xs text-muted-foreground">PNG or JPG (Max 2MB)</p>
           </Field>
           {logo && <img src={logo} alt={`${name || "Workshop"} logo preview`} className="h-20 max-w-full rounded-lg border border-slate-700 bg-slate-950 p-2 object-contain" />}
           <div className="flex items-center gap-3 rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3">

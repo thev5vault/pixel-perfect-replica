@@ -162,7 +162,7 @@ export function Thumb({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-export function PageHeader({ icon, title, subtitle }: { icon?: ReactNode; title: string; subtitle?: string }) {
+export function PageHeader({ icon, title, subtitle }: { icon?: ReactNode; title: ReactNode; subtitle?: string }) {
   return (
     <div className="mb-5">
       <h1 className="flex items-center gap-2 text-2xl font-bold">

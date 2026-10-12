@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Check, LoaderCircle, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { useV1 } from "@/lib/use-v1";
 import type { BillingCatalog, BillingInterval, PlanKey } from "@/lib/v1-types";
 import { gbp, PLAN_DEFINITIONS } from "@/lib/plans";
@@ -40,7 +41,7 @@ export function TierPlans({ vrm, compact = false, workshopOnly = false }: Props)
   const lifetimeProModder = account?.state?.user.tier_override === "pro_modder_lifetime";
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState<PlanKey | "portal" | null>(null);
+  const [busy, setBusy] = useState<PlanKey | null>(null);
   const [interval, setInterval] = useState<BillingInterval>("month");
 
   useEffect(() => {
@@ -60,20 +61,6 @@ export function TierPlans({ vrm, compact = false, workshopOnly = false }: Props)
       else setError(result.message || "Checkout did not return a payment link.");
     } catch (e) {
       setError(message(e, "Checkout could not be started."));
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function portal() {
-    setBusy("portal");
-    setError("");
-    try {
-      const result = await v1.billingPortal();
-      if (result.url) window.location.assign(result.url);
-      else setError(result.message || "Billing portal is unavailable.");
-    } catch (e) {
-      setError(message(e, "Billing settings could not be opened."));
     } finally {
       setBusy(null);
     }
@@ -145,7 +132,7 @@ export function TierPlans({ vrm, compact = false, workshopOnly = false }: Props)
     <div className="flex flex-col gap-3 border-t border-border p-4 sm:flex-row sm:items-center sm:justify-between">
        {!workshopOnly && <div><p className="text-sm font-semibold">Certified Sales Pack · £2.99 once per report</p><p className="text-xs text-muted-foreground">A provenance PDF for the selected vehicle. Checkout is confirmed by the server.</p></div>}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button type="button" className="btn-ghost min-h-11" onClick={() => void portal()} disabled={busy !== null}>{busy === "portal" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}Billing settings</button>
+         <button type="button" className="btn-ghost min-h-11" onClick={() => toast.info("Billing Management: Portal setup will complete during live Stripe onboarding.")} disabled={busy !== null}>Billing settings</button>
          {!workshopOnly && <button type="button" className="btn-primary min-h-11" onClick={() => void start("sales_pack")} disabled={busy !== null || !vrm}>{busy === "sales_pack" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}Buy Sales Pack</button>}
       </div>
     </div>
