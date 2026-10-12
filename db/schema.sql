@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS user_accounts (
   garage_verified BOOLEAN NOT NULL DEFAULT false,
   garage_name TEXT NOT NULL DEFAULT '',
   garage_registration TEXT NOT NULL DEFAULT '',
+  garage_logo_url TEXT NOT NULL DEFAULT '',
+  imi_accreditation TEXT NOT NULL DEFAULT '',
+  garage_address TEXT NOT NULL DEFAULT '',
   workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist')),
   vat_verified BOOLEAN NOT NULL DEFAULT false,
   vat_verified_at TIMESTAMPTZ,
@@ -22,6 +25,9 @@ CREATE TABLE IF NOT EXISTS user_accounts (
 );
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS display_preference TEXT NOT NULL DEFAULT 'easy' CHECK (display_preference IN ('easy','detailed'));
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS workshop_type TEXT NOT NULL DEFAULT 'garage' CHECK (workshop_type IN ('garage','specialist'));
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS garage_logo_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS imi_accreditation TEXT NOT NULL DEFAULT '';
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS garage_address TEXT NOT NULL DEFAULT '';
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS garage_verified BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_verified_at TIMESTAMPTZ;

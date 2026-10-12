@@ -10,6 +10,9 @@ export const accountProfileInputSchema = z.object({
   garage_name: z.string().trim().max(100).optional(),
   garage_registration: z.string().trim().max(40).optional(),
   workshop_type: z.enum(["garage", "specialist"]).optional(),
+  garage_logo_url: z.string().trim().max(2048).optional(),
+  imi_accreditation: z.string().trim().max(100).optional(),
+  garage_address: z.string().trim().max(500).optional(),
 }).strict().superRefine((value, context) => {
   const hasTradeDetails = tradeProfileFields.some((field) => value[field] !== undefined);
   if (hasTradeDetails && tradeProfileFields.some((field) => value[field] === undefined)) {
@@ -27,6 +30,9 @@ export type AccountProfileInput = {
   garage_name?: string | undefined;
   garage_registration?: string | undefined;
   workshop_type?: "garage" | "specialist" | undefined;
+  garage_logo_url?: string | undefined;
+  imi_accreditation?: string | undefined;
+  garage_address?: string | undefined;
 };
 
 export function mergeAccountProfile(user: UserAccount, profile: AccountProfileInput): UserAccount {
@@ -37,6 +43,9 @@ export function mergeAccountProfile(user: UserAccount, profile: AccountProfileIn
     ...(profile.garage_name !== undefined ? { garage_name: profile.garage_name } : {}),
     ...(profile.garage_registration !== undefined ? { garage_registration: profile.garage_registration } : {}),
     ...(profile.workshop_type !== undefined ? { workshop_type: profile.workshop_type } : {}),
+    ...(profile.garage_logo_url !== undefined ? { garage_logo_url: profile.garage_logo_url } : {}),
+    ...(profile.imi_accreditation !== undefined ? { imi_accreditation: profile.imi_accreditation } : {}),
+    ...(profile.garage_address !== undefined ? { garage_address: profile.garage_address } : {}),
   };
 }
 

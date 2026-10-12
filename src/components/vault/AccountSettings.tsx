@@ -5,7 +5,7 @@ import { accountRolePresentation } from "@/lib/account-role";
 import { canEditWorkshopProfile, type AccountProfileInput } from "@/lib/account-profile";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "./ui-bits";
-import { AlertTriangle, Loader2, Save, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { AlertTriangle, Car, Loader2, Save, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { PasskeySettings } from "./PasskeySettings";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -21,11 +21,14 @@ export function AccountSettings() {
   const [garageName, setGarageName] = useState(user?.garage_name ?? "");
   const [registration, setRegistration] = useState(user?.garage_registration ?? "");
   const [workshopType, setWorkshopType] = useState<"garage"|"specialist">(user?.workshop_type??"garage");
+  const [garageLogoUrl, setGarageLogoUrl] = useState(user?.garage_logo_url ?? "");
+  const [imiAccreditation, setImiAccreditation] = useState(user?.imi_accreditation ?? "");
+  const [garageAddress, setGarageAddress] = useState(user?.garage_address ?? "");
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteText, setDeleteText] = useState("");
   const [deleting, setDeleting] = useState(false);
-  useEffect(() => { setName(user?.full_name ?? ""); setGarageName(user?.garage_name ?? ""); setRegistration(user?.garage_registration ?? "");setWorkshopType(user?.workshop_type??"garage"); }, [user?.id, user?.full_name, user?.garage_name, user?.garage_registration,user?.workshop_type,user?.subscription_tier,user?.role]);
+  useEffect(() => { setName(user?.full_name ?? ""); setGarageName(user?.garage_name ?? ""); setRegistration(user?.garage_registration ?? "");setWorkshopType(user?.workshop_type??"garage"); setGarageLogoUrl(user?.garage_logo_url ?? ""); setImiAccreditation(user?.imi_accreditation ?? ""); setGarageAddress(user?.garage_address ?? ""); }, [user?.id, user?.full_name, user?.garage_name, user?.garage_registration,user?.workshop_type,user?.garage_logo_url,user?.imi_accreditation,user?.garage_address,user?.subscription_tier,user?.role]);
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!account) return;
@@ -33,7 +36,7 @@ export function AccountSettings() {
     const profile: AccountProfileInput = {
       full_name: name.trim(),
       ...(canEditWorkshopDetails
-        ? { garage_name: garageName.trim(), garage_registration: registration.trim(), workshop_type: workshopType }
+        ? { garage_name: garageName.trim(), garage_registration: registration.trim(), workshop_type: workshopType, garage_logo_url: garageLogoUrl.trim(), imi_accreditation: imiAccreditation.trim(), garage_address: garageAddress.trim() }
         : {}),
     };
     try { await account.saveProfile(profile); toast.success("Profile saved"); }
@@ -86,6 +89,13 @@ export function AccountSettings() {
         <Pill tone={currentRole.isWorkshop ? "success" : "primary"}>{currentRole.badgeName}</Pill>
       </div>
     </section>
+    <section className="vault-card space-y-3 p-4" aria-label="Vehicle management">
+      <div className="flex items-center justify-between gap-3">
+        <div><h2 className="flex items-center gap-2 font-bold"><Car className="h-4 w-4 text-cyan-300" />My vehicles</h2><p className="mt-1 text-xs text-muted-foreground">Select a linked vehicle to manage its passport.</p></div>
+        <Link to="/vehicle" className="btn-secondary min-h-11 px-3 py-2 text-xs">Manage</Link>
+      </div>
+      {(account.state?.vehicles ?? []).length ? <ul className="space-y-2">{account.state!.vehicles.map((vehicle) => <li key={vehicle.vrm}><Link to="/vehicle" className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-sm hover:border-cyan-500/30"><span className="min-w-0 truncate font-semibold">{vehicle.make} {vehicle.model}</span><span className="uk-plate shrink-0 px-2 py-1 font-mono text-xs">{vehicle.vrm}</span></Link></li>)}</ul> : <p className="rounded-xl border border-slate-800 p-3 text-sm text-muted-foreground">No linked vehicles yet. Use the vehicle selector to connect one.</p>}
+    </section>
     <section className="vault-card space-y-3 p-4" aria-label="Display and accessibility">
       <div>
         <h2 className="text-lg font-bold text-white">Display &amp; Accessibility</h2>
@@ -105,6 +115,9 @@ export function AccountSettings() {
         <Field label="Trading/Business Name"><input maxLength={100} value={garageName} onChange={(e) => setGarageName(e.target.value)} className="field" placeholder="Your trading or business name" /></Field>
         <Field label="Company Reg / VAT Number"><input maxLength={40} value={registration} onChange={(e) => setRegistration(e.target.value)} className="field" placeholder="Company registration or VAT number" /></Field>
         <Field label="Workshop type"><select value={workshopType} onChange={e=>setWorkshopType(e.target.value==="specialist"?"specialist":"garage")} className="field"><option value="garage">Garage</option><option value="specialist">Specialist workshop</option></select></Field>
+        <Field label="Workshop logo URL"><input type="url" maxLength={2048} value={garageLogoUrl} onChange={(e) => setGarageLogoUrl(e.target.value)} className="field" placeholder="https://example.co.uk/logo.png" /></Field>
+        <Field label="IMI accreditation"><input maxLength={100} value={imiAccreditation} onChange={(e) => setImiAccreditation(e.target.value)} className="field" placeholder="Accreditation number or status" /></Field>
+        <Field label="Workshop address"><textarea maxLength={500} rows={3} value={garageAddress} onChange={(e) => setGarageAddress(e.target.value)} className="field" placeholder="Public workshop address" /></Field>
         <p className="text-xs text-muted-foreground">Workshop stamping still requires an approved account and live VAT verification.</p>
         {garageName&&registration&&<p className="text-xs text-muted-foreground">Workshop application: {user?.status}. Changed trade details require administrator review before live stamping.</p>}
         {garageName&&registration&&user?.subscription_status==="trialing"&&user?.trial_expires_at&&<p className="text-xs text-cyan-300">Your no-card Workshop trial ends {new Date(user.trial_expires_at).toLocaleDateString("en-GB")}.</p>}

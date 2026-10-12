@@ -21,6 +21,9 @@ export interface UserAccount {
   billing_unavailable?: boolean;
   garage_name: string;
   garage_registration: string;
+  garage_logo_url?: string;
+  imi_accreditation?: string;
+  garage_address?: string;
   status: ApprovalStatus;
   is_sample: boolean;
   permissions?: readonly string[];

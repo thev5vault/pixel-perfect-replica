@@ -114,7 +114,6 @@ function GaragePage() {
   const [scanMessage, setScanMessage] = useState("");
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
   const [showMoreComponents, setShowMoreComponents] = useState(false);
-  const [showVinRequired, setShowVinRequired] = useState(false);
   const [showWorkshopUpgrade, setShowWorkshopUpgrade] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -133,7 +132,6 @@ function GaragePage() {
     let active = true;
     setForm(emptyForm());
     setBoundVin("");
-    setShowVinRequired(false);
     setReadyDraftKey(null);
     setDraftStatus("");
     void readGarageDraft<GarageForm>(draftKey).then((draft) => {
@@ -263,7 +261,6 @@ function GaragePage() {
     });
     if (formatVrm(form.vrm) !== vrm) {
       setBoundVin("");
-      setShowVinRequired(false);
     }
   }
 
@@ -291,7 +288,6 @@ function GaragePage() {
         mileage: vehicle.odometerAvailable === false ? current.mileage : String(vehicle.odometer ?? current.mileage),
       }));
       setBoundVin(lookedUpVin);
-      setShowVinRequired(false);
       const detail = [
         vehicle.year,
         vehicle.make,
@@ -412,11 +408,9 @@ function GaragePage() {
     }
     if (!validateVIN(form.vin)) {
       setShowDetailedBreakdown(true);
-      setShowVinRequired(true);
       setError("");
       return;
     }
-    setShowVinRequired(false);
     if (!form.physicalVinInspected) {
       setShowDetailedBreakdown(true);
       setError("Confirm that you physically inspected and matched the VIN on the vehicle.");
@@ -538,9 +532,10 @@ function GaragePage() {
               </Field>
               {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-2 py-1.5 text-[10px] font-semibold text-cyan-200">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
                 <span className="break-all">VIN Bound: {form.vin}</span>
               </div>}
-              {showVinRequired && !validateVIN(form.vin) && <p role="alert" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required to stamp permanent record.</p>}
+              {!validateVIN(form.vin) && <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required for permanent chassis log.</p>}
             </div>
             <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className={`${GARAGE_INPUT_CLASS} min-h-[44px]`} /></Field>
           </div>
@@ -576,7 +571,7 @@ function GaragePage() {
           </div>
         </section>
 
-        <button type="submit" disabled={busy || fileBusy} className="btn-primary min-h-[44px] w-full px-3 py-3"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+        <button type="submit" disabled={busy || fileBusy || !validateVIN(form.vin)} className="btn-primary min-h-[44px] w-full px-3 py-3 disabled:cursor-not-allowed disabled:opacity-50"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
         {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
 
         <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/40">
@@ -595,7 +590,7 @@ function GaragePage() {
                 ...(scannedImage ? { receipt: scannedImage } : {}),
               }));
             }} />
-            <Field label="17-character VIN"><input minLength={17} maxLength={17} value={form.vin} onChange={(event) => { change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17)); setBoundVin(""); setShowVinRequired(false); }} placeholder="VIN / chassis number" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
+            <Field label="17-character VIN"><input minLength={17} maxLength={17} value={form.vin} onChange={(event) => { change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17)); setBoundVin(""); }} placeholder="VIN / chassis number" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
             <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
               <input type="checkbox" checked={form.physicalVinInspected} onChange={(event) => change("physicalVinInspected", event.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
               <span>I physically inspected the VIN on the vehicle and matched it to the registration and service record.</span>

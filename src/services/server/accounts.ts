@@ -189,7 +189,10 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
   const user = await currentUser(authRequest);
   const hasWorkshopDetails = input.garage_name !== undefined
     || input.garage_registration !== undefined
-    || input.workshop_type !== undefined;
+    || input.workshop_type !== undefined
+    || input.garage_logo_url !== undefined
+    || input.imi_accreditation !== undefined
+    || input.garage_address !== undefined;
   if (!hasWorkshopDetails) {
     await pool.query("UPDATE user_accounts SET full_name=$1,display_preference=COALESCE($2,display_preference) WHERE id=$3", [input.full_name,input.display_preference ?? null,user.id]);
     return {ok:true};
@@ -198,6 +201,9 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
   const garageName = input.garage_name ?? user.garage_name;
   const garageRegistration = input.garage_registration ?? user.garage_registration;
   const workshopType = input.workshop_type ?? user.workshop_type ?? "garage";
+  const garageLogoUrl = input.garage_logo_url ?? user.garage_logo_url ?? "";
+  const imiAccreditation = input.imi_accreditation ?? user.imi_accreditation ?? "";
+  const garageAddress = input.garage_address ?? user.garage_address ?? "";
   const startsWorkshopTrial = !user.trial_expires_at
     && !user.garage_registration.trim()
     && Boolean(garageName.trim() && garageRegistration.trim())
@@ -209,8 +215,9 @@ export async function updateAccount(input:AccountProfileInput, authRequest?:Requ
     status=CASE WHEN (garage_name=$2 AND garage_registration=$3 AND workshop_type=$6) OR (is_sample AND $4) THEN status ELSE 'pending' END,
     subscription_status=CASE WHEN $7 AND trial_expires_at IS NULL THEN 'trialing' ELSE subscription_status END,
     trial_expires_at=CASE WHEN $7 AND trial_expires_at IS NULL THEN now()+interval '30 days' ELSE trial_expires_at END,
-     workshop_type=$6,display_preference=COALESCE($8,display_preference) WHERE id=$5`,
-    [input.full_name,garageName,garageRegistration,development,user.id,workshopType,startsWorkshopTrial,input.display_preference ?? null]);
+     workshop_type=$6,display_preference=COALESCE($8,display_preference),garage_logo_url=$9,
+     imi_accreditation=$10,garage_address=$11 WHERE id=$5`,
+    [input.full_name,garageName,garageRegistration,development,user.id,workshopType,startsWorkshopTrial,input.display_preference ?? null,garageLogoUrl,imiAccreditation,garageAddress]);
   return {ok:true};
 }
 export async function createService(input:Omit<ServiceRecord,"id"|"verified">) {

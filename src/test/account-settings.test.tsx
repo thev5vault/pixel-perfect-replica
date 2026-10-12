@@ -132,12 +132,18 @@ describe("account settings tier-driven profile", () => {
     fireEvent.change(screen.getByLabelText("Display Name"), { target: { value: "Workshop Owner" } });
     fireEvent.change(screen.getByLabelText("Trading/Business Name"), { target: { value: "Northside Motors" } });
     fireEvent.change(screen.getByLabelText("Company Reg / VAT Number"), { target: { value: "GB123456789" } });
+    fireEvent.change(screen.getByLabelText("Workshop logo URL"), { target: { value: "https://northside.example/logo.png" } });
+    fireEvent.change(screen.getByLabelText("IMI accreditation"), { target: { value: "IMI-12345" } });
+    fireEvent.change(screen.getByLabelText("Workshop address"), { target: { value: "1 Main Street, London" } });
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
     await waitFor(() => expect(mocks.saveProfile).toHaveBeenLastCalledWith({
       full_name: "Workshop Owner",
       garage_name: "Northside Motors",
       garage_registration: "GB123456789",
       workshop_type: "garage",
+      garage_logo_url: "https://northside.example/logo.png",
+      imi_accreditation: "IMI-12345",
+      garage_address: "1 Main Street, London",
     }));
     expect(mocks.toastSuccess).toHaveBeenCalledTimes(2);
   });
