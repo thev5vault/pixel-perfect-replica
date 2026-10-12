@@ -511,7 +511,7 @@ function GaragePage() {
     }
   }
 
-  if (!canEnterWorkshop) return <div className="space-y-5 pb-40">
+  if (!canEnterWorkshop) return <div className="space-y-5 px-4 pt-4 pb-28">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
     <section className="vault-card space-y-4 p-5" aria-labelledby="workshop-access-title">
       <div className="flex items-center gap-3">
@@ -525,13 +525,13 @@ function GaragePage() {
     <UpgradeDialog open={showWorkshopUpgrade} onOpenChange={setShowWorkshopUpgrade} tier="Verified Workshop" price="£9.99/mo" description="30-day trial. Workshop approval and VAT verification are required before live stamping." perks={["Verified digital service stamps", "Workshop customer and booking tools", "Local invoice scanning and offline queue"]} />
   </div>;
 
-  return <div className="space-y-5 pb-40">
+  return <div className="space-y-5 px-4 pt-4 pb-28">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop Terminal"} />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-foreground">Express Core</h2>
-          <button type="button" aria-expanded={showExpressHelp} aria-label="About Express Core" onClick={() => setShowExpressHelp((open) => !open)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4 cursor-pointer text-slate-400" /></button>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-base font-semibold text-white">Express Core</h3>
+          <button type="button" aria-expanded={showExpressHelp} aria-label="About Express Core" onClick={() => setShowExpressHelp((open) => !open)} className="inline-flex min-h-11 min-w-11 items-center justify-start rounded-full text-slate-400 hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4 cursor-pointer text-slate-400" /></button>
         </div>
         {showExpressHelp && <p role="status" className="rounded-lg border border-cyan-500/20 bg-cyan-950/20 px-3 py-2 text-xs leading-relaxed text-cyan-100">Express Core: High-speed 15-second service stamping bound directly to the chassis VIN.</p>}
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
@@ -564,21 +564,18 @@ function GaragePage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work components</p>
-            <div className={showMoreComponents ? "mt-2 grid grid-cols-3 gap-2 my-2" : "mt-2 flex flex-wrap gap-2"}>
-              {QUICK_COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-                className={`flex h-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 px-2 py-1 text-center text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 ${form.components.includes(component) ? "!border-cyan-500/60 !bg-cyan-500/10 !text-cyan-300" : ""}`}>
+            <div className={showMoreComponents ? "mt-2 grid grid-cols-3 gap-2 my-2" : "mt-2 flex flex-wrap items-center gap-2"}>
+              {(showMoreComponents ? COMPONENTS : QUICK_COMPONENTS).map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
+                className={showMoreComponents
+                  ? "flex h-10 w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900 px-2 text-center text-xs font-medium text-slate-300"
+                  : `min-h-11 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
                 {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
               </button>)}
-              {showMoreComponents && COMPONENTS.filter((component) => !QUICK_COMPONENTS.includes(component as typeof QUICK_COMPONENTS[number])).map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-                className={`flex h-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 px-2 py-1 text-center text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 ${form.components.includes(component) ? "!border-cyan-500/60 !bg-cyan-500/10 !text-cyan-300" : ""}`}>
-                {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
-              </button>)}
+              {!showMoreComponents && <button type="button" aria-expanded={false} onClick={() => setShowMoreComponents(true)} className="min-h-11 rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">+ More components</button>}
             </div>
-            <div className={showMoreComponents ? "w-full flex justify-center mt-2" : "mt-2 flex justify-end"}>
-              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((open) => !open)} className="min-h-[44px] rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">
-                {showMoreComponents ? "− Fewer components" : "+ More components"}
-              </button>
-            </div>
+            {showMoreComponents && <div className="w-full flex justify-center mt-3">
+              <button type="button" aria-expanded onClick={() => setShowMoreComponents(false)} className="min-h-11 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-400">- Fewer components</button>
+            </div>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className={`${GARAGE_INPUT_CLASS} min-w-0`} /></Field>
