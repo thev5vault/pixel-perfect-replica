@@ -1,0 +1,23 @@
+Fix layout spacing, demo disclaimer bloat, component pill geometry, and drawer duplication strictly in 'src/routes/garage.tsx':
+
+1. Compress Express Core Demo Disclaimer Box:
+   - Convert the 5-line amber demo text box under the VIN Bound badge into a compact 1-line micro-badge: '<p className="text-[11px] text-amber-400/90 font-medium mt-1.5 flex items-center gap-1"><span>⚠️</span> Demo sample data (2014 Audi A4 2.0 TDI) · Not official DVLA lookup</p>'.
+
+2. Unified Component Pill Shape & Style (Collapsed & Expanded):
+   - Style all component pills identically in BOTH collapsed and expanded states using unified CSS classes: 'h-9 px-3 text-xs font-medium bg-slate-900 border border-slate-800 text-slate-300 rounded-xl flex items-center justify-center text-center transition-all hover:border-slate-700'.
+   - Collapsed State: Display 'Engine Oil', 'Oil Filter', 'Brake Pads', 'Tyres' in a clean flex container ('flex flex-wrap items-center gap-2').
+   - Expanded State: Render all 12 pills in a structured 3-column grid ('grid grid-cols-3 gap-2 my-2') while preserving the exact same 'rounded-xl' pill geometry so pills do NOT change shape when expanding.
+   - Anchored Toggle Button: Anchor the '+ More components' / '- Fewer components' button in a dedicated container beneath the pills so it toggles in place without shifting position.
+
+3. Remove Duplicate VIN Field in Tier 2 Drawer:
+   - In 'Add Detailed Breakdown & Receipt', remove the editable '17-CHARACTER VIN' input box (since VIN is already bound above the fold) and replace it with a locked read-only indicator: '<div className="text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">Locked Chassis VIN: <span className="font-mono text-emerald-400 font-semibold">{vin}</span></div>'.
+
+4. Drawer Inset Framing & Draft Status Badge:
+   - Wrap expanded drawer contents inside an inset card wrapper: 'bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4 my-3'.
+   - Format 'Saved locally - not server-signed' into a centered micro-badge: '<div className="w-full flex justify-center py-2"><span className="text-[11px] text-slate-500 bg-slate-900/60 border border-slate-800/60 px-3 py-1 rounded-full font-mono">Status: Local Draft (Pending Server Stamp)</span></div>'.
+
+5. Trim Bottom Scroll Dead Space:
+   - Set container bottom scroll padding to 'pb-16' to clear the bottom navbar cleanly without large empty dark gaps.
+
+6. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', and 'npm run build' to confirm 100% test passes and clean build compilation.
