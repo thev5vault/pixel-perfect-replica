@@ -21,7 +21,7 @@ async function selectProTier(page: Page) {
 
 async function addPrintFixtureService(page: Page) {
   await page.goto("/vehicle");
-  await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+  await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Snap Receipt" });
   await dialog.getByLabel("Mileage", { exact: true }).fill("91000");
   await dialog.getByLabel("Garage Name", { exact: true }).fill("Print Layout Test Workshop");

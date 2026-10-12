@@ -195,7 +195,7 @@ async function checkInsideParent(element: Locator, label: string) {
 }
 
 async function addLongPartFixture(page: Page, partReference: string) {
-  await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+  await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Snap Receipt" });
   await dialog.getByLabel("Mileage", { exact: true }).fill("91000");
   await dialog.getByLabel("Garage Name", { exact: true }).fill("Narrow Phone Layout Workshop");
@@ -311,7 +311,7 @@ for (const viewport of viewports) {
 
     // Pro DIY exposes all three real two-column field groups in Snap Receipt.
     await selectTier(page, /Pro DIY/);
-    await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+    await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
     const proReceipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(proReceipt).toBeVisible();
     await checkDialogViewport(page, proReceipt);
@@ -336,7 +336,7 @@ for (const viewport of viewports) {
     await waitForClosedDialogOverlays(page);
 
     // Receipt entry remains camera-first and its locked cost breakdown opens Pro DIY.
-    await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+    await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
     const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
     await expect(receipt).toBeVisible();
     const upgradeTrigger = receipt.getByRole("button", { name: /Parts vs labour cost/ });
@@ -473,7 +473,7 @@ test("service forms stay usable with a keyboard on a short portrait phone", asyn
   await page.setViewportSize({ width: 390, height: 640 });
   await startSamplePreview(page);
   await selectTier(page, /Pro DIY/);
-  await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+  await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
   const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
   const mileage = receipt.getByLabel("Mileage", { exact: true });
   await mileage.fill("87420");
@@ -513,7 +513,7 @@ test("nested upgrade dismisses after the receipt form scrolls on a short phone",
   await page.setViewportSize({ width: 390, height: 640 });
   await startSamplePreview(page);
   await selectTier(page, /Basic Driver \(Free\)/);
-  await page.getByRole("button", { name: /scan receipt or logbook page/i }).click();
+  await page.getByRole("button", { name: "Snap Receipt", exact: true }).click();
   const receipt = page.getByRole("dialog", { name: "Snap Receipt" });
   await receipt.getByLabel("Work Description", { exact: true }).focus();
   await setKeyboardViewport(page, true);
