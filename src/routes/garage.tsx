@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, ChevronDown, FileText, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Camera, Check, FileText, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DocumentPrivacyNotice, Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
@@ -105,7 +105,6 @@ function GaragePage() {
   const [scanMessage, setScanMessage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showStampForm, setShowStampForm] = useState(false);
   const [queuedCount, setQueuedCount] = useState(0);
   const [queueStatus, setQueueStatus] = useState("");
 
@@ -466,20 +465,8 @@ function GaragePage() {
 
   return <div className="space-y-5 pb-40">
     <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="VIN-checked workshop service history and supporting documents." />
-    <section className="vault-card flex flex-wrap items-center justify-between gap-4 p-4">
-      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop</p><h2 className="mt-1 break-words text-lg font-bold hyphens-auto">{user?.garage_name || "Workshop profile"}</h2><p className="mt-1 break-words text-xs text-muted-foreground">{`Registration ${user?.garage_registration || "not provided"}`}</p></div>
-      <Pill tone={user?.garage_verified && user?.vat_verified ? "success" : "warning"}>{user?.garage_verified && user?.vat_verified ? <><BadgeCheck className="h-3 w-3" /> VAT status verified</> : "Verification not confirmed"}</Pill>
-      {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. Sample approvals do not verify live VAT registration.</p>}
-    </section>
-    {success && <div role="status" className="vault-card flex items-start gap-3 border-success/30 p-4"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-sm text-muted-foreground">{success}</p></div></div>}
-    <WorkshopReminders />
-    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">A server-approved workshop account with VAT verification and an active Garage Pro subscription is required to stamp service records.</div>}
     {canStamp && <section className="vault-card overflow-hidden">
-      <button type="button" aria-expanded={showStampForm} onClick={() => setShowStampForm((open) => !open)} className="flex min-h-[44px] w-full items-center justify-between gap-3 p-4 text-left">
-        <span><span className="block font-semibold">New verified service stamp</span><span className="mt-0.5 block text-xs text-muted-foreground">VIN check, service details and supporting documents</span></span>
-        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform ${showStampForm ? "rotate-180" : ""}`} />
-      </button>
-      {showStampForm && <form onSubmit={(event) => void submit(event)} className="space-y-5 border-t border-slate-800 bg-slate-950/40 p-4">
+      <form onSubmit={(event) => void submit(event)} className="space-y-5 p-4">
       <div>
         <h2 className="font-semibold text-foreground">VIN-verified fast log</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">A service stamp is created only after the server confirms the vehicle record, your workshop access and the physical VIN inspection.</p>
@@ -565,7 +552,15 @@ function GaragePage() {
       {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
       <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
       <button type="submit" disabled={busy || fileBusy} className="btn-primary min-h-[44px] w-full px-3 py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
-      </form>}
+      </form>
     </section>}
+    {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">A server-approved workshop account with VAT verification and an active Garage Pro subscription is required to stamp service records.</div>}
+    {success && <div role="status" className="vault-card flex items-start gap-3 border-success/30 p-4"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-sm text-muted-foreground">{success}</p></div></div>}
+    <section className="vault-card flex flex-wrap items-center justify-between gap-4 p-4">
+      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop</p><h2 className="mt-1 break-words text-lg font-bold hyphens-auto">{user?.garage_name || "Workshop profile"}</h2><p className="mt-1 break-words text-xs text-muted-foreground">{`Registration ${user?.garage_registration || "not provided"}`}</p></div>
+      <Pill tone={user?.garage_verified && user?.vat_verified ? "success" : "warning"}>{user?.garage_verified && user?.vat_verified ? <><BadgeCheck className="h-3 w-3" /> VAT status verified</> : "Verification not confirmed"}</Pill>
+      {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. Sample approvals do not verify live VAT registration.</p>}
+    </section>
+    <WorkshopReminders />
   </div>;
 }
