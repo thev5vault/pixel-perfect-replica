@@ -511,7 +511,7 @@ function GaragePage() {
     }
   }
 
-  if (!canEnterWorkshop) return <div className="space-y-5 px-4 pt-4 pb-28">
+  if (!canEnterWorkshop) return <div className="space-y-5 px-4 pt-4">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
     <section className="vault-card space-y-4 p-5" aria-labelledby="workshop-access-title">
       <div className="flex items-center gap-3">
@@ -525,7 +525,7 @@ function GaragePage() {
     <UpgradeDialog open={showWorkshopUpgrade} onOpenChange={setShowWorkshopUpgrade} tier="Verified Workshop" price="£9.99/mo" description="30-day trial. Workshop approval and VAT verification are required before live stamping." perks={["Verified digital service stamps", "Workshop customer and booking tools", "Local invoice scanning and offline queue"]} />
   </div>;
 
-  return <div className="space-y-5 px-4 pt-4 pb-16">
+  return <div className="space-y-5 px-4 pt-4">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop Terminal"} />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
@@ -543,8 +543,8 @@ function GaragePage() {
                   <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 gap-1 px-2 text-[11px] whitespace-nowrap"><Search className="h-4 w-4" />{lookupBusy ? "Looking…" : "Fetch specs"}</button>
                 </div>
               </Field>
-              {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-2 py-1.5 text-[10px] font-semibold text-emerald-200">
-                <CheckCircle className="inline h-4 w-4 shrink-0 text-emerald-400" />
+              {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 font-mono text-xs text-emerald-400">
+                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
                 <span className="break-all">VIN Bound: {form.vin}</span>
               </div>}
               {lookupDetails && <p role="status" className={`mt-1.5 flex items-center gap-1 text-[11px] font-medium ${lookupSource === "official" ? "text-emerald-300" : "text-amber-400/90"}`}>
