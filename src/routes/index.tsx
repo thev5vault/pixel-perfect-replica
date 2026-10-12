@@ -696,8 +696,8 @@ function PublicLanding() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <div className="flex items-center gap-3" aria-label="V5Vault home"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold tracking-tight">V5Vault</span></div>
         <div className="flex items-center gap-2">
-          <a href="/auth/driver" className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</a>
-          <a href="/auth/driver?mode=signup" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-cyan-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><UserPlus aria-hidden="true" className="h-4 w-4" />Create Account</a>
+          <button type="button" onClick={() => openRoleChoices("driver")} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</button>
+          <button type="button" onClick={() => openRoleChoices("driver")} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-cyan-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><UserPlus aria-hidden="true" className="h-4 w-4" />Create Account</button>
         </div>
       </header>
 
@@ -709,11 +709,11 @@ function PublicLanding() {
             <h1 className="mt-5 max-w-3xl font-display text-[3.25rem] font-extrabold leading-[.98] tracking-[-.055em] sm:text-7xl">Every mile has a record.</h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">The immutable digital history for vehicle owners and verified workshops.</p>
             <div className="mt-8 grid gap-3 sm:max-w-xl sm:grid-cols-2">
-              <button type="button" onClick={() => openRoleChoices("driver")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-cyan-300/45 bg-slate-900 px-5 text-left font-semibold text-slate-100 shadow-[0_14px_40px_rgba(34,211,238,.12)] transition-transform hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+              <button type="button" onClick={() => window.location.assign("/auth/driver")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-cyan-300/45 bg-slate-900 px-5 text-left font-semibold text-slate-100 shadow-[0_14px_40px_rgba(34,211,238,.12)] transition-transform hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <span className="flex items-center gap-3"><Car aria-hidden="true" className="mr-2 h-4 w-4 text-cyan-400" />Driver Passport</span>
                 <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-cyan-300" />
               </button>
-              <button type="button" onClick={() => openRoleChoices("workshop")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-amber-400/40 bg-slate-900/80 px-5 text-left font-semibold text-slate-100 transition-colors hover:border-amber-300/70 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
+              <button type="button" onClick={() => window.location.assign("/auth/workshop")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-amber-400/40 bg-slate-900/80 px-5 text-left font-semibold text-slate-100 transition-colors hover:border-amber-300/70 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
                 <span className="flex items-center gap-3"><Wrench aria-hidden="true" className="mr-2 h-4 w-4 text-amber-400" />Workshop Terminal</span>
                 <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-amber-300" />
               </button>
@@ -755,7 +755,7 @@ function PublicLanding() {
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />Modder&apos;s Vault for ECU maps &amp; build specs</li>
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />1-tap buyer passport share link</li>
             </ul>
-            <button type="button" onClick={() => openRoleChoices("driver")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-cyan-300/35 px-4 text-sm font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Driver Passport <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
+            <button type="button" onClick={() => window.location.assign("/auth/driver")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-cyan-300/35 px-4 text-sm font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Driver Passport <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
           </article>
 
           <article className="vault-card flex flex-col border-cyan-300/25 bg-slate-900/90 p-6 sm:p-8">
@@ -768,7 +768,7 @@ function PublicLanding() {
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-400" />AI invoice scanner (photo-to-stamp)</li>
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-400" />Branded digital seal with VAT &amp; accreditation</li>
             </ul>
-            <button type="button" onClick={() => openRoleChoices("workshop")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-slate-600 px-4 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-300/50 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Workshop Terminal <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
+            <button type="button" onClick={() => window.location.assign("/auth/workshop")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-slate-600 px-4 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-300/50 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Workshop Terminal <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
           </article>
         </div>
       </section>

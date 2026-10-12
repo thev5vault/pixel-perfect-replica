@@ -1,0 +1,25 @@
+Fix routing, header spacing, inline icon placement, and component grid layout across 'src/routes/index.tsx', 'src/routes/garage.tsx', and auth components:
+
+1. Direct Routing for Persona Buttons (Remove Redundant Popups):
+   - In 'src/routes/index.tsx', ensure explicit CTA buttons navigate directly to their dedicated auth routes without opening the role selection modal sheet:
+     * 'Driver Passport' and 'Choose Driver Passport' buttons must navigate directly to '/auth/driver'.
+     * 'Workshop Terminal' and 'Choose Workshop Terminal' buttons must navigate directly to '/auth/workshop'.
+     * Reserve the 'Choose your V5Vault role' modal sheet strictly for clicks on generic top-header 'Sign in' / 'Create Account' buttons.
+
+2. Express Core Inline Header & Spacing ('src/routes/garage.tsx'):
+   - Fix Floating (i) Icon: Change the header container for Express Core to a tight inline flex container ('flex items-center gap-2') so the Lucide <Info className="w-4 h-4 text-slate-400 cursor-pointer" /> sits directly 8px to the right of the word "Core", removing 'justify-between' across full card width.
+   - Remove Header Badge Duplication: Remove the secondary 'VERIFIED WORKSHOP' pill directly beneath the 'Workshop Terminal' page title.
+   - Pinned VIN Badge: Position the green locked badge '<CheckCircle className="w-4 h-4 text-emerald-400 inline mr-1.5" /> VIN Bound: [17-char VIN]' directly inside Express Core below the Registration input upon lookup.
+
+3. Structured 3-Column Work Components Grid:
+   - When '+ More components' is expanded, render all 12 component pills inside a strict 3-column CSS grid: 'grid grid-cols-3 gap-2 my-2'.
+   - Style each pill with uniform touch dimensions: 'h-9 text-xs px-2 py-1 rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 font-medium hover:border-slate-700 flex items-center justify-center text-center'.
+   - Center the '- Fewer components' button in a dedicated full-width container ('w-full flex justify-center mt-2') below the grid.
+
+4. Form Ergonomics & Drawer Containment:
+   - Ensure 'VEHICLE REGISTRATION' and 'Fetch specs' form inputs use 'flex gap-2' with 'h-11' matching heights.
+   - Wrap 'Add Detailed Breakdown & Receipt' drawer fields inside an inset container: 'bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-4 my-3'.
+   - Strictly ensure Tab 1 ('Express Stamp') contains zero footer cards ('Due Soon' and 'Workshop profile' cards belong strictly on Tab 2 and Tab 3).
+
+5. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', 'npm run build', and 'git diff --check' to confirm 100% test passes and clean production build compilation.
