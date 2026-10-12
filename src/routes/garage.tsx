@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
@@ -506,7 +506,7 @@ function GaragePage() {
   }
 
   if (!canEnterWorkshop) return <div className="space-y-5 pb-40">
-    <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
+    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
     <section className="vault-card space-y-4 p-5" aria-labelledby="workshop-access-title">
       <div className="flex items-center gap-3">
         <LockKeyhole className="h-5 w-5 shrink-0 text-amber-400" />
@@ -520,7 +520,7 @@ function GaragePage() {
   </div>;
 
   return <div className="space-y-5 pb-40">
-    <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="VIN-checked workshop service history and supporting documents." />
+    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop terminal"} subtitle="Verified workshop · Express service stamp" />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
         <div className="flex items-center gap-2">

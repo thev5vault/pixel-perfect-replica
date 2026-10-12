@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Bell, Car, ChevronDown, ClipboardList, FileBadge, Gauge, Lock, LogOut, Settings, ShieldCheck, Terminal, Wrench } from "lucide-react";
+import { Bell, Car, ChevronDown, FileBadge, Lock, LogOut, Settings, ShieldCheck, Terminal, Wrench } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -12,20 +12,13 @@ import { UnlockGate } from "./UnlockGate";
 import { toast } from "sonner";
 import { accountHome, isAuthEntry, shouldHoldAuthEntryForHydration } from "@/lib/auth-routing";
 
-const CIVILIAN = [
-  { to: "/vehicle", label: "Vehicle", icon: Car }, { to: "/passport", label: "Passport", icon: FileBadge }, { to: "/settings", label: "Settings", icon: Settings },
+const OWNER = [
+  { to: "/vehicle", label: "Vehicle", icon: Car },
+  { to: "/vault", label: "Vault", icon: Lock },
+  { to: "/passport", label: "Passport", icon: FileBadge },
 ] as const;
-const MODDER = [
-  { to: "/vehicle", label: "Vehicle", icon: Car }, { to: "/vault", label: "Vault", icon: Lock }, { to: "/passport", label: "Passport", icon: FileBadge }, { to: "/settings", label: "Settings", icon: Settings },
-] as const;
-const GARAGE = [
-  { to: "/garage", label: "Workshop Terminal", icon: Wrench }, { to: "/queue", label: "Customer Queue", icon: ClipboardList }, { to: "/bookings", label: "Bookings", icon: Gauge }, { to: "/account", label: "Account", icon: Settings },
-] as const;
-const GODMODE = [
-  {to:"/vehicle",label:"Vehicle",icon:Car}, {to:"/vault",label:"Vault",icon:Lock},
-  {to:"/garage",label:"Garage",icon:Wrench}, {to:"/passport",label:"Passport",icon:FileBadge},
-  {to:"/admin",label:"Admin",icon:Terminal},
-] as const;
+const PROFILE = { to: "/settings", label: "Profile", icon: Settings } as const;
+const ADMIN = { to: "/admin", label: "Admin", icon: Terminal } as const;
 const ROLE_NAME: Record<Role, string> = {
   Owner: "Civilian · Free account", DIY: "Civilian · Pro DIY", Pro: "Modder · Pro Modder", Garage: "Verified garage", superadmin: "Development superadmin",
 };
@@ -43,9 +36,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = account?.state?.user;
    const role = account?.state?.development_role ?? (user?.role === "dev_admin" ? "superadmin" : user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
    const isDeveloper = user?.role === "dev_admin";
+   const isWorkshopTerminal = path === "/garage" || path === "/workshop";
    const garage = Boolean(user && (isDeveloper || (user.role === "verified_garage" && user.status === "approved" && user.garage_verified && user.vat_verified === true && (user.workshop_access_active || user.subscription_tier === "verified_garage"))));
-  const baseNavItems = !signed ? [] : garage ? GARAGE : user?.role === "modder" || role === "Pro" || role === "superadmin" ? MODDER : CIVILIAN;
-    const navItems = signed && isDeveloper ? GODMODE : baseNavItems;
+  const navItems = signed ? [...OWNER, isDeveloper ? ADMIN : PROFILE] : [];
   const vehicles = account?.state?.vehicles ?? [];
   const active = vehicles.find((v) => v.vrm === vault.vehicle.vrm) ?? vehicles[0];
   const initial = (user?.full_name || user?.email || "V").trim().slice(0, 1).toUpperCase();
@@ -65,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (account?.signedIn && !account.state) return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><h1 className="text-xl font-bold">Your account could not be loaded</h1><p className="mt-2 text-sm text-muted-foreground">{account.error ?? "Please try again."}</p><button className="btn-primary mt-5 w-full" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div></div>;
   if (!account && !vault.hydrated) return <div className="min-h-[100dvh] bg-slate-950" />;
   if (account && !signed && isPublic) return <>{children}</>;
-  if (account && !signed && !isPublic) {
+   if (account && !signed && !isPublic && !isWorkshopTerminal) {
     return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">Sign in to V5Vault</h1><p className="mt-2 text-sm text-muted-foreground">Your vehicle records belong to your account, not this device.</p><a href="/sign-in" className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
   }
   if (signed && isPublic && !isAuthEntry(path)) return <>{children}</>;
@@ -89,7 +82,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <div className="flex min-w-0 items-center justify-center">
-          <DropdownMenu>
+          {isWorkshopTerminal ? <div className="flex min-h-10 max-w-full items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 text-xs font-semibold text-emerald-200">
+            <Wrench className="h-4 w-4 shrink-0 text-emerald-400" />
+            <span className="truncate">{user?.garage_name || "Verified Workshop"}</span>
+          </div> : <DropdownMenu>
             <DropdownMenuTrigger className="flex min-h-[40px] max-w-[min(calc(100vw-8rem),24rem)] min-w-0 items-center justify-center gap-1.5 rounded-full border border-slate-700/60 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-800">
               <span className="min-w-0 truncate">{active ? `${active.make} ${active.model.split(" ")[0]} – ${formatVrm(active.vrm)}` : "Connect a vehicle"}</span><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             </DropdownMenuTrigger>
@@ -100,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setConnectOpen(true)}><Car className="h-4 w-4" /> Connect New Vehicle</DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
         </div>
         <div className="flex min-w-0 items-center justify-end">
           <DropdownMenu>
@@ -133,9 +129,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
-      {signed && isDeveloper && <div role="group" aria-label="Developer navigation mode" className="flex shrink-0 items-center justify-center gap-2 border-b border-slate-800 bg-slate-900/80 px-4 py-2 print:hidden">
-        <button type="button" aria-pressed={path === "/garage"} onClick={() => void navigate({ to: "/garage" })} className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${path === "/garage" ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300"}`}><Wrench className="h-4 w-4 text-cyan-400" />Terminal</button>
-        <button type="button" aria-pressed={path === "/vehicle" || path === "/"} onClick={() => void navigate({ to: "/vehicle" })} className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${path === "/vehicle" || path === "/" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-slate-700 text-slate-300"}`}><Car className="h-4 w-4 text-emerald-400" />Owner</button>
+      {signed && isDeveloper && <div role="group" aria-label="Terminal and owner mode" className="flex shrink-0 items-center justify-center gap-2 border-b border-slate-800 bg-slate-900/80 px-4 py-2 print:hidden">
+        <button type="button" aria-pressed={isWorkshopTerminal} onClick={() => void navigate({ to: "/garage" })} className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${isWorkshopTerminal ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300"}`}><Wrench className="h-4 w-4" />Terminal</button>
+        <span aria-hidden="true" className="text-slate-600">↔</span>
+        <button type="button" aria-pressed="false" onClick={() => void navigate({ to: "/vehicle" })} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs font-semibold text-slate-300"><Car className="h-4 w-4" />Owner</button>
       </div>}
       {account?.preview&&<div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/25 bg-amber-950/40 px-4 py-2 text-[11px] text-amber-100">
         <span>Sample God Mode · No real account or database access. Changes reset on reload.</span>
@@ -145,9 +142,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-4">
         {signed && !garage && vehicles.length === 0 && ["/vehicle","/passport","/vault"].includes(path) ? <section className="vault-card mt-5 space-y-4 p-6 text-center"><Car className="mx-auto h-8 w-8 text-primary" /><h1 className="text-xl font-bold">Connect your first vehicle</h1><p className="text-sm text-muted-foreground">Link a vehicle using its registration and 11-digit V5C reference. Development sample approvals are not live DVLA verification.</p><button className="btn-primary w-full" onClick={()=>setConnectOpen(true)}>Connect New Vehicle</button></section> : children}
       </main>
-      <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 z-50 mx-auto flex max-w-md items-center justify-between rounded-2xl border border-slate-700/80 bg-slate-900/95 px-2 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transform-gpu print:hidden">
+      {!isWorkshopTerminal && <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 z-50 mx-auto flex max-w-md items-center justify-between rounded-2xl border border-slate-700/80 bg-slate-900/95 px-2 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transform-gpu print:hidden">
         <div className="flex w-full justify-between">{navItems.map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: true }} className="group flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-1.5 text-center text-[9px] font-semibold leading-tight tracking-tight text-muted-foreground transition-colors data-[status=active]:border-cyan-500/30 data-[status=active]:bg-cyan-500/10 data-[status=active]:text-cyan-300 sm:text-[10px]"><Icon className="h-5 w-5 transition-transform group-data-[status=active]:scale-110" />{label}</Link>)}</div>
-      </nav>
+      </nav>}
       {account && <VehicleLookupDialog open={connectOpen} onOpenChange={setConnectOpen} />}
     </div>
   );
