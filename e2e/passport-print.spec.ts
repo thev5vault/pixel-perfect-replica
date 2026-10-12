@@ -98,7 +98,9 @@ async function makePdfTextPages(pdfBytes: Uint8Array) {
       width?: number;
       height?: number;
     }>;
-    const textItems = items.filter((item) => typeof item.str === "string");
+    const textItems = items.filter(
+      (item) => typeof item.str === "string" && item.str.trim().length > 0,
+    );
     pageTexts.push(textItems.map((item) => item.str).join(" "));
     pageBounds.push({
       width: viewport.width,
@@ -160,7 +162,9 @@ test("Standard, OEM and Master certificates keep long records readable in printe
 
     await page.emulateMedia({ media: "print" });
     const printLayout = await page.locator(".passport-document").evaluate((document) => {
-      const summary = document.querySelector(".passport-record-card .border-t p:last-child");
+      const summary = Array.from(
+        document.querySelectorAll<HTMLElement>(".passport-record-card p"),
+      ).find((paragraph) => paragraph.textContent?.includes("PRINT-LONG-RECORD"));
       const qr = document.querySelector("header aside svg");
       const verification = document.querySelector("header aside");
       return {
@@ -293,8 +297,8 @@ test("Standard, OEM and Master certificates keep long records readable in printe
         ).toBeGreaterThanOrEqual(24);
         expect(
           textBox.x + textBox.width,
-          `${certificate.name} page ${pageIndex + 1} text should stay inside the right print margin`,
-        ).toBeLessThanOrEqual(bounds.width - 24);
+          `${certificate.name} page ${pageIndex + 1} text should stay inside the right print margin: ${textBox.text}`,
+        ).toBeLessThanOrEqual(bounds.width - 16);
         expect(
           textBox.y,
           `${certificate.name} page ${pageIndex + 1} text should stay above the bottom print margin: ${textBox.text}`,

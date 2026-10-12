@@ -59,15 +59,18 @@ async function focusAndCheck(dialog: Locator, label: string, mobile: boolean): P
 
   const state = await control.evaluate((element) => {
     const labelElement = element.closest("[data-modal-field], label");
+    const visualBox = element.closest<HTMLElement>(".rounded-xl.border") ?? element;
     const rect = element.getBoundingClientRect();
     const fieldRect = labelElement?.getBoundingClientRect();
+    const controlStyle = getComputedStyle(element);
+    const boxStyle = getComputedStyle(visualBox);
     return {
       tagName: element.tagName,
       hasFieldClass: element.classList.contains("field"),
-      fontSize: getComputedStyle(element).fontSize,
-      borderStyle: getComputedStyle(element).borderTopStyle,
-      borderWidth: Number.parseFloat(getComputedStyle(element).borderTopWidth),
-      controlBoxShadow: getComputedStyle(element).boxShadow,
+      fontSize: controlStyle.fontSize,
+      borderStyle: boxStyle.borderTopStyle,
+      borderWidth: Number.parseFloat(boxStyle.borderTopWidth),
+      controlBoxShadow: controlStyle.boxShadow !== "none" ? controlStyle.boxShadow : boxStyle.boxShadow,
       fieldBoxShadow: labelElement ? getComputedStyle(labelElement).boxShadow : "none",
       rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
       fieldRect: fieldRect
@@ -325,7 +328,7 @@ for (const viewport of viewports) {
 
     // Manual DIY entry is a separate form with optional proof uploads.
     await selectTier(page, /Basic Driver \(Free\)/);
-    await page.getByRole("button", { name: /add new repair \/ service record/i }).click();
+    await page.getByRole("button", { name: "Add DIY Service Entry", exact: true }).click();
     const manualEntry = page.getByRole("dialog", { name: "Add a Basic DIY Service Entry" });
     await expect(manualEntry).toBeVisible();
     await expect(manualEntry.getByText("Photo / Image")).toBeVisible();
@@ -576,7 +579,11 @@ for (const width of [320, 390]) {
       await checkInsideParent(qr, `${certificate.title} QR code`);
 
       if (certificate.hasParts) {
-        const partReference = document.locator(".passport-part-card p.font-mono").filter({
+        const serviceCard = document.locator(".passport-service-record").filter({
+          hasText: "Narrow phone overflow layout fixture",
+        });
+        await serviceCard.getByRole("button", { name: /Details/ }).click();
+        const partReference = serviceCard.locator("p.font-mono").filter({
           hasText: longPartReference,
         });
         await expect(partReference).toBeVisible();

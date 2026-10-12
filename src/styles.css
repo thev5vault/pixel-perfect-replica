@@ -478,6 +478,20 @@ button > svg {
     widows: 3;
   }
 
+  .passport-record-card p,
+  .passport-service-description {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .passport-document p,
+  .passport-document code {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   .passport-service-description,
   .passport-record-section > h3,
   .passport-record-card h4,

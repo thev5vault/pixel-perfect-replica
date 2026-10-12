@@ -18,9 +18,10 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      name: "desktop-chromium",
       use: {
         browserName: "chromium",
+        viewport: { width: 1440, height: 900 },
         launchOptions: {
           ...(existsSync(localChromium) ? { executablePath: localChromium } : {}),
           args: ["--no-sandbox", "--disable-dev-shm-usage"],
@@ -30,7 +31,15 @@ export default defineConfig({
     {
       name: "iphone-webkit",
       use: {
-        ...devices["iPhone 13"],
+        ...devices["iPhone 14"],
+        browserName: "webkit",
+        launchOptions: webkitLaunchOptions(),
+      },
+    },
+    {
+      name: "ipad-webkit",
+      use: {
+        ...devices["iPad Mini"],
         browserName: "webkit",
         launchOptions: webkitLaunchOptions(),
       },

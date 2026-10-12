@@ -1,0 +1,44 @@
+Install and configure a Full-Application End-to-End (E2E) and Visual Regression Testing Suite using Playwright across all routes, tabs, drawers, and viewports in V5Vault:
+
+1. Install Playwright & Multi-Device Emulators:
+   - Run 'npm install -D @playwright/test' and 'npx playwright install webkit chromium'.
+   - Configure 'playwright.config.ts' with multi-device viewports:
+     * Mobile: iPhone 14 / Safari WebKit (375px x 812px)
+     * Tablet: iPad Mini (768px x 1024px)
+     * Desktop: Chrome Chromium (1440px x 900px)
+     * WebServer: Automatically start the preview app ('npm run dev') before running test suites.
+
+2. Create Complete E2E & Visual Snapshot Test Suites:
+
+   A. Landing Page & Routing Suite ('e2e/landing.spec.ts'):
+      - Test '/' header CTAs: Verify 'Sign in' and 'Create Account' are visible.
+      - Test direct persona buttons: Click 'Driver Passport' -> Assert direct navigation to '/auth/driver' without modal popups. Click 'Choose Workshop Terminal' -> Assert direct navigation to '/auth/workshop'.
+      - Take visual screenshot comparison: 'expect(page).toHaveScreenshot("landing-page-mobile.png")'.
+
+   B. Workshop Terminal Suite ('e2e/garage.spec.ts'):
+      - Test Express Stamp (Tab 1): Input 'AB14 CDE', click 'Fetch specs', assert above-the-fold green '✓ VIN Bound' badge renders directly under registration box.
+      - Test Component Chips: Verify collapsed chips sit inline. Click '+ More components', verify expanded 12-pill list renders without pill shape-shifting or line-height distortion. Click '- Fewer components', verify clean collapse.
+      - Test Breakdown Drawer: Click 'Add Detailed Breakdown & Receipt', verify fields are contained inside an inset card wrapper.
+      - Test Tab Scroll Resets: Scroll to bottom of Tab 1 (scrollTop > 300), click 'Upcoming Jobs' (Tab 2) -> Assert container 'scrollTop === 0' and search bar is immediately visible above the fold.
+      - Scroll to bottom of Tab 2, click 'Garage Profile' (Tab 3) -> Assert container 'scrollTop === 0' and 'Garage branding' header is visible.
+      - Take visual screenshots of all 3 tabs in collapsed and expanded states.
+
+   C. Driver Glovebox Suite ('e2e/driver.spec.ts'):
+      - Test '/vehicle': Navigate across all tabs ('Vehicle', 'Vault', 'Passport', 'Profile').
+      - Assert that switching tabs anywhere in the driver glovebox ALWAYS resets container scroll position to 0 at the top of the viewport.
+      - Take visual screenshots of driver timeline and Modder's Vault specs.
+
+   D. Auth & Persona Setup Suite ('e2e/auth.spec.ts'):
+      - Test '/auth/driver': Verify "Sign in to Driver Glovebox" title is wrapped cleanly inside dark card frame without raw text bleed.
+      - Test '/auth/workshop': Verify "Verified Workshop Terminal Portal — 30-Day Free Trial (£9.99/mo)" title is formatted inside card frame.
+      - Take visual screenshots of both persona auth routes.
+
+   E. Admin Console Suite ('e2e/admin.spec.ts'):
+      - Test '/admin': Verify God Mode switcher, workshop verification queue, and system audit logs.
+
+3. Enforce Mandatory Quality Gate Pipeline:
+   - Add script to package.json: '"test:e2e": "playwright test"'.
+   - Update Replit quality gate rule: 'npx playwright test' MUST execute in a real headless mobile browser and pass 100% cleanly alongside 'npm test' and 'npx tsc --noEmit' before marking ANY task or fix as complete.
+
+4. Quality Gate Verification:
+   - Run 'npx playwright test' inside Replit and ensure all E2E visual and functional tests across all 5 test suites pass with 0 errors.
