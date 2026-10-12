@@ -3,6 +3,7 @@ import type { UserAccount } from "./account-types";
 import { isWorkshopTrialActive } from "./plans";
 
 const tradeProfileFields = ["garage_name", "garage_registration", "workshop_type"] as const;
+export const GARAGE_ACCREDITATIONS = ["imi", "good_garage_scheme", "bosch_service"] as const;
 
 export const accountProfileInputSchema = z.object({
   full_name: z.string().trim().min(1).max(100),
@@ -10,9 +11,12 @@ export const accountProfileInputSchema = z.object({
   garage_name: z.string().trim().max(100).optional(),
   garage_registration: z.string().trim().max(40).optional(),
   workshop_type: z.enum(["garage", "specialist"]).optional(),
-  garage_logo_url: z.string().trim().max(2048).optional(),
+  garage_logo_url: z.string().trim().max(1_500_000).optional(),
   imi_accreditation: z.string().trim().max(100).optional(),
   garage_address: z.string().trim().max(500).optional(),
+  garage_phone: z.string().trim().max(40).optional(),
+  support_email: z.string().trim().email().max(254).or(z.literal("")).optional(),
+  garage_accreditations: z.array(z.enum(GARAGE_ACCREDITATIONS)).max(3).optional(),
 }).strict().superRefine((value, context) => {
   const hasTradeDetails = tradeProfileFields.some((field) => value[field] !== undefined);
   if (hasTradeDetails && tradeProfileFields.some((field) => value[field] === undefined)) {
@@ -33,6 +37,9 @@ export type AccountProfileInput = {
   garage_logo_url?: string | undefined;
   imi_accreditation?: string | undefined;
   garage_address?: string | undefined;
+  garage_phone?: string | undefined;
+  support_email?: string | undefined;
+  garage_accreditations?: string[] | undefined;
 };
 
 export function mergeAccountProfile(user: UserAccount, profile: AccountProfileInput): UserAccount {
@@ -46,6 +53,9 @@ export function mergeAccountProfile(user: UserAccount, profile: AccountProfileIn
     ...(profile.garage_logo_url !== undefined ? { garage_logo_url: profile.garage_logo_url } : {}),
     ...(profile.imi_accreditation !== undefined ? { imi_accreditation: profile.imi_accreditation } : {}),
     ...(profile.garage_address !== undefined ? { garage_address: profile.garage_address } : {}),
+    ...(profile.garage_phone !== undefined ? { garage_phone: profile.garage_phone } : {}),
+    ...(profile.support_email !== undefined ? { support_email: profile.support_email } : {}),
+    ...(profile.garage_accreditations !== undefined ? { garage_accreditations: profile.garage_accreditations } : {}),
   };
 }
 

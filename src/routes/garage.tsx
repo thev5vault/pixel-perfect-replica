@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
+import { Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
-import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
+import { Field, PageHeader } from "@/components/vault/ui-bits";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
 import {
   clearGarageDraft,
@@ -96,6 +95,7 @@ function GaragePage() {
   const user = account?.state?.user;
   const accountRefreshRef = useRef(account?.refresh);
   const syncingOutboxRef = useRef(false);
+  const autoLookupRef = useRef("");
   const adminBypass = user?.role === "dev_admin" || user?.permissions?.includes("all_access") === true;
   const canEnterWorkshop = Boolean(user && (adminBypass || canUseWorkshopFeatures(user)));
   const canStamp = adminBypass || Boolean(user && canUseWorkshopFeatures(user));
@@ -113,6 +113,7 @@ function GaragePage() {
   const [scanBusy, setScanBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  const [showExpressHelp, setShowExpressHelp] = useState(false);
   const [showMoreComponents, setShowMoreComponents] = useState(false);
   const [showWorkshopUpgrade, setShowWorkshopUpgrade] = useState(false);
   const [error, setError] = useState("");
@@ -123,6 +124,16 @@ function GaragePage() {
   useEffect(() => {
     accountRefreshRef.current = account?.refresh;
   }, [account?.refresh]);
+
+  useEffect(() => {
+    const normalized = form.vrm.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    if (normalized.length < 6 || validateVIN(form.vin) || lookupBusy || autoLookupRef.current === normalized) return;
+    const timer = window.setTimeout(() => {
+      autoLookupRef.current = normalized;
+      void lookupVehicle();
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [form.vrm, form.vin, lookupBusy]);
 
   useEffect(() => {
     if (!draftKey) {
@@ -266,6 +277,7 @@ function GaragePage() {
 
   async function lookupVehicle() {
     if (lookupBusy || !form.vrm.trim()) return;
+    autoLookupRef.current = form.vrm.replace(/[^A-Z0-9]/gi, "").toUpperCase();
     setLookupBusy(true);
     setError("");
     setLookupDetails("");
@@ -519,8 +531,9 @@ function GaragePage() {
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground">Express Core</h2>
-          <button type="button" title="Blur addresses and 11-digit V5C reference numbers before uploading." aria-label="Document privacy tip" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
+          <button type="button" aria-expanded={showExpressHelp} aria-label="About Express Core" onClick={() => setShowExpressHelp((open) => !open)} className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
         </div>
+        {showExpressHelp && <p role="status" className="rounded-lg border border-cyan-500/20 bg-cyan-950/20 px-3 py-2 text-xs leading-relaxed text-cyan-100">Express Core: High-speed 15-second service stamping bound directly to the chassis VIN.</p>}
         <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
           <div className="space-y-3">
             <div className="min-w-0">
@@ -530,12 +543,12 @@ function GaragePage() {
                   <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 gap-1 px-2 text-[11px] whitespace-nowrap"><Search className="h-4 w-4" />{lookupBusy ? "Looking…" : "Fetch specs"}</button>
                 </div>
               </Field>
-              {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-2 py-1.5 text-[10px] font-semibold text-cyan-200">
+              {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-2 py-1.5 text-[10px] font-semibold text-emerald-200">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
                 <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
                 <span className="break-all">VIN Bound: {form.vin}</span>
               </div>}
-              {!validateVIN(form.vin) && <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required for permanent chassis log.</p>}
+              {!validateVIN(form.vin) ? <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required for permanent chassis log.</p> : boundVin !== form.vin && <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">Fetch specs to bind this VIN to the registration before stamping.</p>}
             </div>
             <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className={`${GARAGE_INPUT_CLASS} min-h-[44px]`} /></Field>
           </div>
@@ -571,7 +584,7 @@ function GaragePage() {
           </div>
         </section>
 
-        <button type="submit" disabled={busy || fileBusy || !validateVIN(form.vin)} className="btn-primary min-h-[44px] w-full px-3 py-3 disabled:cursor-not-allowed disabled:opacity-50"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+        <button type="submit" disabled={busy || fileBusy || !validateVIN(form.vin) || boundVin !== form.vin} className="btn-primary min-h-[44px] w-full px-3 py-3 disabled:cursor-not-allowed disabled:opacity-50"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
         {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
 
         <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/40">
@@ -635,11 +648,5 @@ function GaragePage() {
     </section>}
     {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">A server-approved workshop account with VAT verification and an active Garage Pro subscription is required to stamp service records.</div>}
     {success && <div role="status" className="vault-card flex items-start gap-3 border-success/30 p-4"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-success" /><div><p className="font-semibold">Record submitted</p><p className="text-sm text-muted-foreground">{success}</p></div></div>}
-    <section className="vault-card flex flex-wrap items-center justify-between gap-4 p-4">
-      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workshop</p><h2 className="mt-1 break-words text-lg font-bold hyphens-auto">{user?.garage_name || "Workshop profile"}</h2><p className="mt-1 break-words text-xs text-muted-foreground">{`Registration ${user?.garage_registration || "not provided"}`}</p></div>
-      <Pill tone={user?.garage_verified && user?.vat_verified ? "success" : "warning"}>{user?.garage_verified && user?.vat_verified ? <><BadgeCheck className="h-3 w-3" /> VAT status verified</> : "Verification not confirmed"}</Pill>
-      {user?.is_sample && <p className="w-full rounded-lg border border-amber-400/25 bg-amber-950/30 p-2.5 text-xs text-amber-100">Development sample workshop account. Sample approvals do not verify live VAT registration.</p>}
-    </section>
-    <WorkshopReminders />
   </div>;
 }

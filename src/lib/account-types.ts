@@ -24,6 +24,9 @@ export interface UserAccount {
   garage_logo_url?: string;
   imi_accreditation?: string;
   garage_address?: string;
+  garage_phone?: string;
+  support_email?: string;
+  garage_accreditations?: string[];
   status: ApprovalStatus;
   is_sample: boolean;
   permissions?: readonly string[];

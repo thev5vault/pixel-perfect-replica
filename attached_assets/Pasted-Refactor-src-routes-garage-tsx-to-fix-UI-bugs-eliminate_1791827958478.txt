@@ -1,0 +1,23 @@
+Refactor 'src/routes/garage.tsx' to fix UI bugs, eliminate component duplication, and build a dedicated B2B Garage Profile view:
+
+1. Fix Floating (i) Icon Bug on Express Core:
+   - Make the '(i)' info icon beside 'Express Core' an interactive Lucide <Info className="w-4 h-4 text-slate-400 cursor-pointer" /> icon.
+   - Tapping it toggles an inline helper badge: "Express Core: High-speed 15-second service stamping bound directly to the chassis VIN."
+
+2. Eliminate Component Duplication Across Tabs:
+   - Clean up 'Express Stamp' tab so it contains ONLY the Express Stamping form, AI Scanner, and optional detailed breakdown drawer. Completely REMOVE 'Workshop profile' and 'Due soon' cards from the bottom of this route.
+   - Keep 'Due Soon' and Customer Vehicle Search bar consolidated strictly inside the 'Upcoming Jobs' tab.
+
+3. Build Dedicated B2B Garage Profile Tab (Replace B2C Account Settings):
+   - In the 'Garage Profile' tab, remove consumer settings ('My vehicles', 'Pro DIY/Modder tiers') and replace with a dedicated Workshop Business Card:
+     * Garage Branding: Trading Name input, Workshop Logo upload preview, and Digital Stamp Seal preview.
+     * Verification & Accreditation: VAT Number field, IMI / Good Garage Scheme / Bosch Service checkable accreditation badges.
+     * Workshop Contact Info: Shop Address, Phone Number, and Customer Support Email.
+     * Active Subscription Card: 'Verified Workshop / Garage Pro Tier (£9.99/mo or £99.99/yr)' with billing management buttons.
+
+4. Express Core Auto-VIN Display & Guardrail:
+   - Ensure that triggering 'Fetch specs' or typing a REG immediately displays a locked green badge in Express Core: '<CheckCircle className="w-4 h-4 text-emerald-400 inline mr-1" /> VIN Bound: [17-char VIN]'.
+   - Enforce mandatory 17-char VIN validation before enabling the 'Stamp verified job' button.
+
+5. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', and 'npm run build' to verify clean build compilation and passing unit tests.

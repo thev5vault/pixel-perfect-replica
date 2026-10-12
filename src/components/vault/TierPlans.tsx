@@ -5,7 +5,7 @@ import type { BillingCatalog, BillingInterval, PlanKey } from "@/lib/v1-types";
 import { gbp, PLAN_DEFINITIONS } from "@/lib/plans";
 import { useAccount } from "@/lib/account-store";
 
-type Props = { vrm?: string; compact?: boolean };
+type Props = { vrm?: string; compact?: boolean; workshopOnly?: boolean };
 type SubscriptionPlan = Exclude<PlanKey, "sales_pack">;
 
 const TIERS = [
@@ -34,7 +34,7 @@ const TIERS = [
   features: readonly string[];
 }[];
 
-export function TierPlans({ vrm, compact = false }: Props) {
+export function TierPlans({ vrm, compact = false, workshopOnly = false }: Props) {
   const v1 = useV1();
   const account = useAccount();
   const lifetimeProModder = account?.state?.user.tier_override === "pro_modder_lifetime";
@@ -83,7 +83,7 @@ export function TierPlans({ vrm, compact = false }: Props) {
     <div className="border-b border-border p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Plans & access</p>
       <h2 className="mt-1 text-xl font-bold">Built for the way you keep cars.</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Prices are shown in GBP. Workshop tools require approval and VAT verification.</p>
+      <p className="mt-1 text-sm text-muted-foreground">{workshopOnly ? "Verified Workshop / Garage Pro · £9.99 monthly or £99.99 yearly." : "Prices are shown in GBP. Workshop tools require approval and VAT verification."}</p>
       {catalog && <p className="mt-3 text-xs font-semibold text-amber-300">
         {catalog.preview ? "Preview prices only · Stripe unavailable, no checkout or charges" : v1.preview ? "Sample preview · no Stripe checkout or charges" : catalog.test_mode ? "Stripe SANDBOX · test payments only" : "Live Stripe billing"}
       </p>}
@@ -99,7 +99,7 @@ export function TierPlans({ vrm, compact = false }: Props) {
           </div>
         </div>
         <div className={`grid auto-rows-fr min-w-0 items-stretch gap-3 ${compact ? "" : "md:grid-cols-2"}`}>
-          <article className="flex h-full flex-col rounded-xl border border-primary/35 bg-primary/5 p-4">
+          {!workshopOnly && <article className="flex h-full flex-col rounded-xl border border-primary/35 bg-primary/5 p-4">
             <div className="flex items-start justify-between gap-2">
               <div><p className="text-xs uppercase tracking-wider text-muted-foreground">01 / Included</p><h3 className="mt-1 text-lg font-bold">Basic Driver (Free)</h3></div>
               <span className="rounded-lg bg-primary/15 p-2 text-primary"><Check className="h-5 w-5" /></span>
@@ -110,8 +110,8 @@ export function TierPlans({ vrm, compact = false }: Props) {
             <button type="button" disabled className="btn-secondary mt-4 min-h-12 w-full" aria-label={account?.state?.user.subscription_tier === "free" ? "Current Plan: Basic Driver" : "Basic Driver is included"}>
               {account?.state?.user.subscription_tier === "free" ? "Current Plan" : "Basic access included"}
             </button>
-          </article>
-          {TIERS.map((tier, index) => {
+          </article>}
+          {TIERS.filter((tier) => !workshopOnly || tier.monthly === "workshop_monthly").map((tier, index) => {
             const key = interval === "year" ? tier.yearly : tier.monthly;
             const price = catalog.prices.find((item) => item.key === key);
             const configured = catalog.preview || v1.preview || Boolean(price);
@@ -143,10 +143,10 @@ export function TierPlans({ vrm, compact = false }: Props) {
       </div>
     }
     <div className="flex flex-col gap-3 border-t border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div><p className="text-sm font-semibold">Certified Sales Pack · £2.99 once per report</p><p className="text-xs text-muted-foreground">A provenance PDF for the selected vehicle. Checkout is confirmed by the server.</p></div>
+       {!workshopOnly && <div><p className="text-sm font-semibold">Certified Sales Pack · £2.99 once per report</p><p className="text-xs text-muted-foreground">A provenance PDF for the selected vehicle. Checkout is confirmed by the server.</p></div>}
       <div className="flex flex-col gap-2 sm:flex-row">
         <button type="button" className="btn-ghost min-h-11" onClick={() => void portal()} disabled={busy !== null}>{busy === "portal" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}Billing settings</button>
-        <button type="button" className="btn-primary min-h-11" onClick={() => void start("sales_pack")} disabled={busy !== null || !vrm}>{busy === "sales_pack" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}Buy Sales Pack</button>
+         {!workshopOnly && <button type="button" className="btn-primary min-h-11" onClick={() => void start("sales_pack")} disabled={busy !== null || !vrm}>{busy === "sales_pack" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}Buy Sales Pack</button>}
       </div>
     </div>
   </section>;
