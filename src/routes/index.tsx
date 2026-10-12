@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, Camera, Car, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, Wrench, Zap } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Camera, Car, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, UserPlus, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -682,13 +682,12 @@ function PublicLanding() {
   };
 
   const onPublicRoleChoice = (role: "vehicle-owner" | "verified-workshop") => {
-    const intent = role === "vehicle-owner" ? "owner" : "workshop";
     const destination = role === "vehicle-owner" ? "/vehicle" : "/workshop/setup";
     if (account?.signedIn) {
       window.location.assign(destination);
       return;
     }
-    window.location.assign(`/sign-up?intent=${intent}`);
+    window.location.assign(role === "vehicle-owner" ? "/auth/driver?mode=signup" : "/auth/workshop?mode=signup");
   };
 
   return (
@@ -696,7 +695,10 @@ function PublicLanding() {
       {import.meta.env.DEV && <div className="mx-auto max-w-md px-5"><DevPreviewButton /></div>}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <div className="flex items-center gap-3" aria-label="V5Vault home"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold tracking-tight">V5Vault</span></div>
-        <a href="/sign-in" className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</a>
+        <div className="flex items-center gap-2">
+          <a href="/auth/driver" className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</a>
+          <a href="/auth/driver?mode=signup" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-cyan-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><UserPlus aria-hidden="true" className="h-4 w-4" />Create Account</a>
+        </div>
       </header>
 
       <section className="relative mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-16">

@@ -68,8 +68,8 @@ export function TierPlans({ vrm, compact = false, workshopOnly = false }: Props)
 
   return <section className="vault-card overflow-hidden">
     <div className="border-b border-border p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Plans & access</p>
-      <h2 className="mt-1 text-xl font-bold">Built for the way you keep cars.</h2>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{workshopOnly ? "WORKSHOP SUBSCRIPTION" : "Plans & access"}</p>
+      <h2 className="mt-1 text-xl font-bold">{workshopOnly ? "Verified Garage Pro Plan" : "Built for the way you keep cars."}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{workshopOnly ? "Verified Workshop / Garage Pro · £9.99 monthly or £99.99 yearly." : "Prices are shown in GBP. Workshop tools require approval and VAT verification."}</p>
       {catalog && <p className="mt-3 text-xs font-semibold text-amber-300">
         {catalog.preview ? "Preview prices only · Stripe unavailable, no checkout or charges" : v1.preview ? "Sample preview · no Stripe checkout or charges" : catalog.test_mode ? "Stripe SANDBOX · test payments only" : "Live Stripe billing"}

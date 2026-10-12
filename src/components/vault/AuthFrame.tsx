@@ -6,7 +6,7 @@ import { watchAuthInputs } from "@/lib/auth-inputs";
 import { DevPreviewButton } from "./DevPreviewButton";
 import { PasskeySignInButton } from "./PasskeySignInButton";
 
-export function AuthFrame({ mode, children, title }: { mode: "sign-in" | "sign-up"; children: ReactNode; title?: string | undefined }) {
+export function AuthFrame({ mode, children, signInUrl = "/sign-in", signUpUrl = "/sign-up" }: { mode: "sign-in" | "sign-up"; children: ReactNode; signInUrl?: string; signUpUrl?: string }) {
   const signup = mode === "sign-up";
   const root = useRef<HTMLElement>(null);
   useEffect(() => root.current ? watchAuthInputs(root.current) : undefined, []);
@@ -14,13 +14,12 @@ export function AuthFrame({ mode, children, title }: { mode: "sign-in" | "sign-u
     <div className="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
     <div className="relative my-auto w-full min-w-0 max-w-md">
       <Link to="/" onClick={clearPendingSignup} className="mb-6 flex items-center justify-center gap-3 text-lg font-bold"><V5VaultLogo className="h-10 w-10" /> V5Vault</Link>
-      {title && <h1 className="mb-5 text-center text-xl font-bold leading-snug text-white">{title}</h1>}
       {children}
       {!signup && <div className="mt-6 border-t border-slate-800 pt-4"><DevPreviewButton /></div>}
       {!signup && <PasskeySignInButton />}
       <p className="mt-5 text-center text-sm text-slate-400">
         {signup ? "Already registered?" : "New to V5Vault?"}{" "}
-        <a onClick={clearPendingSignup} className="font-semibold text-cyan-300 underline-offset-4 hover:underline" href={signup ? "/sign-in" : "/sign-up"}>
+          <a onClick={clearPendingSignup} className="font-semibold text-cyan-300 underline-offset-4 hover:underline" href={signup ? signInUrl : signUpUrl}>
           {signup ? "Sign in" : "Create account"}
         </a>
       </p>

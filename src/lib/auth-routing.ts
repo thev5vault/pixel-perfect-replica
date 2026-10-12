@@ -1,7 +1,7 @@
 import type { AccountState } from "./account-types";
 
 export function isAuthEntry(path: string) {
-  return path === "/" || path === "/dashboard" || /^\/sign-(in|up)(\/|$)/.test(path);
+  return path === "/" || path === "/dashboard" || /^\/(?:sign-(in|up)|auth\/(?:driver|workshop))(\/|$)/.test(path);
 }
 
 export function shouldHoldAuthEntryForHydration(path: string, authLoaded: boolean | undefined) {

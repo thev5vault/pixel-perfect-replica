@@ -1,0 +1,19 @@
+Fix visual alignment bugs, header duplication, auth routes, and component structure across 'src/routes/index.tsx', 'src/routes/garage.tsx', and auth components:
+1. Landing Page & Header Navigation Polish ('src/routes/index.tsx'):
+ Top Header Nav: Render BOTH 'Sign in' and a primary CTA button '[ <UserPlus className="w-4 h-4 mr-1.5"/> Create Account ]' in the top right navigation bar.
+ Separate Dedicated Auth Routes:
+ Drivers: '/auth/driver' -> Title: "Sign in to Driver Glovebox" / "Create Driver Account".
+ Garages: '/auth/workshop' -> Title: "Verified Workshop Terminal Portal — 30-Day Free Trial (£9.99/mo)".
+ Fix Bleeding Title Text: Properly wrap workshop signup title inside the card container header component to eliminate raw unstyled text rendering above the card frame.
+2. Express Core Header & Badge Fixes ('src/routes/garage.tsx'):
+ Tight Inline (i) Icon: Wrap 'Express Core' title and Lucide <Info className="w-4 h-4 text-slate-400 cursor-pointer"/> in an inline flex group ('flex items-center gap-1.5') so the (i) icon sits directly next to the word "Core" instead of floating at the far right card margin.
+ Remove Duplicate Badge: Remove the secondary 'VERIFIED WORKSHOP' pill directly under the page title '🛠️ Workshop Terminal' to eliminate double badge stacking.
+ Express Core Auto-VIN Badge: Display the green locked badge '<CheckCircle className="w-4 h-4 text-emerald-400 inline mr-1.5"/> VIN Bound: [17-char VIN]' directly inside Express Core under the Registration box upon lookup.
+3. Work Components Grid Polish:
+ Structure expanded component pills into a clean 3-column grid container ('grid grid-cols-3 gap-2 py-2') with a centered '- Fewer components' collapse button.
+4. Strict Zero-Duplication Tab Policy:
+ Tab 1 ('⚡ Express Stamp'): Stamping form, AI Scanner, and optional breakdown drawer ONLY. Completely REMOVE 'Workshop profile' and 'Due soon' cards from the bottom of Tab 1.
+ Tab 2 ('📅 Upcoming Jobs'): Customer Vehicle Search Bar ('Reg' / 'VIN' lookup) pinned at the top, followed by Active Bay Queue & 'Due Soon' reminders.
+ Tab 3 ('🏬 Garage Profile'): B2B Workshop Business Profile (Trading Name, Logo Upload, Stamp Seal, VAT, Accreditations, Address, and B2B Subscription controls). Update billing header text to: "WORKSHOP SUBSCRIPTION: Verified Garage Pro Plan".
+5. Comprehensive Quality Gate Verification:
+ Run 'npm test', 'npx tsc --noEmit', 'npm run build', and 'git diff --check' to confirm 100% test passes across all suites and clean compilation.

@@ -44,6 +44,7 @@ import { Route as ApiUserAccountRouteImport } from './routes/api.user.account'
 import { Route as ApiUserExportRouteImport } from './routes/api.user.export'
 import { Route as ApiUserProfileRouteImport } from './routes/api.user.profile'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
+import { Route as AuthPersonaSplatRouteImport } from './routes/auth.$persona.$'
 import { Route as ApiServicesRecordIdInvoiceRouteImport } from './routes/api.services.$recordId.invoice'
 import { Route as ApiServicesRecordIdReceiptRouteImport } from './routes/api.services.$recordId.receipt'
 
@@ -229,6 +230,11 @@ const ApiVaultCreateRoute = ApiVaultCreateRouteImport.update({
   path: '/api/vault/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthPersonaSplatRoute = AuthPersonaSplatRouteImport.update({
+  id: '/auth/$persona/$',
+  path: '/auth/$persona/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiServicesRecordIdInvoiceRoute =
   ApiServicesRecordIdInvoiceRouteImport.update({
     id: '/api/services/$recordId/invoice',
@@ -278,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -398,6 +407,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   fileRoutesByTo: FileRoutesByTo
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   id:
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   fileRoutesById: FileRoutesById
@@ -515,6 +527,7 @@ export interface RootRouteChildren {
   ApiUserExportRoute: typeof ApiUserExportRoute
   ApiUserProfileRoute: typeof ApiUserProfileRoute
   ApiVaultCreateRoute: typeof ApiVaultCreateRoute
+  AuthPersonaSplatRoute: typeof AuthPersonaSplatRoute
   ApiServicesRecordIdInvoiceRoute: typeof ApiServicesRecordIdInvoiceRoute
   ApiServicesRecordIdReceiptRoute: typeof ApiServicesRecordIdReceiptRoute
 }
@@ -766,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVaultCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/$persona/$': {
+      id: '/auth/$persona/$'
+      path: '/auth/$persona/$'
+      fullPath: '/auth/$persona/$'
+      preLoaderRoute: typeof AuthPersonaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/services/$recordId/invoice': {
       id: '/api/services/$recordId/invoice'
       path: '/api/services/$recordId/invoice'
@@ -830,6 +850,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUserExportRoute: ApiUserExportRoute,
   ApiUserProfileRoute: ApiUserProfileRoute,
   ApiVaultCreateRoute: ApiVaultCreateRoute,
+  AuthPersonaSplatRoute: AuthPersonaSplatRoute,
   ApiServicesRecordIdInvoiceRoute: ApiServicesRecordIdInvoiceRoute,
   ApiServicesRecordIdReceiptRoute: ApiServicesRecordIdReceiptRoute,
 }

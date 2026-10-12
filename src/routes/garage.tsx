@@ -526,7 +526,7 @@ function GaragePage() {
   </div>;
 
   return <div className="space-y-5 pb-40">
-    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={<span className="flex flex-wrap items-center gap-2"><span>Workshop Terminal</span><span className="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">Verified Workshop</span></span>} />
+    <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop Terminal"} />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
         <div className="flex items-center gap-2">
@@ -557,7 +557,7 @@ function GaragePage() {
           </p>}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service category</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className={showMoreComponents ? "mt-2 grid grid-cols-3 gap-2 py-2" : "mt-2 flex flex-wrap gap-2"}>
               {CATEGORIES.map((category) => <button key={category} type="button" aria-pressed={form.category === category} onClick={() => change("category", category)}
                 className={`min-h-11 rounded-lg border px-2 text-xs font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
             </div>
@@ -574,7 +574,7 @@ function GaragePage() {
                 {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
               </button>)}
             </div>
-            <div className="mt-2 flex justify-end">
+            <div className={`mt-2 flex ${showMoreComponents ? "justify-center" : "justify-end"}`}>
               <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((open) => !open)} className="min-h-[44px] rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">
                 {showMoreComponents ? "− Fewer components" : "+ More components"}
               </button>

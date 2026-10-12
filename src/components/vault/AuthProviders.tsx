@@ -12,12 +12,22 @@ const { cssLayerName: _unusedLayer, ...darkTheme } = dark;
 function BrowserProviders({children}:{children:ReactNode}) {
   const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"]);
   const clerkProxyUrl = import.meta.env["VITE_CLERK_PROXY_URL"];
+  const isWorkshopAuth = window.location.pathname.startsWith("/auth/workshop") || new URLSearchParams(window.location.search).get("intent") === "workshop";
+  const isPersonaAuth = window.location.pathname.startsWith("/auth/");
+  const isSignup = new URLSearchParams(window.location.search).get("mode") === "signup" || window.location.pathname.startsWith("/sign-up");
+  const authTitle = isPersonaAuth
+    ? isWorkshopAuth
+      ? isSignup ? "Verified Workshop Terminal Portal — 30-Day Free Trial (£9.99/mo)" : "Sign in to Verified Workshop Terminal Portal"
+      : isSignup ? "Create Driver Account" : "Sign in to Driver Glovebox"
+    : isWorkshopAuth && isSignup
+      ? "Create Verified Workshop Account — Start 30-Day Free Trial (£9.99/mo)"
+      : undefined;
   return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl}
-    signInUrl="/sign-in" signUpUrl="/sign-up"
+    signInUrl={isWorkshopAuth ? "/auth/workshop" : "/auth/driver"} signUpUrl={isWorkshopAuth ? "/auth/workshop?mode=signup" : "/auth/driver?mode=signup"}
     signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard"
     localization={{
-      signIn: { start: { title: "Sign in to V5Vault", titleCombined: "Sign in to V5Vault", subtitle: "Access your V5Vault vehicle passport." } },
-      signUp: { start: { title: "Create your V5Vault account", titleCombined: "Create your V5Vault account", subtitle: "Keep your vehicle history with V5Vault." } },
+      signIn: { start: { title: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", titleCombined: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", subtitle: "Access your V5Vault vehicle passport." } },
+      signUp: { start: { title: authTitle && isSignup ? authTitle : "Create your V5Vault account", titleCombined: authTitle && isSignup ? authTitle : "Create your V5Vault account", subtitle: "Keep your vehicle history with V5Vault." } },
     }}
     appearance={{
       theme: darkTheme,
