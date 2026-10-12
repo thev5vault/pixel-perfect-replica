@@ -52,7 +52,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const initial = (user?.full_name || user?.email || "V").trim().slice(0, 1).toUpperCase();
 
    useEffect(() => {
-     window.scrollTo({ top: 0, behavior: "instant" });
+     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+     document.documentElement.scrollTop = 0;
+     document.body.scrollTop = 0;
      mainScrollRef.current?.scrollTo({ top: 0, behavior: "instant" });
    }, [path]);
 
@@ -152,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button type="button" onClick={()=>void account.signOut()} className="min-h-9 shrink-0 rounded-lg border border-amber-500/30 px-2">Exit preview</button>
       </div>}
       {account?.error && <div role="alert" className="mx-auto mt-3 flex max-w-2xl items-center justify-between rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-2 text-xs text-red-200"><span>{account.error}</span><button className="underline" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div>}
-       <main ref={mainScrollRef} className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-12 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-4">
+       <main ref={mainScrollRef} className="mx-auto min-h-0 w-full max-w-2xl flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-28 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
         {["/queue", "/bookings"].includes(path) && !garage ? <Navigate to="/garage" replace /> : signed && !garage && vehicles.length === 0 && ["/vehicle","/passport","/vault"].includes(path) ? <section className="vault-card mt-5 space-y-4 p-6 text-center"><Car className="mx-auto h-8 w-8 text-primary" /><h1 className="text-xl font-bold">Connect your first vehicle</h1><p className="mt-2 text-sm text-muted-foreground">Link a vehicle using its registration and 11-digit V5C reference. Development sample approvals are not live DVLA verification.</p><button className="btn-primary w-full" onClick={()=>setConnectOpen(true)}>Connect New Vehicle</button></section> : children}
       </main>
       {(!isWorkshopTerminal || garage) && <nav className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] inset-x-3 z-50 mx-auto flex max-w-md items-center justify-between rounded-2xl border border-slate-700/80 bg-slate-900/95 px-2 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.8)] transform-gpu print:hidden">

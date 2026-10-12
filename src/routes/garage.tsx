@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Camera, Check, CheckCircle, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
@@ -91,6 +91,8 @@ function createSubmissionId() {
 export const Route = createFileRoute("/garage")({ component: GaragePage });
 
 function GaragePage() {
+  const activeTab = useLocation().pathname;
+  const mainContainerRef = useRef<HTMLDivElement>(null);
   const account = useAccount();
   const user = account?.state?.user;
   const accountRefreshRef = useRef(account?.refresh);
@@ -120,6 +122,16 @@ function GaragePage() {
   const [success, setSuccess] = useState("");
   const [queuedCount, setQueuedCount] = useState(0);
   const [queueStatus, setQueueStatus] = useState("");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTop = 0;
+      mainContainerRef.current.closest("main")?.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     accountRefreshRef.current = account?.refresh;
@@ -511,7 +523,7 @@ function GaragePage() {
     }
   }
 
-  if (!canEnterWorkshop) return <div className="space-y-5 px-4 pt-4">
+  if (!canEnterWorkshop) return <div ref={mainContainerRef} className="space-y-5 px-4 pt-4">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
     <section className="vault-card space-y-4 p-5" aria-labelledby="workshop-access-title">
       <div className="flex items-center gap-3">
@@ -525,7 +537,7 @@ function GaragePage() {
     <UpgradeDialog open={showWorkshopUpgrade} onOpenChange={setShowWorkshopUpgrade} tier="Verified Workshop" price="£9.99/mo" description="30-day trial. Workshop approval and VAT verification are required before live stamping." perks={["Verified digital service stamps", "Workshop customer and booking tools", "Local invoice scanning and offline queue"]} />
   </div>;
 
-  return <div className="space-y-5 px-4 pt-4">
+  return <div ref={mainContainerRef} className="space-y-5 px-4 pt-4">
     <PageHeader icon={<Wrench className="h-5 w-5 text-primary" />} title={user?.garage_name || "Workshop Terminal"} />
     {canStamp && <section className="vault-card overflow-hidden">
       <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
