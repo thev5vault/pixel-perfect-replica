@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Camera, CheckCircle2, Disc3, Gauge, Plus, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -74,7 +74,7 @@ function DisplayPreferenceSetup({ account }: { account: ReturnType<typeof useAcc
     <p className="mt-1 text-sm text-slate-200">Easy View uses larger text and clear summaries. Detailed View opens the full technical record.</p>
     <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
       {(["easy", "detailed"] as const).map((mode) => <button key={mode} type="button" onClick={() => void account.setDisplayPreference(mode).catch((error) => toast.error(error instanceof Error ? error.message : "Preference could not be saved"))} className="flex min-h-12 items-center justify-center rounded-xl border border-cyan-500/30 bg-slate-900 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-slate-800">
-        {mode === "easy" ? "⚡ Easy View" : "🛠️ Detailed View"}
+        {mode === "easy" ? <><Zap className="h-4 w-4 text-amber-400" /> Easy View</> : <><Wrench className="h-4 w-4 text-cyan-400" /> Detailed View</>}
       </button>)}
     </div>
   </section>;
@@ -238,7 +238,7 @@ export function Dashboard() {
 
       {!registrationVerified && <section role="status" className="my-3 flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 px-4 shadow-sm">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="shrink-0 text-sm">⚠️</span>
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
           <span className="truncate text-xs font-semibold text-amber-200">V5C Re-verification Needed</span>
         </div>
         <button type="button" onClick={() => setRegistrationOpen(true)} disabled={!vehicle.vin || vehicle.is_sample} title={vehicle.is_sample ? "Development samples cannot be re-verified as live vehicles." : undefined} className="min-h-[36px] shrink-0 whitespace-nowrap rounded-lg border border-amber-500/40 bg-amber-500/20 px-3.5 py-1.5 text-[11px] font-bold text-amber-300 transition-colors hover:bg-amber-500/30 disabled:cursor-not-allowed disabled:opacity-60">
@@ -278,7 +278,7 @@ export function Dashboard() {
         <button disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} onClick={() => setReceiptOpen(true)} className="btn-primary min-h-[44px] w-full flex-1 py-3 text-base">
           <Camera className="h-5 w-5 shrink-0" /> Snap Receipt
         </button>
-        <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full flex-1">🛠️ Add DIY Service Entry</button>
+        <button type="button" onClick={() => setDiyOpen(true)} disabled={vehicle.is_scrapped || vehicle.access==="archived"||vehicle.access==="plan_locked"} className="btn-ghost min-h-[44px] w-full flex-1"><Wrench className="mr-2 h-4 w-4 text-cyan-400" /> Add DIY Service Entry</button>
       </div>
 
       {history.length === 0 && motReadings.length === 0 ? (
@@ -294,11 +294,11 @@ export function Dashboard() {
               ? <>
                   <ol className="relative space-y-4 border-l border-primary/30 pl-5">{visibleHistory.map((s) => <TimelineItem key={s.id} s={s} bookable />)}</ol>
                   {history.length > 3 && <button type="button" aria-expanded={showAllServiceRecords} onClick={() => setShowAllServiceRecords((expanded) => !expanded)} className="my-3 flex min-h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-cyan-400 transition-colors hover:bg-slate-800">
-                    {showAllServiceRecords ? "📂 Collapse Timeline ˄" : `📂 View All Service Records (${history.length}) ˅`}
+                    {showAllServiceRecords ? <><FolderOpen className="h-4 w-4" /> Collapse Timeline ˄</> : <><FolderClosed className="h-4 w-4" /> View All Service Records ({history.length}) ˅</>}
                   </button>}
                 </>
               : <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-800/80 bg-slate-900/60 px-3.5 py-2.5 text-[11px] font-semibold text-slate-100">
-                  <span>📄 No Service Records</span>
+                  <span className="inline-flex items-center gap-1.5"><FileText className="h-4 w-4 text-slate-400" />No Service Records</span>
                 </div>}
           </section>
 

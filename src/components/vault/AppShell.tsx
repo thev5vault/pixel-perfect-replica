@@ -42,9 +42,10 @@ export function AppShell({ children }: { children: ReactNode }) {
    const isPublic = isAuthEntry(path) || path.startsWith("/verify") || path.startsWith("/v/");
   const user = account?.state?.user;
    const role = account?.state?.development_role ?? (user?.role === "dev_admin" ? "superadmin" : user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
-  const garage = user?.role === "verified_garage" || role === "Garage";
+   const isDeveloper = user?.role === "dev_admin";
+   const garage = Boolean(user && (isDeveloper || (user.role === "verified_garage" && user.status === "approved" && user.garage_verified && user.vat_verified === true && (user.workshop_access_active || user.subscription_tier === "verified_garage"))));
   const baseNavItems = !signed ? [] : garage ? GARAGE : user?.role === "modder" || role === "Pro" || role === "superadmin" ? MODDER : CIVILIAN;
-   const navItems = signed && user?.role==="dev_admin" ? GODMODE : baseNavItems;
+    const navItems = signed && isDeveloper ? GODMODE : baseNavItems;
   const vehicles = account?.state?.vehicles ?? [];
   const active = vehicles.find((v) => v.vrm === vault.vehicle.vrm) ?? vehicles[0];
   const initial = (user?.full_name || user?.email || "V").trim().slice(0, 1).toUpperCase();
@@ -132,6 +133,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </DropdownMenu>
         </div>
       </header>
+      {signed && isDeveloper && <div role="group" aria-label="Developer navigation mode" className="flex shrink-0 items-center justify-center gap-2 border-b border-slate-800 bg-slate-900/80 px-4 py-2 print:hidden">
+        <button type="button" aria-pressed={path === "/garage"} onClick={() => void navigate({ to: "/garage" })} className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${path === "/garage" ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300"}`}><Wrench className="h-4 w-4 text-cyan-400" />Terminal</button>
+        <button type="button" aria-pressed={path === "/vehicle" || path === "/"} onClick={() => void navigate({ to: "/vehicle" })} className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${path === "/vehicle" || path === "/" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-slate-700 text-slate-300"}`}><Car className="h-4 w-4 text-emerald-400" />Owner</button>
+      </div>}
       {account?.preview&&<div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/25 bg-amber-950/40 px-4 py-2 text-[11px] text-amber-100">
         <span>Sample God Mode · No real account or database access. Changes reset on reload.</span>
         <button type="button" onClick={()=>void account.signOut()} className="min-h-9 shrink-0 rounded-lg border border-amber-500/30 px-2">Exit preview</button>

@@ -20,6 +20,7 @@ import { Route as QueueRouteImport } from './routes/queue'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VaultRouteImport } from './routes/vault'
 import { Route as VehicleRouteImport } from './routes/vehicle'
+import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as ApiCreateCheckoutSessionRouteImport } from './routes/api.create-checkout-session'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
@@ -98,6 +99,11 @@ const VaultRoute = VaultRouteImport.update({
 const VehicleRoute = VehicleRouteImport.update({
   id: '/vehicle',
   path: '/vehicle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopRoute = WorkshopRouteImport.update({
+  id: '/workshop',
+  path: '/workshop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCreateCheckoutSessionRoute =
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/workshop': typeof WorkshopRoute
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/workshop': typeof WorkshopRoute
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
   '/vehicle': typeof VehicleRoute
+  '/workshop': typeof WorkshopRoute
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
     | '/sign-in/$'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
     | '/sign-in/$'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/vault'
     | '/vehicle'
+    | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
     | '/sign-in/$'
@@ -468,6 +480,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   VaultRoute: typeof VaultRoute
   VehicleRoute: typeof VehicleRoute
+  WorkshopRoute: typeof WorkshopRoute
   ApiCreateCheckoutSessionRoute: typeof ApiCreateCheckoutSessionRoute
   CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   SignInSplatRoute: typeof SignInSplatRoute
@@ -571,6 +584,13 @@ declare module '@tanstack/react-router' {
       path: '/vehicle'
       fullPath: '/vehicle'
       preLoaderRoute: typeof VehicleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workshop': {
+      id: '/workshop'
+      path: '/workshop'
+      fullPath: '/workshop'
+      preLoaderRoute: typeof WorkshopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/create-checkout-session': {
@@ -756,6 +776,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   VaultRoute: VaultRoute,
   VehicleRoute: VehicleRoute,
+  WorkshopRoute: WorkshopRoute,
   ApiCreateCheckoutSessionRoute: ApiCreateCheckoutSessionRoute,
   CheckoutSuccessRoute: CheckoutSuccessRoute,
   SignInSplatRoute: SignInSplatRoute,

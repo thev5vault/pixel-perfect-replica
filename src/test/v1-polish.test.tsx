@@ -120,7 +120,7 @@ describe("V1 polish", () => {
     localStorage.setItem("v5vault:v1", JSON.stringify({ role: "DIY", services: [] }));
     render(<VaultProvider><Dashboard /></VaultProvider>);
 
-    expect(screen.getByText("📄 No Service Records")).toBeInTheDocument();
+    expect(screen.getByText("No Service Records")).toBeInTheDocument();
     expect(screen.queryByText(/Recorded Spend: £0\.00/)).not.toBeInTheDocument();
     expect(screen.queryByText("Recorded spend")).not.toBeInTheDocument();
     expect(screen.queryByText(/Engine size not returned|Tax status not returned/)).not.toBeInTheDocument();

@@ -1,0 +1,30 @@
+Implement Role-Based Access Control (RBAC) route guarding, gatekeeping, and Express Workshop Terminal refactoring in 'src/routes/garage.tsx':
+
+1. Strict Icon Rule (NO Emojis):
+   - Replace ALL system emojis (such as 🔒, 🛠️, 🚗, ⚡) across Garage, Vault, Passport, and header components with clean, consistent Lucide React SVG icons (e.g., <Lock />, <Wrench />, <Car />, <CheckCircle />, <Zap />).
+   - Style all SVG icons using UI color tokens (e.g., 'w-4 h-4 text-amber-400', 'w-4 h-4 text-emerald-400', 'w-4 h-4 text-slate-400').
+
+2. Role-Based Access Control & Navigation Guards:
+   - Restrict access to the Workshop Terminal strictly to users where 'user.tier === "verified_workshop"' or 'user.role === "admin"' / 'user.role === "developer"'.
+   - For standard public users ('basic_driver', 'pro_diy', 'pro_modder'), hide the 'Garage' terminal tab from the bottom navigation bar.
+
+3. Gatekeeper Paywall Card (Unverified Users):
+   - If an unverified user accesses '/garage' or '/workshop', render a clean Gatekeeper card:
+     * Header: Flex container with an SVG <Lock className="w-5 h-5 text-amber-400" /> icon and text "Verified Workshop Access Required".
+     * Description: "Digital stamping tools are exclusively reserved for verified garages, technicians, and specialists to maintain V5Vault record integrity."
+     * CTA Button: "Start 30-Day Free Trial (£9.99/mo)" launching the Verified Workshop subscription modal.
+     * Secondary Button: "Return to Vehicle Passport" navigating to 'src/routes/index.tsx'.
+
+4. Developer Role Switcher (Admin/Dev Only):
+   - Add a subtle header switcher visible ONLY when logged in as Admin/Developer: 
+     * Mode buttons paired with SVG icons: [ <Wrench className="w-4 h-4 text-cyan-400" /> Terminal ] <-> [ <Car className="w-4 h-4 text-emerald-400" /> Owner ].
+
+5. Verified Workshop Terminal Express View:
+   - Inline Reg Lookup: '[ AB14 CDE | <Search className="w-4 h-4" /> Fetch Specs ]'
+   - Mandatory VIN Auto-Binding: Auto-populate and lock a prominent badge directly below the Reg input upon lookup: '<CheckCircle className="w-4 h-4 text-emerald-400 inline mr-1.5" /> VIN Bound: [17-char VIN]'.
+   - Submission Guardrail: Block 'Stamp verified job' if the 17-character VIN is missing/invalid, showing helper text: "17-character VIN required for permanent chassis log."
+   - Compact Express Layout: Reg, Odometer, Category pills, 4 quick component chips, Date, and Invoice Total grouped above the fold.
+   - Optional Inset Drawer: Collapse optional fields (Parts/Labour split, Work Notes, Advisories, Uploads) inside 'Add Detailed Breakdown & Receipt ˅'.
+
+6. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', and 'npm run build' to verify clean build compilation and zero test regressions.

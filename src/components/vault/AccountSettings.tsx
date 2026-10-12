@@ -5,7 +5,7 @@ import { accountRolePresentation } from "@/lib/account-role";
 import { canEditWorkshopProfile, type AccountProfileInput } from "@/lib/account-profile";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "./ui-bits";
-import { AlertTriangle, Loader2, Save, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Loader2, Save, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { PasskeySettings } from "./PasskeySettings";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -93,7 +93,7 @@ export function AccountSettings() {
       </div>
       <div role="group" aria-label="Preferred display mode" className="grid grid-cols-2 gap-2">
         {(["easy", "detailed"] as const).map((mode) => <button key={mode} type="button" aria-pressed={account.displayPreference === mode} onClick={() => void account.setDisplayPreference(mode).then(() => toast.success("Display preference saved")).catch((error) => toast.error(error instanceof Error ? error.message : "Display preference could not be saved"))} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${account.displayPreference === mode ? "border-cyan-400/60 bg-cyan-500/15 text-white" : "border-slate-700 bg-slate-900 text-slate-300"}`}>
-          {mode === "easy" ? "⚡ Easy View" : "🛠️ Detailed View"}
+          {mode === "easy" ? <><Zap className="h-4 w-4 text-amber-400" /> Easy View</> : <><Wrench className="h-4 w-4 text-cyan-400" /> Detailed View</>}
         </button>)}
       </div>
       <p className="text-xs text-slate-400">{account.displayPreference === "easy" ? "Easy View uses clearer summaries and larger touch controls; advanced tools remain available." : "Detailed View keeps specifications and technical history expanded."}</p>

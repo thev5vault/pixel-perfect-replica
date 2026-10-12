@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
@@ -18,6 +18,7 @@ import { useAccount } from "@/lib/account-store";
 import { canUseWorkshopFeatures } from "@/lib/plans";
 import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
+import { UpgradeDialog } from "@/components/vault/UpgradeDialog";
 
 const CATEGORIES = ["Servicing", "Brakes", "Repairs", "Tyres"] as const;
 const COMPONENTS = [
@@ -95,7 +96,9 @@ function GaragePage() {
   const user = account?.state?.user;
   const accountRefreshRef = useRef(account?.refresh);
   const syncingOutboxRef = useRef(false);
-  const canStamp = user?.role === "dev_admin" || Boolean(user && canUseWorkshopFeatures(user));
+  const adminBypass = user?.role === "dev_admin" || user?.permissions?.includes("all_access") === true;
+  const canEnterWorkshop = Boolean(user && (adminBypass || canUseWorkshopFeatures(user)));
+  const canStamp = adminBypass || Boolean(user && canUseWorkshopFeatures(user));
   const canScanInvoice = Boolean(user && (user.role === "dev_admin" || user.subscription_tier !== "free" || user.workshop_access_active));
   const draftKey = user ? `garage-service:${user.id}` : null;
   const [form, setForm] = useState<GarageForm>(emptyForm);
@@ -112,6 +115,7 @@ function GaragePage() {
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
   const [showMoreComponents, setShowMoreComponents] = useState(false);
   const [showVinRequired, setShowVinRequired] = useState(false);
+  const [showWorkshopUpgrade, setShowWorkshopUpgrade] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [queuedCount, setQueuedCount] = useState(0);
@@ -501,6 +505,20 @@ function GaragePage() {
     }
   }
 
+  if (!canEnterWorkshop) return <div className="space-y-5 pb-40">
+    <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="Verified workshop stamping tools." />
+    <section className="vault-card space-y-4 p-5" aria-labelledby="workshop-access-title">
+      <div className="flex items-center gap-3">
+        <LockKeyhole className="h-5 w-5 shrink-0 text-amber-400" />
+        <h2 id="workshop-access-title" className="text-lg font-bold">Verified Workshop Access Required</h2>
+      </div>
+      <p className="text-sm leading-relaxed text-slate-300">Digital stamping tools are exclusively reserved for verified garages, technicians, and specialists to maintain V5Vault record integrity.</p>
+      <button type="button" onClick={() => setShowWorkshopUpgrade(true)} className="btn-primary min-h-12 w-full">Start 30-Day Free Trial (£9.99/mo)</button>
+      <button type="button" onClick={() => window.location.assign("/vehicle")} className="btn-secondary min-h-12 w-full">Return to Vehicle Passport</button>
+    </section>
+    <UpgradeDialog open={showWorkshopUpgrade} onOpenChange={setShowWorkshopUpgrade} tier="Verified Workshop" price="£9.99/mo" description="30-day trial. Workshop approval and VAT verification are required before live stamping." perks={["Verified digital service stamps", "Workshop customer and booking tools", "Local invoice scanning and offline queue"]} />
+  </div>;
+
   return <div className="space-y-5 pb-40">
     <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="VIN-checked workshop service history and supporting documents." />
     {canStamp && <section className="vault-card overflow-hidden">
@@ -519,8 +537,8 @@ function GaragePage() {
                 </div>
               </Field>
               {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-2 py-1.5 text-[10px] font-semibold text-cyan-200">
-                <LockKeyhole className="h-3.5 w-3.5 shrink-0" />
-                <span className="break-all">✓ VIN Bound: {form.vin}</span>
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span className="break-all">VIN Bound: {form.vin}</span>
               </div>}
               {showVinRequired && !validateVIN(form.vin) && <p role="alert" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required to stamp permanent record.</p>}
             </div>
