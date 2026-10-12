@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Camera, Check, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
+import { Camera, Check, CheckCircle, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader } from "@/components/vault/ui-bits";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
@@ -544,8 +544,7 @@ function GaragePage() {
                 </div>
               </Field>
               {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-2 py-1.5 text-[10px] font-semibold text-emerald-200">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                <LockKeyhole className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                <CheckCircle className="inline h-4 w-4 shrink-0 text-emerald-400" />
                 <span className="break-all">VIN Bound: {form.vin}</span>
               </div>}
               {!validateVIN(form.vin) ? <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required for permanent chassis log.</p> : boundVin !== form.vin && <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">Fetch specs to bind this VIN to the registration before stamping.</p>}
