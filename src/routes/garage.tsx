@@ -569,14 +569,12 @@ function GaragePage() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work components</p>
-            <div className={showMoreComponents ? "mt-2 grid grid-cols-3 gap-2 my-2" : "mt-2 flex flex-wrap items-center gap-2"}>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               {(showMoreComponents ? COMPONENTS : QUICK_COMPONENTS).map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-                className="flex h-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 px-3 text-center text-xs font-medium text-slate-300 transition-all hover:border-slate-700">
+                className="h-8 px-3 text-xs font-medium bg-slate-900 border border-slate-800 text-slate-300 rounded-full flex items-center justify-center whitespace-nowrap transition-all hover:border-slate-700">
                 {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
               </button>)}
-            </div>
-            <div className="w-full flex justify-center mt-3">
-              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((expanded) => !expanded)} className="min-h-11 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-400">{showMoreComponents ? "- Fewer components" : "+ More components"}</button>
+              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((expanded) => !expanded)} className="h-8 px-3 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center whitespace-nowrap hover:bg-cyan-500/20">{showMoreComponents ? "- Fewer components" : "+ More components"}</button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
