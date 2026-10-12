@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Camera, Check, FileText, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
+import { BadgeCheck, Camera, Check, FileText, Info, LoaderCircle, Search, ShieldCheck, Timer, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { DocumentPrivacyNotice, Field, PageHeader, Pill } from "@/components/vault/ui-bits";
+import { Field, PageHeader, Pill } from "@/components/vault/ui-bits";
 import { WorkshopReminders } from "@/components/vault/WorkshopReminders";
 import { formatVrm, readImage, today } from "@/lib/vault-store";
 import {
@@ -24,6 +24,11 @@ const COMPONENTS = [
   "Engine oil", "Oil filter", "Air filter", "Cabin filter", "Spark plugs",
   "Brake pads", "Brake discs", "Brake fluid", "Tyres", "Battery", "Coolant", "Suspension",
 ];
+const QUICK_COMPONENTS = ["Engine oil", "Oil filter", "Brake pads", "Tyres"] as const;
+const GARAGE_INPUT_CLASS =
+  "appearance-none [-webkit-appearance:none] w-full min-w-0 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50";
+const componentLabel = (component: string) =>
+  component.replace(/\b(engine oil|oil filter|brake pads)\b/i, (match) => match.replace(/\b\w/g, (letter) => letter.toUpperCase()));
 
 type Category = (typeof CATEGORIES)[number];
 type GarageStampPayload = {
@@ -103,6 +108,8 @@ function GaragePage() {
   const [busy, setBusy] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  const [showMoreComponents, setShowMoreComponents] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [queuedCount, setQueuedCount] = useState(0);
@@ -374,14 +381,17 @@ function GaragePage() {
       return;
     }
     if (!validateVIN(form.vin)) {
+      setShowDetailedBreakdown(true);
       setError("Enter a valid 17-character VIN. VINs do not contain I, O or Q.");
       return;
     }
     if (!form.physicalVinInspected) {
+      setShowDetailedBreakdown(true);
       setError("Confirm that you physically inspected and matched the VIN on the vehicle.");
       return;
     }
     if (!form.components.length && !form.notes.trim()) {
+      setShowDetailedBreakdown(true);
       setError("Select at least one component or describe the work performed.");
       return;
     }
@@ -466,97 +476,111 @@ function GaragePage() {
   return <div className="space-y-5 pb-40">
     <PageHeader icon={<Timer className="h-5 w-5 text-primary" />} title="Workshop terminal" subtitle="VIN-checked workshop service history and supporting documents." />
     {canStamp && <section className="vault-card overflow-hidden">
-      <form onSubmit={(event) => void submit(event)} className="space-y-5 p-4">
-      <div>
-        <h2 className="font-semibold text-foreground">VIN-verified fast log</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">A service stamp is created only after the server confirms the vehicle record, your workshop access and the physical VIN inspection.</p>
-      </div>
-      <DocumentPrivacyNotice />
-      <AIScanButton canScan={canScanInvoice} isAdmin={user?.role === "dev_admin"} onScanned={(fields, scannedImage) => {
-        setForm((current) => ({
-          ...current,
-          date: isoDateFromUkDate(fields.date) ?? current.date,
-          mileage: fields.mileage ? String(fields.mileage) : current.mileage,
-          notes: fields.workSummary || current.notes,
-          components: current.components.length ? current.components : fields.workSummary.split(/[;,.\n]+/).map((item) => item.trim()).filter(Boolean).slice(0, 12),
-          totalCost: fields.totalCost ? String(fields.totalCost) : current.totalCost,
-          ...(scannedImage ? { receipt: scannedImage } : {}),
-        }));
-      }} />
-      <div className="w-full min-w-0">
-        <label htmlFor="garage-vehicle-registration" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vehicle registration</label>
+      <form onSubmit={(event) => void submit(event)} className="space-y-4 p-4">
         <div className="flex items-center gap-2">
-          <input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className="field min-h-[44px] w-full min-w-0 flex-1 font-mono uppercase" />
-          <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 px-3 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
+          <h2 className="font-semibold text-foreground">Express Core</h2>
+          <button type="button" title="Blur addresses and 11-digit V5C reference numbers before uploading." aria-label="Document privacy tip" className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-slate-800 hover:text-cyan-300"><Info className="h-4 w-4" /></button>
         </div>
-      </div>
-      {lookupDetails && <p role="status" className={`rounded-lg border p-3 text-xs leading-relaxed ${lookupSource === "official" ? "border-emerald-400/30 bg-emerald-950/25 text-emerald-100" : "border-amber-400/25 bg-amber-950/20 text-amber-100"}`}>
-        {lookupSource === "official" ? "Government source · " : "Unverified sample/supplied data · "}{lookupDetails}
-      </p>}
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="17-character VIN"><input required minLength={17} maxLength={17} value={form.vin} onChange={(event) => change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17))} placeholder="VIN / chassis number" className="field font-mono uppercase" /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
-        <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className="field" /></Field>
-      </div>
-      <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
-        <input required type="checkbox" checked={form.physicalVinInspected} onChange={(event) => change("physicalVinInspected", event.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
-        <span>I physically inspected the VIN on the vehicle and matched it to the registration and service record.</span>
-      </label>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service category</p>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {CATEGORIES.map((category) => <button key={category} type="button" aria-pressed={form.category === category} onClick={() => change("category", category)}
-            className={`min-h-11 rounded-xl border px-3 text-sm font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
-        </div>
-      </div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work performed / components</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
-            className={`min-h-[44px] rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
-            {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{component}
-          </button>)}
-        </div>
-      </div>
-      <Field label="Work performed / notes"><textarea rows={3} maxLength={2000} value={form.notes} onChange={(event) => change("notes", event.target.value)} placeholder="Describe the work carried out" className="field" /></Field>
-      <Field label="Advisories (optional)"><textarea rows={2} maxLength={2000} value={form.advisories} onChange={(event) => change("advisories", event.target.value)} placeholder="One advisory per line" className="field" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2 min-w-0 sm:col-span-1">
-          <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className="w-full min-w-0 appearance-none [-webkit-appearance:none] bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-base text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" /></Field>
-        </div>
-        <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-      </div>
-       <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-       <Field label="Invoice total (£) · optional"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className="field" /></Field>
-         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="min-w-0 space-y-2">
-            <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
-             <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Photo / Image
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
-          </label>
-          <p className="text-xs leading-snug text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Image stored privately on all tiers."}</p>
-          {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="inline-flex min-h-[44px] min-w-[44px] items-center text-xs text-muted-foreground underline">Remove photo</button>}
-        </div>
-         <div className="min-w-0 space-y-2">
-            <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
-             <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> PDF Document
-            <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
-          </label>
-          <p className="break-words text-xs leading-snug text-muted-foreground">{form.invoiceName ?? "PDF stored privately · 5 MB max."}</p>
-          {form.invoiceData && <button type="button" onClick={() => setForm((current) => {
-            const { invoiceName: _invoiceName, invoiceData: _invoiceData, ...remaining } = current;
-            return remaining;
-          })} className="inline-flex min-h-[44px] min-w-[44px] items-center text-xs text-muted-foreground underline">Remove invoice</button>}
-        </div>
-      </div>
-      {canScanInvoice && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={scanBusy} className="btn-secondary min-h-11 w-full">
-        {scanBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{scanBusy ? "Scanning on this device…" : "Scan locally and suggest fields"}
-      </button>}
-      {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
-      {draftStatus && <p role="status" className="rounded-lg border border-slate-700 bg-slate-950/50 p-3 text-xs text-slate-300">{draftStatus}</p>}
-       {queueStatus && <p role="status" className="rounded-lg border border-cyan-400/40 bg-cyan-950/50 p-3 text-sm text-cyan-50">{queueStatus}</p>}
-      {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
-      <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp and cannot be shown as verified until the server accepts it.</p>
-      <button type="submit" disabled={busy || fileBusy} className="btn-primary min-h-[44px] w-full px-3 py-4"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+        <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0">
+              <Field label="Vehicle registration"><input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => change("vrm", formatVrm(event.target.value).slice(0, 8))} placeholder="AB14 CDE" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /></Field>
+              <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary mt-2 min-h-[44px] w-full px-2 text-xs"><Search className="h-4 w-4" />{lookupBusy ? "Looking up…" : "Fetch specs"}</button>
+            </div>
+            <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className={`${GARAGE_INPUT_CLASS} min-h-[44px]`} /></Field>
+          </div>
+          {lookupDetails && <p role="status" className={`rounded-lg border p-3 text-xs leading-relaxed ${lookupSource === "official" ? "border-emerald-400/30 bg-emerald-950/25 text-emerald-100" : "border-amber-400/25 bg-amber-950/20 text-amber-100"}`}>
+            {lookupSource === "official" ? "Government source · " : "Unverified sample/supplied data · "}{lookupDetails}
+          </p>}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service category</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORIES.map((category) => <button key={category} type="button" aria-pressed={form.category === category} onClick={() => change("category", category)}
+                className={`h-9 min-h-9 rounded-lg border px-2 text-xs font-semibold transition-colors ${form.category === category ? "border-primary bg-primary/15 text-primary" : "border-slate-700 text-muted-foreground hover:border-slate-500"}`}>{category}</button>)}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Work components</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {QUICK_COMPONENTS.map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
+                className={`min-h-9 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
+              </button>)}
+              {showMoreComponents && COMPONENTS.filter((component) => !QUICK_COMPONENTS.includes(component as typeof QUICK_COMPONENTS[number])).map((component) => <button key={component} type="button" aria-pressed={form.components.includes(component)} onClick={() => toggleComponent(component)}
+                className={`min-h-9 rounded-full border px-3 text-xs font-medium transition-colors ${form.components.includes(component) ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>
+                {form.components.includes(component) && <Check className="mr-1 inline h-3 w-3" />}{componentLabel(component)}
+              </button>)}
+              <button type="button" aria-expanded={showMoreComponents} onClick={() => setShowMoreComponents((open) => !open)} className="min-h-9 rounded-full border border-cyan-500/30 px-3 text-xs font-semibold text-cyan-300">
+                {showMoreComponents ? "− Fewer components" : "+ More components"}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Service date"><input type="date" value={form.date} onChange={(event) => change("date", event.target.value)} className={GARAGE_INPUT_CLASS} /></Field>
+            <Field label="Invoice total (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.totalCost} onChange={(event) => change("totalCost", event.target.value)} placeholder="0.00" className={GARAGE_INPUT_CLASS} /></Field>
+          </div>
+        </section>
+
+        <button type="submit" disabled={busy || fileBusy} className="btn-primary min-h-[44px] w-full px-3 py-3"><Upload className="h-5 w-5" />{busy ? "Saving signed service record…" : "Stamp verified job to vehicle passport"}</button>
+        {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200">{error}</p>}
+
+        <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/40">
+          <button type="button" aria-expanded={showDetailedBreakdown} onClick={() => setShowDetailedBreakdown((open) => !open)} className="flex min-h-[44px] w-full items-center justify-between gap-3 p-3 text-left text-sm font-semibold">
+            <span>Add Detailed Breakdown &amp; Receipt {showDetailedBreakdown ? "˄" : "˅"}</span>
+          </button>
+          {showDetailedBreakdown && <div className="space-y-4 border-t border-slate-800 p-3">
+            <AIScanButton canScan={canScanInvoice} isAdmin={user?.role === "dev_admin"} onScanned={(fields, scannedImage) => {
+              setForm((current) => ({
+                ...current,
+                date: isoDateFromUkDate(fields.date) ?? current.date,
+                mileage: fields.mileage ? String(fields.mileage) : current.mileage,
+                notes: fields.workSummary || current.notes,
+                components: current.components.length ? current.components : fields.workSummary.split(/[;,.\n]+/).map((item) => item.trim()).filter(Boolean).slice(0, 12),
+                totalCost: fields.totalCost ? String(fields.totalCost) : current.totalCost,
+                ...(scannedImage ? { receipt: scannedImage } : {}),
+              }));
+            }} />
+            <Field label="17-character VIN"><input minLength={17} maxLength={17} value={form.vin} onChange={(event) => change("vin", event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17))} placeholder="VIN / chassis number" className={`${GARAGE_INPUT_CLASS} font-mono uppercase`} /><span className="text-right text-[11px] text-muted-foreground">{form.vin.length}/17</span></Field>
+            <label className="flex min-h-12 items-start gap-3 rounded-xl border border-slate-700/70 p-3 text-sm text-slate-200">
+              <input type="checkbox" checked={form.physicalVinInspected} onChange={(event) => change("physicalVinInspected", event.target.checked)} className="mt-0.5 h-4 w-4 accent-cyan-400" />
+              <span>I physically inspected the VIN on the vehicle and matched it to the registration and service record.</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Parts cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.partsCost} onChange={(event) => change("partsCost", event.target.value)} placeholder="0.00" className={GARAGE_INPUT_CLASS} /></Field>
+              <Field label="Labour cost (£)"><input type="number" min={0} step="0.01" max={1_000_000} inputMode="decimal" value={form.labourCost} onChange={(event) => change("labourCost", event.target.value)} placeholder="0.00" className={GARAGE_INPUT_CLASS} /></Field>
+            </div>
+            <Field label="Work performed / notes"><textarea rows={3} maxLength={2000} value={form.notes} onChange={(event) => change("notes", event.target.value)} placeholder="Describe the work carried out" className={GARAGE_INPUT_CLASS} /></Field>
+            <Field label="Advisories (optional)"><textarea rows={2} maxLength={2000} value={form.advisories} onChange={(event) => change("advisories", event.target.value)} placeholder="One advisory per line" className={GARAGE_INPUT_CLASS} /></Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="min-w-0 space-y-2">
+                <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
+                  <Camera className="h-5 w-5 shrink-0 text-cyan-400" /> Photo / Image
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachReceipt(event.target.files?.[0])} />
+                </label>
+                <p className="text-xs leading-snug text-muted-foreground">{fileBusy ? "Reading file…" : form.receipt ? "Receipt photo attached" : "Image stored privately on all tiers."}</p>
+                {form.receipt && <button type="button" onClick={() => change("receipt", undefined)} className="inline-flex min-h-[44px] min-w-[44px] items-center text-xs text-muted-foreground underline">Remove photo</button>}
+              </div>
+              <div className="min-w-0 space-y-2">
+                <label className="flex min-h-[72px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/60 p-3 text-center text-sm text-slate-200 hover:bg-slate-800/60">
+                  <FileText className="h-5 w-5 shrink-0 text-cyan-400" /> PDF Document
+                  <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={fileBusy || busy} onChange={(event) => void attachInvoice(event.target.files?.[0])} />
+                </label>
+                <p className="break-words text-xs leading-snug text-muted-foreground">{form.invoiceName ?? "PDF stored privately · 5 MB max."}</p>
+                {form.invoiceData && <button type="button" onClick={() => setForm((current) => {
+                  const { invoiceName: _invoiceName, invoiceData: _invoiceData, ...remaining } = current;
+                  return remaining;
+                })} className="inline-flex min-h-[44px] min-w-[44px] items-center text-xs text-muted-foreground underline">Remove invoice</button>}
+              </div>
+            </div>
+            {canScanInvoice && (form.invoiceData || form.receipt) && <button type="button" onClick={() => void scanInvoice()} disabled={scanBusy} className="btn-secondary min-h-11 w-full">
+              {scanBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{scanBusy ? "Scanning on this device…" : "Scan locally and suggest fields"}
+            </button>}
+            {scanMessage && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-950/20 p-3 text-sm text-amber-100">{scanMessage}</p>}
+            <p className="text-xs leading-relaxed text-muted-foreground">If the connection is unavailable, this form is saved as a local draft. A draft is not a service stamp until the server accepts it.</p>
+          </div>}
+        </section>
+        {draftStatus && <p role="status" className="rounded-lg border border-slate-700 bg-slate-950/50 p-3 text-xs text-slate-300">{draftStatus}</p>}
+        {queueStatus && <p role="status" className="rounded-lg border border-cyan-400/40 bg-cyan-950/50 p-3 text-sm text-cyan-50">{queueStatus}</p>}
       </form>
     </section>}
     {!canStamp && <div className="rounded-xl border border-amber-500/25 bg-amber-950/30 p-4 text-sm leading-relaxed text-amber-100">A server-approved workshop account with VAT verification and an active Garage Pro subscription is required to stamp service records.</div>}
