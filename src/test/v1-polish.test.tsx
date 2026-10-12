@@ -78,8 +78,8 @@ describe("V1 polish", () => {
     fireEvent.click(screen.getByRole("button", { name: /OEM Provenance Certificate/ }));
     await act(async () => { vi.advanceTimersByTime(1100); });
     const doc = container.querySelector(".passport-document")!;
-    expect(doc).toHaveTextContent("📄 No Service Records");
-    expect(doc).toHaveTextContent("💰 Recorded Spend: £0.00");
+    expect(doc).toHaveTextContent("No Service Records");
+    expect(doc).toHaveTextContent("Recorded Spend: £0.00");
     expect(doc).not.toHaveTextContent("Financial Summary");
     expect(doc).not.toHaveTextContent("No service records.");
   });

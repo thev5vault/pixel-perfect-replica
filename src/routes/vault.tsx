@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { History, Lock, Plus, RotateCcw, Zap } from "lucide-react";
+import { Lock, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ModalHeader } from "@/components/vault/ModalHeader";
@@ -45,15 +45,14 @@ function VaultPage() {
 
 function ProVault() {
   const { mods, vehicle } = useVault();
-  const [tab, setTab] = useState<"active" | "reverted">("active");
   const [adding, setAdding] = useState(false);
   const [reverting, setReverting] = useState<Modification | null>(null);
   const vehicleMods = (Array.isArray(mods) ? mods : []).filter((m) => m?.vrm === vehicle.vrm);
   const diagnosticLogs = vehicleMods.filter((m) => m.status === "reverted");
-  const list = tab === "reverted" ? diagnosticLogs : vehicleMods.filter((m) => m.status === "active");
+  const activeMods = vehicleMods.filter((m) => m.status === "active");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-40">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           <span className="rounded-lg bg-primary/15 p-1.5 text-primary glow">
@@ -64,42 +63,24 @@ function ProVault() {
         <p className="mt-1 text-sm text-muted-foreground">Every part, every gain, every reversal — on record.</p>
       </div>
 
-      <div className="grid grid-cols-2 rounded-xl border bg-card p-1">
-        {(
-          [
-            ["active", "Active Build", Zap],
-            ["reverted", "Diagnostic History", History],
-          ] as const
-        ).map(([k, label, Icon]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={cn(
-              "flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-all",
-              tab === k ? "bg-primary text-primary-foreground glow" : "text-muted-foreground",
-            )}
-          >
-            <Icon className="h-4 w-4" /> {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "active" && (
-        <button onClick={() => setAdding(true)} className="btn-primary w-full">
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Active Build</h2>
+        <button onClick={() => setAdding(true)} className="btn-primary min-h-[44px] w-full">
           <Plus className="h-5 w-5" /> Add Modification
         </button>
-      )}
-
-      <div className="space-y-3">
-        {(list || []).map((m) => (
+        {activeMods.map((m) => (
           <ModCard key={m.id} m={m} onRevert={() => setReverting(m)} />
         ))}
-        {list.length === 0 && (
-          <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-xl text-center text-slate-400 text-sm">
-            {tab === "active" ? "No active modifications. Your car is running stock." : "No diagnostic fault codes or scan logs recorded yet."}
-          </div>
-        )}
-      </div>
+        {activeMods.length === 0 && <div className="vault-card p-6 text-center text-sm text-muted-foreground">No active modifications. Your car is running stock.</div>}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Diagnostic History</h2>
+        <div className="space-y-3">
+          {diagnosticLogs.map((m) => <ModCard key={m.id} m={m} onRevert={() => setReverting(m)} />)}
+          {diagnosticLogs.length === 0 && <div className="vault-card p-6 text-center text-sm text-muted-foreground">No diagnostic fault codes or scan logs recorded yet.</div>}
+        </div>
+      </section>
 
       <AddModDialog open={adding} onOpenChange={setAdding} />
       <RevertDialog mod={reverting} onClose={() => setReverting(null)} />
@@ -108,56 +89,31 @@ function ProVault() {
 }
 
 function ModCard({ m, onRevert }: { m: Modification; onRevert: () => void }) {
+  const [expanded, setExpanded] = useState(false);
   const reverted = m.status === "reverted";
   return (
     <article className={cn("vault-card animate-vault-open p-4", reverted && "opacity-90")}>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap gap-1.5">
-            <Pill tone="primary">{m.category}</Pill>
-            {m.stage && <Pill tone="success">{m.stage}</Pill>}
-            {reverted && <Pill tone="warning">Reverted</Pill>}
-          </div>
-          <h3 className="mt-1.5 text-lg font-bold">{m.name}</h3>
-          {m.gains && (
-            <p className="flex items-center gap-1 font-display text-sm font-bold text-success">
-              <Zap className="h-3.5 w-3.5" /> {m.gains}
-            </p>
-          )}
-        </div>
-        {m.image && <Thumb src={m.image} alt={`${m.name} dyno sheet`} />}
+      <p className="break-words text-xs text-muted-foreground">{m.category} · Installed {fmtDate(m.installDate)} · {fmtMiles(m.installMileage)}</p>
+      <h3 className="mt-1 break-words text-lg font-bold hyphens-auto">{m.name}</h3>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {m.stage && <Pill tone="success">{m.stage}</Pill>}
+        {reverted && <Pill tone="warning">Reverted</Pill>}
+        {m.gains && <Pill tone="primary">{m.gains}</Pill>}
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-2 border-t pt-3 text-xs">
-        <div>
-          <dt className="text-muted-foreground">Installed</dt>
-          <dd className="font-semibold">
-            {fmtDate(m.installDate)} · {fmtMiles(m.installMileage)}
-          </dd>
-        </div>
-        {reverted && m.removalDate && (
-          <div>
-            <dt className="text-muted-foreground">Removed</dt>
-            <dd className="font-semibold text-warning">
-              {fmtDate(m.removalDate)} · {fmtMiles(m.removalMileage ?? 0)}
-            </dd>
-          </div>
-        )}
-      </dl>
-      {m.specs && <p className="mt-2 text-sm">{m.specs}</p>}
-      {m.tags && m.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {m.tags.map((t) => (
-            <Pill key={t}>{t}</Pill>
-          ))}
-        </div>
-      )}
-      {m.notes && <p className="mt-2 text-sm text-muted-foreground">{m.notes}</p>}
-      {m.invoice_data && <a href={m.invoice_data} download={m.invoice_name || "modification-invoice.pdf"} className="mt-2 inline-flex min-h-[44px] max-w-full items-center break-all text-sm text-cyan-300 underline underline-offset-2">PDF Document · {m.invoice_name || "Download evidence"}</a>}
-      {!reverted && !m.frozen_at && (
-        <button onClick={onRevert} className="btn-ghost mt-3 w-full text-sm">
-          <RotateCcw className="h-4 w-4" /> Revert to Stock
+      <div className="mt-3 flex items-center justify-between gap-3 border-t pt-2">
+        {reverted ? <span className="break-words text-xs font-semibold text-warning">Removed {m.removalDate ? `${fmtDate(m.removalDate)} · ${fmtMiles(m.removalMileage ?? 0)}` : ""}</span> : <span className="text-xs text-muted-foreground">Modification record</span>}
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)} className="flex min-h-[44px] min-w-[44px] shrink-0 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-3 text-xs font-semibold text-cyan-400">
+          {expanded ? "Hide Details ˄" : "Details ˅"}
         </button>
-      )}
+      </div>
+      {expanded && <div className="mt-3 space-y-2 rounded-xl border border-slate-800 bg-slate-950/80 p-3">
+        {m.specs && <p className="break-words text-sm hyphens-auto">{m.specs}</p>}
+        {m.tags?.length ? <div className="flex flex-wrap gap-1.5">{m.tags.map((tag) => <Pill key={tag}>{tag}</Pill>)}</div> : null}
+        {m.notes && <p className="break-words text-sm text-muted-foreground hyphens-auto">{m.notes}</p>}
+        {m.image && <Thumb src={m.image} alt={`${m.name} dyno sheet`} />}
+        {m.invoice_data && <a href={m.invoice_data} download={m.invoice_name || "modification-invoice.pdf"} className="inline-flex min-h-[44px] max-w-full items-center break-all text-sm text-cyan-300 underline underline-offset-2">PDF Document · {m.invoice_name || "Download evidence"}</a>}
+        {!reverted && !m.frozen_at && <button onClick={onRevert} className="btn-ghost min-h-[44px] w-full text-sm"><RotateCcw className="h-4 w-4" /> Revert to Stock</button>}
+      </div>}
     </article>
   );
 }

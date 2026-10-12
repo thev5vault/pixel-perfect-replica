@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, Wrench, Zap } from "lucide-react";
+import { BadgeCheck, ChevronDown, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { QRCodeSVG } from "qrcode.react";
@@ -68,7 +68,7 @@ function PassportPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-40">
       <div className="print:hidden"><PageHeader title="Export Passport" subtitle="Resale certificates that document your vehicle history." /></div>
       {!registrationVerified&&<div role="alert" className="rounded-xl border border-amber-400/30 bg-amber-950/20 p-4 text-sm leading-relaxed text-amber-100">{REVERIFICATION_NOTICE}<p className="mt-2 text-xs text-amber-100/70">Your timeline remains available, but public sharing and certified sales-pack exports stay locked until verification is complete.</p></div>}
       <button className="btn-primary w-full print:hidden" onClick={()=>setShareOpen(true)} disabled={!registrationVerified}><FileBadge className="h-4 w-4"/>{registrationVerified?"Sales pack & shareable buyer passport":"Re-verification required to share or export"}</button>
@@ -171,7 +171,7 @@ function Certificate({ cert }: { cert: Cert }) {
               </aside>
             </div>
             <div className="flex min-w-0 flex-col gap-2 print:hidden sm:flex-row">
-              <code className="field min-w-0 flex-1 truncate text-xs">{link || "No signed workshop record"}</code>
+              <code className="field min-w-0 flex-1 break-all text-xs">{link || "No signed workshop record"}</code>
               <button
                 disabled={!link}
                 onClick={() => {
@@ -227,8 +227,8 @@ function Certificate({ cert }: { cert: Cert }) {
               />
             : <section className="passport-section min-w-0 p-4" aria-label="Service History">
                 <h3 className="mb-3 font-bold">Service History</h3>
-                <div role="status" className="inline-flex max-w-full flex-nowrap items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2.5 text-[11px] font-semibold text-slate-800">
-                  <span>📄 No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>💰 Recorded Spend: £0.00</span>
+                <div role="status" className="flex max-w-full flex-wrap items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2.5 text-[11px] font-semibold text-slate-800">
+                  <span>No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>Recorded Spend: £0.00</span>
                 </div>
               </section>}
           <RecordCards
@@ -253,7 +253,7 @@ function Certificate({ cert }: { cert: Cert }) {
         <>
           {history.length > 0 && <section className="passport-section min-w-0 p-4" aria-labelledby="financial-summary-title">
             <h3 id="financial-summary-title" className="mb-3 font-bold">Financial Summary</h3>
-            <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid min-w-0 grid-cols-1 gap-2">
             {[
               ["Total Spend", total],
               ["Parts", partsTotal],
@@ -266,48 +266,7 @@ function Certificate({ cert }: { cert: Cert }) {
             ))}
             </div>
           </section>}
-          {history.map((s) => (
-            <section key={s.id} className="passport-section passport-service-record min-w-0 p-4">
-              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start">
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-xs text-muted-foreground">
-                    {s.category || "Service record"} · {fmtDate(s.date)}
-                  </p>
-                  <p className="mt-1 break-words text-sm text-muted-foreground">{s.garage} · {fmtMiles(s.mileage)}</p>
-                  <h3 className="passport-service-description mt-2 break-words font-bold hyphens-auto">{s.description}</h3>
-                  {s.fluids && <p className="break-words text-xs text-muted-foreground hyphens-auto">Fluids: {s.fluids}</p>}
-                </div>
-                {s.image && <div className="passport-receipt-image max-w-full self-start"><Thumb src={s.image} alt={`${s.description} receipt`} /></div>}
-              </div>
-              <div className="mt-3 min-w-0">
-                <h4 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-600">Parts Breakdown</h4>
-                <div className="space-y-2">
-                  {(s.parts ?? []).map((p, i) => (
-                    <div key={`${p.name}-${i}`} className="passport-part-card grid min-w-0 gap-1 rounded-lg border border-slate-200 bg-white/80 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] sm:items-center">
-                      <p className="min-w-0 break-words text-sm hyphens-auto">{p.name}</p>
-                      <p className="min-w-0 break-all font-mono text-xs">
-                        <span className="font-sans text-[10px] font-semibold uppercase tracking-wide text-slate-500">Manufacturer reference · </span>
-                        {p.partNo || "—"}
-                      </p>
-                    </div>
-                  ))}
-                  {!s.parts?.length && <p className="rounded-lg bg-white/80 p-3 text-sm text-slate-500">No part numbers logged.</p>}
-                </div>
-                <div className="passport-cost-breakdown mt-3 grid min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-3" role="group" aria-label="Itemized costs">
-                  {[
-                    ["Parts", s.partsCost ?? 0],
-                    ["Labour", s.labourCost ?? 0],
-                    ["Total", s.cost ?? 0],
-                  ].map(([label, amount]) => (
-                    <div key={label as string} className="passport-cost-card min-w-0 rounded-lg border border-slate-200 bg-white/80 p-2">
-                      <p className="break-words text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-                      <p className="break-words font-mono text-sm font-bold">£{(amount as number).toFixed(2)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ))}
+          {history.map((s) => <CertificateServiceCard key={s.id} service={s} />)}
         </>
       )}
 
@@ -316,39 +275,7 @@ function Certificate({ cert }: { cert: Cert }) {
           <section>
             <h3 className="mb-3 font-bold">Active Build Spec</h3>
             <div className="space-y-3">
-              {active.map((m) => (
-                <div key={m.id} className="passport-section p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap gap-1.5">
-                        <Pill tone="primary">{m.category}</Pill>
-                        {m.stage && <Pill tone="success">{m.stage}</Pill>}
-                      </div>
-                      <p className="mt-1 font-bold">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Fitted {fmtDate(m.installDate)} @ {fmtMiles(m.installMileage)}
-                      </p>
-                      {m.gains && <p className="font-display text-sm font-bold text-success">{m.gains}</p>}
-                      {m.specs && <p className="mt-1 text-sm">{m.specs}</p>}
-                    </div>
-                  </div>
-                  {m.image && (
-                    <div className="passport-dyno-image mt-3">
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dyno Curve Printout</p>
-                      <img src={m.image} alt={`${m.name} dyno curve`} className="passport-dyno-photo w-full rounded-lg border" />
-                    </div>
-                  )}
-                  {m.tags && m.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {m.tags.map((t) => (
-                        <Pill key={t}>
-                          <BadgeCheck className="h-3 w-3" /> {t}
-                        </Pill>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {active.map((m) => <MasterBuildCard key={m.id} modification={m} />)}
               {active.length === 0 && <p className="text-sm text-muted-foreground">Vehicle is running stock.</p>}
             </div>
           </section>
@@ -398,6 +325,7 @@ type PassportCardRow = {
 };
 
 function RecordCards({ title, rows, empty }: { title: string; rows: PassportCardRow[]; empty: string }) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   return (
     <section className="passport-section passport-record-section min-w-0 p-4">
       <h3 className="mb-2 font-bold">{title}</h3>
@@ -407,32 +335,86 @@ function RecordCards({ title, rows, empty }: { title: string; rows: PassportCard
         <div className="passport-record-list min-w-0 space-y-2" role="list">
           {rows.map((row) => (
             <article key={row.key} className="passport-record-card min-w-0 rounded-xl border border-slate-200 bg-white/80 p-3" role="listitem">
-              <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 flex-1">
-                  <h4 className="break-words font-bold hyphens-auto">{row.title}</h4>
-                  {row.date && <p className="mt-0.5 break-words text-xs text-slate-600">{row.date}</p>}
-                </div>
-                {row.badge && <span className="max-w-full self-start break-words rounded-full border border-cyan-800/20 bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-900">{row.badge}</span>}
+              <button type="button" aria-expanded={expandedKey === row.key} onClick={() => setExpandedKey((current) => current === row.key ? null : row.key)} className="flex min-h-[44px] w-full min-w-0 flex-col gap-1.5 text-left">
+                <span className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                  {row.date && <span className="break-words">{row.date}</span>}
+                  {row.badge && <span className="break-words rounded-full border border-cyan-800/20 bg-cyan-50 px-2 py-0.5 font-semibold text-cyan-900">{row.badge}</span>}
+                </span>
+                <span className="w-full break-words font-bold hyphens-auto">{row.title}</span>
+                {row.provider && <span className="w-full break-words text-sm text-slate-700 hyphens-auto">{row.provider}</span>}
+                <span className="flex w-full items-center justify-between gap-2 border-t border-slate-200 pt-1.5 text-xs">
+                  {row.summaryLabel && <span className="break-words text-slate-500">{row.summaryLabel}</span>}
+                  <span className="ml-auto inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 font-semibold text-cyan-400">
+                    {expandedKey === row.key ? "Hide Details ˄" : "Details ˅"}
+                    <ChevronDown aria-hidden="true" className={cn("h-3.5 w-3.5", expandedKey === row.key && "rotate-180")} />
+                  </span>
+                </span>
+              </button>
+              <div className={`mt-2 space-y-2 rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-slate-100 ${expandedKey === row.key ? "block" : "hidden print:block"}`}>
+                {row.summary && <div><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{row.summaryLabel ?? "Details"}</p><p className="mt-0.5 break-words text-sm hyphens-auto">{row.summary}</p></div>}
+                {row.details?.map((detail) => <div key={detail.label}><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{detail.label}</p><p className="mt-0.5 break-words text-xs hyphens-auto">{detail.value}</p></div>)}
               </div>
-              {row.provider && <p className="mt-2 min-w-0 break-words text-sm text-slate-700 hyphens-auto">{row.provider}</p>}
-              {row.summary && (
-                <div className="mt-2 min-w-0 border-t border-slate-200 pt-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{row.summaryLabel ?? "Details"}</p>
-                  <p className="mt-0.5 min-w-0 break-words text-sm text-slate-800 hyphens-auto">{row.summary}</p>
-                </div>
-              )}
-              {row.details?.map((detail) => (
-                <div key={detail.label} className="mt-2 min-w-0 rounded-lg bg-slate-50 p-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{detail.label}</p>
-                  <p className="mt-0.5 min-w-0 break-words text-xs text-slate-700 hyphens-auto">{detail.value}</p>
-                </div>
-              ))}
             </article>
           ))}
         </div>
       )}
     </section>
   );
+}
+
+function CertificateServiceCard({ service }: { service: ServiceRecord }) {
+  const [expanded, setExpanded] = useState(false);
+  return <section className="passport-section passport-service-record min-w-0 p-4">
+    <p className="break-words text-xs text-muted-foreground">{service.category || "Service record"} · {fmtDate(service.date)} · {fmtMiles(service.mileage)}</p>
+    <h3 className="passport-service-description mt-1 break-words font-bold hyphens-auto">{service.description}</h3>
+    <p className="mt-1 break-words text-sm text-muted-foreground hyphens-auto">{service.garage}</p>
+    <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2">
+      <span className="break-words text-xs font-semibold">£{(service.cost ?? 0).toFixed(2)} total</span>
+      <button type="button" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)} className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-3 text-xs font-semibold text-cyan-400">
+        {expanded ? "Hide Details ˄" : "Details ˅"}
+      </button>
+    </div>
+    <div className={`mt-2 space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-slate-100 ${expanded ? "block" : "hidden print:block"}`}>
+      {service.fluids && <p className="break-words text-xs hyphens-auto">Fluids: {service.fluids}</p>}
+      <h4 className="text-xs font-bold uppercase tracking-wider">Parts Breakdown</h4>
+      <div className="space-y-2">
+        {(service.parts ?? []).map((part, index) => <div key={`${part.name}-${index}`} className="grid min-w-0 gap-1 rounded-lg border border-slate-700 bg-slate-900/80 p-3">
+          <p className="break-words text-sm hyphens-auto">{part.name}</p>
+          <p className="break-all font-mono text-xs"><span className="font-sans text-[10px] font-semibold uppercase tracking-wide text-slate-400">Manufacturer reference · </span>{part.partNo || "—"}</p>
+        </div>)}
+        {!service.parts?.length && <p className="text-sm text-slate-300">No part numbers logged.</p>}
+      </div>
+      <div className="grid min-w-0 grid-cols-1 gap-2" role="group" aria-label="Itemized costs">
+        {([["Parts", service.partsCost ?? 0], ["Labour", service.labourCost ?? 0], ["Total", service.cost ?? 0]] as const).map(([label, amount]) => <div key={label} className="min-w-0 rounded-lg border border-slate-700 bg-slate-900/80 p-2">
+          <p className="break-words text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="break-words font-mono text-sm font-bold">£{amount.toFixed(2)}</p>
+        </div>)}
+      </div>
+      {service.image && <div className="passport-receipt-image max-w-full"><Thumb src={service.image} alt={`${service.description} receipt`} /></div>}
+    </div>
+  </section>;
+}
+
+function MasterBuildCard({ modification }: { modification: ReturnType<typeof useVault>["mods"][number] }) {
+  const [expanded, setExpanded] = useState(false);
+  return <article className="passport-section min-w-0 p-4">
+    <p className="break-words text-xs text-muted-foreground">{modification.category} · Fitted {fmtDate(modification.installDate)} · {fmtMiles(modification.installMileage)}</p>
+    <h4 className="mt-1 break-words font-bold hyphens-auto">{modification.name}</h4>
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {modification.stage && <Pill tone="success">{modification.stage}</Pill>}
+      {modification.gains && <Pill tone="primary">{modification.gains}</Pill>}
+    </div>
+    <div className="mt-2 flex justify-end border-t border-slate-200 pt-2">
+      <button type="button" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 px-3 text-xs font-semibold text-cyan-400">
+        {expanded ? "Hide Details ˄" : "Details ˅"}
+      </button>
+    </div>
+    <div className={`mt-2 space-y-2 rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-slate-100 ${expanded ? "block" : "hidden print:block"}`}>
+      {modification.specs && <p className="break-words text-sm hyphens-auto">{modification.specs}</p>}
+      {modification.image && <div className="passport-dyno-image"><p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-300">Dyno Curve Printout</p><img src={modification.image} alt={`${modification.name} dyno curve`} className="passport-dyno-photo w-full rounded-lg border" /></div>}
+      {modification.tags?.length ? <div className="flex flex-wrap gap-1.5">{modification.tags.map((tag) => <Pill key={tag}><BadgeCheck className="h-3 w-3" /> {tag}</Pill>)}</div> : null}
+    </div>
+  </article>;
 }
 
 function Redact({ children, delay }: { children: string; delay: number }) {

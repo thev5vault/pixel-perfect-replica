@@ -24,11 +24,10 @@ function renderVault(mods: unknown) {
 describe("Diagnostic History", () => {
   it.each([undefined, null, [], { legacy: true }])("shows an empty state safely for %j records", (mods) => {
     renderVault(mods);
-    fireEvent.click(screen.getByRole("button", { name: "Diagnostic History" }));
+    expect(screen.getByRole("heading", { name: "Diagnostic History" })).toBeInTheDocument();
     expect(screen.getByText("No diagnostic fault codes or scan logs recorded yet.")).toHaveClass(
-      "p-6", "bg-slate-900/60", "border-slate-800", "rounded-xl",
+      "p-6", "text-center",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Active Build" }));
     expect(screen.getByText("No active modifications. Your car is running stock.")).toBeInTheDocument();
   });
 
@@ -45,8 +44,10 @@ describe("Diagnostic History", () => {
       gains: "",
     };
     renderVault([record, { ...record, id: "other-car", vrm: "OTHER", name: "Other vehicle part" }]);
-    fireEvent.click(screen.getByRole("button", { name: "Diagnostic History" }));
+    expect(screen.getByRole("heading", { name: "Diagnostic History" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Reverted intake" })).toBeInTheDocument();
+    expect(screen.queryByText("Removed after a P0101 scan.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Details ˅" }));
     expect(screen.getByText("Removed after a P0101 scan.")).toBeInTheDocument();
     expect(screen.queryByText("Other vehicle part")).not.toBeInTheDocument();
     expect(screen.queryByText("No diagnostic fault codes or scan logs recorded yet.")).not.toBeInTheDocument();
