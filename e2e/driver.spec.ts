@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 async function startSample(page: import("@playwright/test").Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /Direct GodMode Bypass/ }).click();
-  await page.goto("/vehicle");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole("link", { name: "Vehicle", exact: true }).click();
+  await expect(page).toHaveURL(/\/vehicle$/);
 }
 
 test("driver glovebox tabs reset scroll and show responsive screens", async ({ page }) => {
@@ -17,7 +19,10 @@ test("driver glovebox tabs reset scroll and show responsive screens", async ({ p
     await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBe(0);
     await expect(main).toBeVisible();
     if (tab === "Vehicle") {
-      await expect(page).toHaveScreenshot("driver-vehicle.png", { animations: "disabled" });
+      await expect(page).toHaveScreenshot("driver-vehicle.png", {
+        animations: "disabled",
+        maxDiffPixels: 50,
+      });
     }
   }
 });

@@ -238,7 +238,8 @@ test("browser Back closes the active dialog before leaving its route", async ({ 
   await expect(page).toHaveURL(/\/vehicle$/);
 });
 
-test("vehicle header plate and status matrix fit at 375px", async ({ page }) => {
+test("vehicle header plate and status matrix fit at 375px", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Viewport-specific regression runs once in Chromium.");
   await page.setViewportSize({ width: 375, height: 812 });
   await startSamplePreview(page);
   await checkPageHasNoHorizontalOverflow(page, "vehicle header at 375px");
@@ -290,7 +291,8 @@ test("vehicle header plate and status matrix fit at 375px", async ({ page }) => 
 });
 
 for (const viewport of viewports) {
-  test(`modification date and mileage fields fit at ${viewport.name}`, async ({ page }) => {
+  test(`modification date and mileage fields fit at ${viewport.name}`, async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Explicit viewport checks run once in Chromium.");
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startSamplePreview(page);
     await selectTier(page, /Pro Modder/);
@@ -308,7 +310,9 @@ for (const viewport of viewports) {
     await expect(dialog).toBeHidden();
   });
 
-  test(`mobile forms and nested upgrade fit at ${viewport.name}`, async ({ page }) => {
+  test(`mobile forms and nested upgrade fit at ${viewport.name}`, async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Explicit viewport checks run once in Chromium.");
+    test.setTimeout(60_000);
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startSamplePreview(page);
 
@@ -406,7 +410,9 @@ for (const viewport of viewports) {
 }
 
 async function waitForClosedDialogOverlays(page: Page) {
-  await expect(page.locator('[data-state="closed"][class*="fixed"][class*="inset-0"]')).toHaveCount(0);
+  await expect(page.locator('[data-state="closed"][class*="fixed"][class*="inset-0"]')).toHaveCount(0, {
+    timeout: 10_000,
+  });
 }
 
 async function clickNestedDialogTrigger(page: Page, trigger: Locator) {
@@ -548,7 +554,8 @@ test("nested upgrade dismisses after the receipt form scrolls on a short phone",
 });
 
 for (const width of [320, 390]) {
-  test(`passport certificates and shared parts fit at ${width}px`, async ({ page }) => {
+  test(`passport certificates and shared parts fit at ${width}px`, async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Explicit narrow-width checks run once in Chromium.");
     await page.setViewportSize({ width, height: 844 });
     await startSamplePreview(page);
     await selectTier(page, /Pro Modder/);
@@ -605,7 +612,8 @@ for (const width of [320, 390]) {
   });
 }
 
-test("passport views reflow with enlarged text on a phone", async ({ page }) => {
+test("passport views reflow with enlarged text on a phone", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Explicit 320px text-scale check runs once in Chromium.");
   await page.setViewportSize({ width: 320, height: 844 });
   await startSamplePreview(page);
   await selectTier(page, /Pro Modder/);

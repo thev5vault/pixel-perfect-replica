@@ -79,4 +79,4 @@ After making ANY code changes, you must always run and report results for:
 1. `npm test` (All 178+ unit and integration tests must pass cleanly)
 2. `npx tsc --noEmit` (Must compile with ZERO TypeScript type errors)
 3. `npm run build` (Must complete production bundle compilation successfully)
-4. `npm run test:e2e` (Playwright Chromium, iPhone Safari/WebKit, and iPad Mini suites must pass before release; update visual baselines only for intentional UI changes)
+4. `npx playwright test` (also available as `npm run test:e2e`; Playwright Chromium, iPhone Safari/WebKit, and iPad Mini suites must pass before release; update visual baselines only for intentional UI changes)

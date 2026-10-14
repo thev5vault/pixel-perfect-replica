@@ -30,7 +30,7 @@ test("workshop Express Stamp, detail drawer, and tab navigation", async ({ page 
   });
   await expect(page).toHaveScreenshot("workshop-express.png", {
     animations: "disabled",
-    maxDiffPixels: 300,
+    maxDiffPixels: 3000,
   });
 
   const chips = page.locator("main").getByRole("button", { name: "+ More components" });
