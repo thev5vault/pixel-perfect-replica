@@ -42,6 +42,35 @@ describe("vehicle lookup data", () => {
     });
   });
 
+  it("sanitizes OAuth environment values and logs Microsoft 401 diagnostics without credentials", async () => {
+    const clientSecret = "test~.secret+with%&symbols";
+    vi.stubEnv("DVSA_API_KEY", " ' api-key-test ' ");
+    vi.stubEnv("DVSA_CLIENT_ID", "\" test-client \"");
+    vi.stubEnv("DVSA_CLIENT_SECRET", `'  ${clientSecret}  '`);
+    vi.stubEnv("DVSA_SCOPE_URL", "\" https://tapi.dvsa.gov.uk/.default \"");
+    vi.stubEnv("DVSA_TOKEN_URL", "\" https://login.microsoftonline.com/test/oauth2/v2.0/token \"");
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: "invalid_client",
+      error_description: `Client rejected secret ${clientSecret}`,
+      error_codes: [7000215],
+    }), { status: 401 }));
+    vi.stubGlobal("fetch", fetcher);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(lookupRegistration("AB14CDE")).rejects.toThrow("DVSA authentication lookup failed (401)");
+
+    expect(fetcher.mock.calls[0]?.[0]).toBe("https://login.microsoftonline.com/test/oauth2/v2.0/token");
+    const params = new URLSearchParams(String(fetcher.mock.calls[0]?.[1]?.body));
+    expect(params.get("client_id")).toBe("test-client");
+    expect(params.get("client_secret")).toBe(clientSecret);
+    expect(params.get("scope")).toBe("https://tapi.dvsa.gov.uk/.default");
+    const diagnostic = JSON.stringify(consoleError.mock.calls);
+    expect(diagnostic).toContain("invalid_client");
+    expect(diagnostic).toContain("7000215");
+    expect(diagnostic).not.toContain(clientSecret);
+    expect(diagnostic).not.toContain("api-key-test");
+  });
+
   it("switches to manual entry for incomplete API credentials", async () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("MOT_HISTORY_CLIENT_ID", "example-test-id");

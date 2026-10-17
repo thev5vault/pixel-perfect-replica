@@ -9,6 +9,22 @@ let legacyTokenCache: { token: string; expires: number } | undefined;
 let dvsaTokenCache: { token: string; expires: number } | undefined;
 let dvsaTokenRequest: Promise<string> | undefined;
 
+function cleanDvsaEnv(value: string | undefined): string {
+  return (value ?? "").trim().replace(/^["']|["']$/g, "").trim();
+}
+
+function redactDvsaDiagnostic(value: unknown, secrets: string[]): string | undefined {
+  if (typeof value !== "string") return undefined;
+  let safe = value.slice(0, 1200);
+  for (const secret of secrets) {
+    if (!secret) continue;
+    safe = safe.split(secret).join("[REDACTED]");
+    const encoded = new URLSearchParams({ value: secret }).toString().slice("value=".length);
+    safe = safe.split(encoded).join("[REDACTED]");
+  }
+  return safe;
+}
+
 async function jsonRequest<T>(url: string, init: RequestInit, provider: string): Promise<T> {
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
   if (!response.ok) {
@@ -39,10 +55,10 @@ async function motToken() {
 async function dvsaAccessToken() {
   if (dvsaTokenCache && dvsaTokenCache.expires > Date.now()) return dvsaTokenCache.token;
   if (dvsaTokenRequest) return dvsaTokenRequest;
-  const tokenUrl = process.env["DVSA_TOKEN_URL"];
-  const clientId = process.env["DVSA_CLIENT_ID"];
-  const clientSecret = process.env["DVSA_CLIENT_SECRET"];
-  const scope = process.env["DVSA_SCOPE_URL"];
+  const tokenUrl = cleanDvsaEnv(process.env["DVSA_TOKEN_URL"]);
+  const clientId = cleanDvsaEnv(process.env["DVSA_CLIENT_ID"]);
+  const clientSecret = cleanDvsaEnv(process.env["DVSA_CLIENT_SECRET"]);
+  const scope = cleanDvsaEnv(process.env["DVSA_SCOPE_URL"]);
   if (!tokenUrl || !clientId || !clientSecret || !scope) {
     throw new Error("DVSA OAuth configuration is incomplete.");
   }
@@ -55,21 +71,38 @@ async function dvsaAccessToken() {
   tokenParams.append("client_secret", clientSecret);
   tokenParams.append("scope", scope);
   dvsaTokenRequest = (async () => {
-    const response = await jsonRequest<{ access_token: string; expires_in: number }>(
-      tokenUrl,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-        body: tokenParams.toString(),
-      },
-      "DVSA authentication",
-    );
-    if (!response.access_token || !Number.isFinite(response.expires_in)) {
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: tokenParams.toString(),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) {
+      if (response.status === 400 || response.status === 401) {
+        const body: unknown = await response.json().catch(() => null);
+        const detail = body && typeof body === "object" ? body as Record<string, unknown> : {};
+        const secrets = [clientId, clientSecret, tokenUrl, scope];
+        const error = redactDvsaDiagnostic(detail["error"], secrets);
+        const errorDescription = redactDvsaDiagnostic(detail["error_description"], secrets);
+        const errorCodes = Array.isArray(detail["error_codes"])
+          ? detail["error_codes"].filter((code): code is number => typeof code === "number").slice(0, 10)
+          : undefined;
+        console.error("[DVSA OAuth] Token request rejected", JSON.stringify({
+          status: response.status,
+          ...(error ? { error } : {}),
+          ...(errorDescription ? { error_description: errorDescription } : {}),
+          ...(errorCodes ? { error_codes: errorCodes } : {}),
+        }));
+      }
+      throw new Error(`DVSA authentication lookup failed (${response.status}). Please check API configuration or try again later.`);
+    }
+    const tokenResponse = await response.json() as { access_token?: string; expires_in?: number };
+    if (!tokenResponse.access_token || !Number.isFinite(tokenResponse.expires_in)) {
       throw new Error("DVSA authentication returned an invalid access token.");
     }
-    const lifetimeSeconds = Math.min(response.expires_in, 50 * 60);
-    dvsaTokenCache = { token: response.access_token, expires: Date.now() + Math.max(1, lifetimeSeconds - 30) * 1000 };
-    return response.access_token;
+    const lifetimeSeconds = Math.min(tokenResponse.expires_in!, 50 * 60);
+    dvsaTokenCache = { token: tokenResponse.access_token, expires: Date.now() + Math.max(1, lifetimeSeconds - 30) * 1000 };
+    return tokenResponse.access_token;
   })();
   try {
     return await dvsaTokenRequest;
@@ -303,7 +336,8 @@ async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehic
 /** Use official DVSA data when credentials are present; samples remain clearly labelled. */
 export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
   const vrm = normalizeRegistration(inputVrm);
-  const dvsaConfigured = Boolean(process.env["DVSA_API_KEY"]);
+  const dvsaApiKey = cleanDvsaEnv(process.env["DVSA_API_KEY"]);
+  const dvsaConfigured = Boolean(dvsaApiKey);
   if (process.env["GOV_API_ENABLED"] !== "true" && !dvsaConfigured) {
     const supplied = suppliedVehicleRecords[vrm];
     if (supplied) {
@@ -316,7 +350,7 @@ export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehic
     return lookupMockRegistration(vrm);
   }
 
-  const dvsaKey = process.env["DVSA_API_KEY"];
+  const dvsaKey = dvsaApiKey;
   if (dvsaKey) {
     try {
       return await lookupDvsa(vrm, dvsaKey);

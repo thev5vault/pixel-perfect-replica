@@ -40,7 +40,7 @@ failure. The current official API host is `history.mot.api.gov.uk`; the `.defaul
 OAuth scope uses `tapi.dvsa.gov.uk`.
 
 **Why:** Official DVSA documentation distinguishes the API host from its OAuth
-scope, and the live token endpoint returned 401 with the correctly encoded request.
+scope; HTTP 401s can occur even when form encoding is correct.
 
 **How to apply:** Keep credentials server-only, retain the documented API host,
 and ask the workspace owner to refresh/check the tenant-specific credentials rather
