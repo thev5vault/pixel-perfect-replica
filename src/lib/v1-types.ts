@@ -16,6 +16,7 @@ export interface PublicPassport {
   public_url: string;
   is_sample: boolean;
   published: boolean;
+  public_dvsa_only?: boolean;
   buyer_report_unlocked?: boolean;
 }
 export interface InvestorMetrics {

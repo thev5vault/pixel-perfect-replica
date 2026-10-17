@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { BadgeCheck, ChevronDown, Copy, Download, EyeOff, FileBadge, Gauge, Loader2, LockKeyhole, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -45,6 +45,11 @@ const CERTS: { id: Cert; title: string; tier: string; price: string; icon: typeo
 ];
 
 function PassportPage() {
+  if (typeof window !== "undefined" && /^\/passport\/[^/]+(?:\/full)?\/?$/.test(window.location.pathname)) return <Outlet />;
+  return <PassportExportPage />;
+}
+
+function PassportExportPage() {
   const { role } = useVault();
   const account = useAccount();
   const [cert, setCert] = useState<Cert | null>(null);

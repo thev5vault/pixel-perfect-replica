@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { passportData } from "@/lib/passport-data";
+import { dvsaPublicPassport, passportData } from "@/lib/passport-data";
 import { salesReportPdf } from "@/lib/pdf-reports";
 import type { UserAccount } from "@/lib/account-types";
 import type { PublicPassport } from "@/lib/v1-types";
@@ -7,7 +7,7 @@ import type { Vehicle, ServiceRecord, Modification } from "@/lib/vault-store";
 import { pool } from "./db";
 import { currentUser, serviceRow } from "./accounts";
 import { requestOrigin } from "./billing";
-import { samples } from "./dvla";
+import { lookupRegistration, samples } from "./dvla";
 import { sampleAccount } from "@/lib/sample-account";
 import { fulfillSalesPack } from "./sales-fulfillment";
 import { stripeClient } from "./stripe-client";
@@ -51,12 +51,51 @@ export async function publicPassport(inputVrm: string, sample = false): Promise<
     return { ...passportData(samples[vrm]!, fixture.services.filter(s=>s.vrm===vrm), fixture.mods.filter(m=>m.vrm===vrm), requestOrigin(), true), published: true };
   }
   const row = (await pool.query("SELECT v.*,u.subscription_tier FROM vehicles v LEFT JOIN user_accounts u ON u.id=v.owner_user_id WHERE v.vrm=$1", [vrm])).rows[0];
-  if (!row || row.is_sample || row.status !== "approved" || row.verification_state !== "VERIFIED") throw new Error("This vehicle has no shared, verified public passport.");
+  if (!row || row.is_sample || row.status !== "approved" || row.verification_state !== "VERIFIED") {
+    try {
+      const { vehicle } = await lookupRegistration(vrm);
+      if (vehicle.motHistorySource === "official" && vehicle.motHistory?.length) {
+        if (row?.id) {
+          await pool.query("UPDATE vehicles SET data=data || '{\"public_dvsa_enabled\":true}'::jsonb WHERE id=$1", [row.id]);
+        }
+        return dvsaPublicPassport(vehicle, requestOrigin());
+      }
+    } catch {
+      // If live official data is unavailable, do not substitute sample data on public routes.
+    }
+    throw new Error("This vehicle has no shared, verified public passport.");
+  }
+  let vehicleData = row.data as Vehicle;
+  let dvsaVerified = vehicleData.motHistorySource === "official" && Boolean(vehicleData.motHistory?.length);
+  if (!dvsaVerified) {
+    try {
+      const { vehicle: liveVehicle } = await lookupRegistration(vrm);
+      if (liveVehicle.motHistorySource === "official" && liveVehicle.motHistory?.length) {
+        vehicleData = { ...vehicleData, ...liveVehicle, vrm: row.vrm, vin: row.vin, public_dvsa_enabled: true };
+        await pool.query("UPDATE vehicles SET data=$1::jsonb WHERE id=$2", [JSON.stringify(vehicleData), row.id]);
+        dvsaVerified = true;
+      }
+    } catch {
+      // A failed live lookup never turns keeper-supplied values into public government data.
+    }
+  }
   if (!row.public_enabled) {
-    // Authenticated keeper preview is allowed; a guest receives no private data.
-    const user = await currentUser();
-    await ownerSnapshot(vrm,user);
-    return snapshot(vrm,user.subscription_tier!=="free");
+    try {
+      const user = await currentUser();
+      if (user.id === row.owner_user_id || user.role === "dev_admin") {
+        await ownerSnapshot(vrm,user);
+        return snapshot(vrm,user.subscription_tier!=="free");
+      }
+    } catch {
+      // Anonymous public DVSA view below remains restricted to official data only.
+    }
+    if (dvsaVerified && (vehicleData.public_dvsa_enabled || vehicleData.motHistorySource === "official")) {
+      if (!vehicleData.public_dvsa_enabled) {
+        await pool.query("UPDATE vehicles SET data=data || '{\"public_dvsa_enabled\":true}'::jsonb WHERE id=$1", [row.id]);
+      }
+      return dvsaPublicPassport({ ...vehicleData, vrm: row.vrm, public_dvsa_enabled: true }, requestOrigin());
+    }
+    throw new Error("This vehicle has no shared, verified public passport.");
   }
   try {
     const buyer = await currentUser();

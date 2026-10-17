@@ -108,6 +108,7 @@ export interface Vehicle {
   odometerAvailable?: boolean | undefined;
   motHistory?: MotReading[];
   motHistorySource?: "official" | "demo" | "user-provided" | undefined;
+  public_dvsa_enabled?: boolean | undefined;
   source?: "demo" | "official" | "user-provided" | undefined;
   owner_user_id?: string | null;
   status?: "approved" | "pending" | "rejected";

@@ -46,14 +46,17 @@ scope; HTTP 401s can occur even when form encoding is correct.
 and ask the workspace owner to refresh/check the tenant-specific credentials rather
 than switching hosts or masking the failure with unverified data.
 
-Public passport aliases must reuse the existing keeper-sharing and verification
-checks. Registration-only access must not expose private owner service history or
-workshop stamps.
+Public passport aliases may expose verified DVSA vehicle specifications and MOT
+history to guests, but must never include keeper-entered service records, workshop
+stamps, parts, receipts, VIN, V5C references, or tax/account details unless the
+keeper separately enables the broader buyer-passport share.
 
-**Why:** Buyer reports contain keeper-supplied history beyond public MOT data.
+**Why:** The user explicitly enabled public DVSA viewing while retaining a separate
+consent boundary for private owner/workshop history.
 
-**How to apply:** Keep public route aliases pointed at the guarded passport service;
-do not add an unprotected VRM query that returns private passport records.
+**How to apply:** Keep `/passport/:vrm` and `/v/:vrm` on the public passport service;
+return a DVSA-only snapshot to guests by default, and reserve full snapshots for
+the existing keeper share and purchase checks.
 
 A paid buyer report must be tied to the purchasing account and only be offered
 after the keeper has enabled sharing for a verified vehicle.

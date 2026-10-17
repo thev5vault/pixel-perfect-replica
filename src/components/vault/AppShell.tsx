@@ -38,7 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const signed = Boolean(account?.signedIn && account.state);
-   const isPublic = isAuthEntry(path) || path.startsWith("/verify") || path.startsWith("/v/");
+   const isPublicPassportAlias = /^\/passport\/[^/]+\/?$/.test(path);
+   const isPublic = isAuthEntry(path) || path.startsWith("/verify") || path.startsWith("/v/") || isPublicPassportAlias;
   const user = account?.state?.user;
    const role = account?.state?.development_role ?? (user?.role === "dev_admin" ? "superadmin" : user?.role === "verified_garage" ? "Garage" : user?.subscription_tier === "pro_modder" ? "Pro" : user?.subscription_tier === "pro_diy" ? "DIY" : "Owner");
    const isDeveloper = user?.role === "dev_admin";

@@ -53,28 +53,29 @@ function PublicBuyerPassport() {
     }
   }
   return <main className="mx-auto min-h-[100dvh] w-full max-w-5xl space-y-5 px-4 pb-28 pt-6 sm:px-6 sm:pt-10">
-    <header className="flex items-center justify-between gap-3 border-b border-border pb-4">
-      <div><p className="font-display text-lg font-extrabold tracking-tight">V5Vault</p><p className="text-xs text-muted-foreground">Buyer passport · private vehicle history</p></div>
-      <Pill tone={passport?.is_sample ? "warning" : "primary"}>{passport?.is_sample || sample ? "Development sample" : "Read-only buyer view"}</Pill>
+      <header className="flex items-center justify-between gap-3 border-b border-border pb-4">
+      <div><p className="font-display text-lg font-extrabold tracking-tight">V5Vault</p><p className="text-xs text-muted-foreground">Buyer passport · public vehicle record</p></div>
+      <Pill tone={passport?.is_sample ? "warning" : "primary"}>{passport?.is_sample || sample ? "Development sample" : passport?.public_dvsa_only ? "Public DVSA record" : "Read-only buyer view"}</Pill>
     </header>
     {loading && <div role="status" className="space-y-4"><div className="h-48 animate-pulse rounded-2xl bg-muted/60"/><div className="h-60 animate-pulse rounded-2xl bg-muted/60"/><div className="h-40 animate-pulse rounded-2xl bg-muted/60"/></div>}
     {error && <section className="vault-card p-6" role="alert"><AlertTriangle className="h-7 w-7 text-warning"/><h1 className="mt-3 text-xl font-bold">Passport unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error}</p><p className="mt-4 text-xs text-muted-foreground">Confirm the public link with the vehicle keeper. This page cannot unlock a private passport.</p></section>}
     {passport && <>
       {(passport.is_sample || sample || passport.vehicle.source === "demo") && <div className="rounded-xl border border-warning/35 bg-warning/10 p-4 text-sm"><strong className="text-warning">Development sample — not a live vehicle record.</strong><p className="mt-1 text-muted-foreground">Sample material is for interface demonstration only. It is not official government data or certification.</p></div>}
-      {!passport.published && !passport.is_sample && <div className="rounded-xl border border-warning/35 bg-warning/10 p-4 text-sm">This snapshot is private to the owner. A public buyer link has not been enabled.</div>}
+      {!passport.published && !passport.is_sample && !passport.public_dvsa_only && <div className="rounded-xl border border-warning/35 bg-warning/10 p-4 text-sm">This snapshot is private to the owner. A public buyer link has not been enabled.</div>}
       <section className="vault-card relative overflow-hidden p-5 sm:p-8">
         <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-primary/10"/>
-        <div className="relative flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Vehicle record / {passport.published ? "shared by keeper" : "owner preview"}</p><h1 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">{passport.vehicle.make} {passport.vehicle.model}</h1><p className="mt-2 text-sm text-muted-foreground">{passport.vehicle.year ?? "Year not supplied"}{passport.vehicle.colour ? ` · ${passport.vehicle.colour}` : ""}{passport.vehicle.fuelType ? ` · ${passport.vehicle.fuelType}` : ""}</p></div><Plate vrm={passport.vehicle.vrm} size="lg"/></div>
+         <div className="relative flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Vehicle record / {passport.public_dvsa_only ? "public DVSA record" : passport.published ? "shared by keeper" : "owner preview"}</p><h1 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">{passport.vehicle.make} {passport.vehicle.model}</h1><p className="mt-2 text-sm text-muted-foreground">{passport.vehicle.year ?? "Year not supplied"}{passport.vehicle.colour ? ` · ${passport.vehicle.colour}` : ""}{passport.vehicle.fuelType ? ` · ${passport.vehicle.fuelType}` : ""}</p></div><Plate vrm={passport.vehicle.vrm} size="lg"/></div>
         <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat icon={<Gauge/>} label="Current mileage" value={passport.vehicle.odometerAvailable === false ? "Not supplied" : fmtMiles(passport.vehicle.odometer)}/>
+           <Stat icon={<Gauge/>} label="Current mileage" value={passport.vehicle.odometerAvailable === false ? "Not supplied" : fmtMiles(passport.vehicle.odometer)}/>
           <Stat icon={<CalendarDays/>} label="First registered" value={passport.vehicle.registrationDate ? fmtDate(passport.vehicle.registrationDate) : "Not supplied"}/>
           <Stat icon={<CalendarDays/>} label="MOT expiry" value={passport.vehicle.motExpiry ? fmtDate(passport.vehicle.motExpiry) : "Not supplied"}/>
-          <Stat icon={<Wrench/>} label="Service records" value={String(passport.services.length)}/>
-          <Stat icon={<BadgeCheck/>} label="Workshop stamps" value={String(passport.verified_stamp_count)}/>
+           <Stat icon={<Wrench/>} label="Engine size" value={passport.vehicle.engineCapacity ? `${passport.vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not supplied"}/>
+           {!passport.public_dvsa_only && <Stat icon={<Wrench/>} label="Service records" value={String(passport.services.length)}/>}
+           {!passport.public_dvsa_only && <Stat icon={<BadgeCheck/>} label="Workshop stamps" value={String(passport.verified_stamp_count)}/>}
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <MotStatusPill source={passport.vehicle.source} motHistorySource={passport.vehicle.motHistorySource} motStatus={passport.vehicle.motStatus} motExpiry={passport.vehicle.motExpiry} />
-          <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+           <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             {passport.vehicle.verification_tier === "government_data" ? "Government data matched" : passport.vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
           </span>
           {passport.vehicle.is_scrapped && <span role="status" className="rounded-full border border-amber-500/35 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-800">Scrapped · history read-only</span>}
@@ -85,7 +86,7 @@ function PublicBuyerPassport() {
         </p>}
         <div className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground"><Shield className="h-4 w-4 shrink-0 text-primary"/>Keeper contact details and V5C reference are never displayed. VIN {passport.vehicle.vin ? `ending ${passport.vehicle.vin.slice(-4).padStart(Math.min(4, passport.vehicle.vin.length), "•")}` : "not available"}.</div>
       </section>
-      {passport.published && !passport.is_sample && !passport.buyer_report_unlocked && <section className="vault-card flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
+       {passport.published && !passport.public_dvsa_only && !passport.is_sample && !passport.buyer_report_unlocked && <section className="vault-card flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
         <div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Full buyer report</p><p className="mt-1 text-sm text-muted-foreground">Unlock the complete shared history and download-ready provenance snapshot for this vehicle.</p></div>
         <button type="button" onClick={() => void upgradeToFullReport()} disabled={checkoutBusy} className="btn-primary min-h-11 w-full shrink-0 sm:w-auto">
           {checkoutBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />}
@@ -96,7 +97,7 @@ function PublicBuyerPassport() {
         <div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wider text-primary">01 / Mileage</p><h2 className="mt-1 text-xl font-bold">MOT mileage trend</h2><p className="mt-1 text-xs text-muted-foreground">MOT readings and workshop odometer entries. Source labels reflect record provenance.</p></div>
         {mileage.length > 0 ? <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={mileage} margin={{ left: -14, right: 10, top: 8, bottom: 0 }}><CartesianGrid stroke="rgba(148,163,184,.2)" vertical={false}/><XAxis dataKey="date" tickFormatter={(date: string) => date.slice(0,4)} stroke="#94a3b8" fontSize={11}/><YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} stroke="#94a3b8" fontSize={11}/><Tooltip contentStyle={{ background: "#1e293b", border: "1px solid rgba(148,163,184,.3)", borderRadius: 10, color: "#f8fafc", fontSize: 12 }} labelFormatter={(d) => fmtDate(String(d))} formatter={(value: number, _name, item) => [fmtMiles(value), (item.payload as { source: string }).source]}/><Line type="monotone" dataKey="mileage" stroke="#67c1cb" strokeWidth={2.5} dot={{ r: 3, fill: "#67c1cb" }} activeDot={{ r: 5 }}/></LineChart></ResponsiveContainer></div> : <Empty title="No mileage trend yet" detail="MOT and workshop readings will appear when available." />}
       </section>
-      <section className="vault-card overflow-hidden">
+       {!passport.public_dvsa_only && <section className="vault-card overflow-hidden">
         <div className="border-b border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-primary">02 / Provenance</p><h2 className="mt-1 text-xl font-bold">Services & workshops</h2></div>
         {passport.services.length ? <ol className="divide-y divide-border">{[...passport.services].sort((a,b) => b.date.localeCompare(a.date)).map((service) => {
           const stamped = service.is_verified_stamp === true;
@@ -107,10 +108,10 @@ function PublicBuyerPassport() {
             <p className="mt-3 text-[11px] text-muted-foreground">Receipt files are not shared on this page.</p>
           </li>;
         })}</ol> : <Empty title="No service records" detail="The keeper has not shared service records for this vehicle." />}
-      </section>
-      <section className="vault-card overflow-hidden">
-        <div className="border-b border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-primary">03 / Roadworthiness</p><h2 className="mt-1 text-xl font-bold">MOT record</h2><p className="mt-1 text-xs text-muted-foreground">{passport.vehicle.source === "official" && !passport.is_sample ? "Official-source data supplied to V5Vault" : "Unverified or sample data"}</p></div>
-        {passport.mot_history.length ? <div className="divide-y divide-border">{[...passport.mot_history].reverse().map((mot, index) => <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={`${mot.date}-${index}`}><div><p className="font-semibold">{fmtDate(mot.date)}</p><p className="mt-1 text-sm text-muted-foreground">{mot.result}{mot.advisories?.length ? ` · ${mot.advisories.join("; ")}` : ""}</p></div><div className="text-right"><p className="font-mono text-sm">{mot.mileage !== undefined ? fmtMiles(mot.mileage) : "Mileage unavailable"}</p><Pill tone={passport.is_sample ? "warning" : "muted"}>{passport.is_sample ? "Sample" : "Source unverified here"}</Pill></div></div>)}</div> : <Empty title="No MOT history shared" detail="No MOT entries are available in this snapshot." />}
+       </section>}
+       <section className="vault-card overflow-hidden">
+         <div className="border-b border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-primary">03 / Roadworthiness</p><h2 className="mt-1 text-xl font-bold">{passport.public_dvsa_only ? "DVSA MOT Test History" : "MOT record"}</h2><p className="mt-1 text-xs text-muted-foreground">{passport.public_dvsa_only ? "Verified live via GOV.UK DVSA MOT API" : passport.vehicle.source === "official" && !passport.is_sample ? "Official-source data supplied to V5Vault" : "Unverified or sample data"}</p></div>
+         {passport.mot_history.length ? <div className="divide-y divide-border">{[...passport.mot_history].reverse().map((mot, index) => <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={`${mot.date}-${index}`}><div><p className="font-semibold">{fmtDate(mot.date)}</p><p className="mt-1 text-sm text-muted-foreground">{mot.result}{mot.advisories?.length ? ` · ${mot.advisories.join("; ")}` : ""}</p></div><div className="text-right"><p className="font-mono text-sm">{mot.mileage !== undefined ? fmtMiles(mot.mileage) : "Mileage unavailable"}</p><Pill tone={passport.is_sample ? "warning" : "success"}>{passport.is_sample ? "Sample" : passport.public_dvsa_only ? "DVSA record" : "Source unverified here"}</Pill></div></div>)}</div> : <Empty title="No MOT history shared" detail="No MOT entries are available in this snapshot." />}
       </section>
       <footer className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-xs leading-relaxed text-muted-foreground"><p className="font-semibold text-warning">Important: not government certification</p><p className="mt-1">V5Vault presents records supplied by keepers, workshops and external sources. A stamp or mileage entry shown here does not independently certify the vehicle, its condition, ownership or roadworthiness. Verify important facts directly before purchase.</p><p className="mt-2">Snapshot generated {new Date(passport.generated_at).toLocaleDateString("en-GB")} · public information only.</p></footer>
     </>}
