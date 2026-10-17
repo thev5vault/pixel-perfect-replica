@@ -6,6 +6,7 @@ import { Pill, Plate } from "@/components/vault/ui-bits";
 import { useV1 } from "@/lib/use-v1";
 import type { PublicPassport } from "@/lib/v1-types";
 import { fmtDate, fmtMiles } from "@/lib/vault-store";
+import { MotStatusPill } from "@/components/vault/MotStatusPill";
 
 export const Route = createFileRoute("/v/$vrm")({
   validateSearch: (search: Record<string, unknown>) => ({ sample: search["sample"] === true || search["sample"] === "true" }),
@@ -54,7 +55,8 @@ function PublicBuyerPassport() {
           <Stat icon={<Wrench/>} label="Service records" value={String(passport.services.length)}/>
           <Stat icon={<BadgeCheck/>} label="Workshop stamps" value={String(passport.verified_stamp_count)}/>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <MotStatusPill source={passport.vehicle.source} motHistorySource={passport.vehicle.motHistorySource} motStatus={passport.vehicle.motStatus} motExpiry={passport.vehicle.motExpiry} />
           <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             {passport.vehicle.verification_tier === "government_data" ? "Government data matched" : passport.vehicle.verification_tier === "workshop_checked" ? "Workshop checked" : "Provisional vehicle data"}
           </span>

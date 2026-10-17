@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { SharePassportModal } from "@/components/vault/SharePassportModal";
+import { MotStatusPill } from "@/components/vault/MotStatusPill";
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 
 export const Route = createFileRoute("/passport")({
@@ -161,6 +162,7 @@ function Certificate({ cert }: { cert: Cert }) {
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
+                <MotStatusPill source={vehicle.source} motHistorySource={vehicle.motHistorySource} motStatus={vehicle.motStatus} motExpiry={vehicle.motExpiry} className="mt-2" />
                 <h2 className="break-words text-xl font-bold hyphens-auto">
                   {vehicle.make} {vehicle.model}
                 </h2>

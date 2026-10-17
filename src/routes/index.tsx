@@ -30,6 +30,7 @@ import { parseInvoiceText, readInvoiceText } from "@/services/invoice-ocr";
 import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicleRegistrationDialog";
 import { hasVerifiedVehicleRegistration } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
+import { MotStatusPill } from "@/components/vault/MotStatusPill";
 
 const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap uppercase transition-all shadow-sm select-none";
 
@@ -268,6 +269,7 @@ export function Dashboard() {
           ok={motDays > 42}
           status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "MOT Due Soon"}
           meta={motDetail}
+            badge={<MotStatusPill source={vehicle.source} motHistorySource={vehicle.motHistorySource} motStatus={vehicle.motStatus} motExpiry={vehicle.motExpiry} />}
           forceWarn
           easy={easyView}
         />
@@ -373,6 +375,7 @@ function HealthCard({
   ok,
   status,
   meta,
+  badge,
   forceWarn,
   easy = false,
 }: {
@@ -381,6 +384,7 @@ function HealthCard({
   ok: boolean;
   status: string;
   meta: string;
+  badge?: ReactNode;
   forceWarn?: boolean;
   easy?: boolean;
 }) {
@@ -394,6 +398,7 @@ function HealthCard({
           {warn ? <AlertTriangle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
           {status}
         </Pill>
+        {badge}
         <p className={`mt-1 ${easy ? "text-sm text-slate-200" : "text-xs text-muted-foreground"}`}>{meta}</p>
       </div>
     </div>

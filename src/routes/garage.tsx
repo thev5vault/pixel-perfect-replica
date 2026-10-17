@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "re
 import { Camera, Check, CheckCircle, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader } from "@/components/vault/ui-bits";
+import { MotStatusPill } from "@/components/vault/MotStatusPill";
 import { formatVrm, readImage, today, type MotReading } from "@/lib/vault-store";
 import {
   clearGarageDraft,
@@ -108,6 +109,9 @@ function GaragePage() {
   const [draftStatus, setDraftStatus] = useState("");
   const [lookupDetails, setLookupDetails] = useState("");
   const [lookupMotHistory, setLookupMotHistory] = useState<MotReading[]>([]);
+  const [lookupMotExpiry, setLookupMotExpiry] = useState("");
+  const [lookupMotStatus, setLookupMotStatus] = useState("");
+  const [lookupMotSource, setLookupMotSource] = useState<"official" | undefined>();
   const [lookupSource, setLookupSource] = useState<"official" | "unverified" | null>(null);
   const [boundVin, setBoundVin] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -313,6 +317,9 @@ function GaragePage() {
       }));
       setBoundVin(lookedUpVin);
       setLookupMotHistory(Array.isArray(vehicle.motHistory) ? vehicle.motHistory : []);
+      setLookupMotExpiry(typeof vehicle.motExpiry === "string" ? vehicle.motExpiry : "");
+      setLookupMotStatus(typeof vehicle.motStatus === "string" ? vehicle.motStatus : "");
+      setLookupMotSource(vehicle.motHistorySource === "official" || vehicle.source === "official" ? "official" : undefined);
       const detail = [
         vehicle.year,
         vehicle.make,
@@ -569,6 +576,7 @@ function GaragePage() {
                       ? <>Vehicle details supplied · Not an official DVLA lookup</>
                       : <>Demo sample data · Not official DVLA lookup</>}
               </p>}
+              <MotStatusPill source={lookupSource === "official" ? "official" : "user-provided"} motHistorySource={lookupMotSource} motStatus={lookupMotStatus} motExpiry={lookupMotExpiry} className="mt-2" />
               {lookupMotHistory.length > 0 && <div className="mt-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs">
                 <h4 className="font-semibold text-slate-200">MOT history</h4>
                 <div className="mt-2 space-y-2">

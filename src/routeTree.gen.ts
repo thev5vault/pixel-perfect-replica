@@ -23,6 +23,7 @@ import { Route as VehicleRouteImport } from './routes/vehicle'
 import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as ApiCreateCheckoutSessionRouteImport } from './routes/api.create-checkout-session'
 import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
+import { Route as PassportVrmRouteImport } from './routes/passport.$vrm'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as VVrmRouteImport } from './routes/v.$vrm'
@@ -46,6 +47,7 @@ import { Route as ApiUserProfileRouteImport } from './routes/api.user.profile'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
 import { Route as ApiVehicleLookupRouteImport } from './routes/api.vehicle.lookup'
 import { Route as AuthPersonaSplatRouteImport } from './routes/auth.$persona.$'
+import { Route as PassportVrmFullRouteImport } from './routes/passport.$vrm.full'
 import { Route as ApiServicesRecordIdInvoiceRouteImport } from './routes/api.services.$recordId.invoice'
 import { Route as ApiServicesRecordIdReceiptRouteImport } from './routes/api.services.$recordId.receipt'
 
@@ -119,6 +121,11 @@ const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
   id: '/checkout/success',
   path: '/checkout/success',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PassportVrmRoute = PassportVrmRouteImport.update({
+  id: '/$vrm',
+  path: '/$vrm',
+  getParentRoute: () => PassportRoute,
 } as any)
 const SignInSplatRoute = SignInSplatRouteImport.update({
   id: '/sign-in/$',
@@ -241,6 +248,11 @@ const AuthPersonaSplatRoute = AuthPersonaSplatRouteImport.update({
   path: '/auth/$persona/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PassportVrmFullRoute = PassportVrmFullRouteImport.update({
+  id: '/full',
+  path: '/full',
+  getParentRoute: () => PassportVrmRoute,
+} as any)
 const ApiServicesRecordIdInvoiceRoute =
   ApiServicesRecordIdInvoiceRouteImport.update({
     id: '/api/services/$recordId/invoice',
@@ -261,7 +273,7 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof BookingsRoute
   '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
-  '/passport': typeof PassportRoute
+  '/passport': typeof PassportRouteWithChildren
   '/queue': typeof QueueRoute
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
@@ -269,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/workshop': typeof WorkshopRouteWithChildren
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/passport/$vrm': typeof PassportVrmRouteWithChildren
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
@@ -292,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
+  '/passport/$vrm/full': typeof PassportVrmFullRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -302,7 +316,7 @@ export interface FileRoutesByTo {
   '/bookings': typeof BookingsRoute
   '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
-  '/passport': typeof PassportRoute
+  '/passport': typeof PassportRouteWithChildren
   '/queue': typeof QueueRoute
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
@@ -310,6 +324,7 @@ export interface FileRoutesByTo {
   '/workshop': typeof WorkshopRouteWithChildren
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/passport/$vrm': typeof PassportVrmRouteWithChildren
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
@@ -333,6 +348,7 @@ export interface FileRoutesByTo {
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
+  '/passport/$vrm/full': typeof PassportVrmFullRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -344,7 +360,7 @@ export interface FileRoutesById {
   '/bookings': typeof BookingsRoute
   '/dashboard': typeof DashboardRoute
   '/garage': typeof GarageRoute
-  '/passport': typeof PassportRoute
+  '/passport': typeof PassportRouteWithChildren
   '/queue': typeof QueueRoute
   '/settings': typeof SettingsRoute
   '/vault': typeof VaultRoute
@@ -352,6 +368,7 @@ export interface FileRoutesById {
   '/workshop': typeof WorkshopRouteWithChildren
   '/api/create-checkout-session': typeof ApiCreateCheckoutSessionRoute
   '/checkout/success': typeof CheckoutSuccessRoute
+  '/passport/$vrm': typeof PassportVrmRouteWithChildren
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/v/$vrm': typeof VVrmRoute
@@ -375,6 +392,7 @@ export interface FileRoutesById {
   '/api/vault/create': typeof ApiVaultCreateRoute
   '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
+  '/passport/$vrm/full': typeof PassportVrmFullRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
 }
@@ -395,6 +413,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
+    | '/passport/$vrm'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/v/$vrm'
@@ -418,6 +437,7 @@ export interface FileRouteTypes {
     | '/api/vault/create'
     | '/api/vehicle/lookup'
     | '/auth/$persona/$'
+    | '/passport/$vrm/full'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   fileRoutesByTo: FileRoutesByTo
@@ -436,6 +456,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
+    | '/passport/$vrm'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/v/$vrm'
@@ -459,6 +480,7 @@ export interface FileRouteTypes {
     | '/api/vault/create'
     | '/api/vehicle/lookup'
     | '/auth/$persona/$'
+    | '/passport/$vrm/full'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   id:
@@ -477,6 +499,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/api/create-checkout-session'
     | '/checkout/success'
+    | '/passport/$vrm'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/v/$vrm'
@@ -500,6 +523,7 @@ export interface FileRouteTypes {
     | '/api/vault/create'
     | '/api/vehicle/lookup'
     | '/auth/$persona/$'
+    | '/passport/$vrm/full'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
   fileRoutesById: FileRoutesById
@@ -511,7 +535,7 @@ export interface RootRouteChildren {
   BookingsRoute: typeof BookingsRoute
   DashboardRoute: typeof DashboardRoute
   GarageRoute: typeof GarageRoute
-  PassportRoute: typeof PassportRoute
+  PassportRoute: typeof PassportRouteWithChildren
   QueueRoute: typeof QueueRoute
   SettingsRoute: typeof SettingsRoute
   VaultRoute: typeof VaultRoute
@@ -644,6 +668,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/checkout/success'
       preLoaderRoute: typeof CheckoutSuccessRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/passport/$vrm': {
+      id: '/passport/$vrm'
+      path: '/$vrm'
+      fullPath: '/passport/$vrm'
+      preLoaderRoute: typeof PassportVrmRouteImport
+      parentRoute: typeof PassportRoute
     }
     '/sign-in/$': {
       id: '/sign-in/$'
@@ -806,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPersonaSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/passport/$vrm/full': {
+      id: '/passport/$vrm/full'
+      path: '/full'
+      fullPath: '/passport/$vrm/full'
+      preLoaderRoute: typeof PassportVrmFullRouteImport
+      parentRoute: typeof PassportVrmRoute
+    }
     '/api/services/$recordId/invoice': {
       id: '/api/services/$recordId/invoice'
       path: '/api/services/$recordId/invoice'
@@ -822,6 +860,30 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface PassportVrmRouteChildren {
+  PassportVrmFullRoute: typeof PassportVrmFullRoute
+}
+
+const PassportVrmRouteChildren: PassportVrmRouteChildren = {
+  PassportVrmFullRoute: PassportVrmFullRoute,
+}
+
+const PassportVrmRouteWithChildren = PassportVrmRoute._addFileChildren(
+  PassportVrmRouteChildren,
+)
+
+interface PassportRouteChildren {
+  PassportVrmRoute: typeof PassportVrmRouteWithChildren
+}
+
+const PassportRouteChildren: PassportRouteChildren = {
+  PassportVrmRoute: PassportVrmRouteWithChildren,
+}
+
+const PassportRouteWithChildren = PassportRoute._addFileChildren(
+  PassportRouteChildren,
+)
 
 interface WorkshopRouteChildren {
   WorkshopSetupRoute: typeof WorkshopSetupRoute
@@ -842,7 +904,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookingsRoute: BookingsRoute,
   DashboardRoute: DashboardRoute,
   GarageRoute: GarageRoute,
-  PassportRoute: PassportRoute,
+  PassportRoute: PassportRouteWithChildren,
   QueueRoute: QueueRoute,
   SettingsRoute: SettingsRoute,
   VaultRoute: VaultRoute,

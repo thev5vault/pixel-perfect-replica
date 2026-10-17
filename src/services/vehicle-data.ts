@@ -61,7 +61,7 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
     ...(year ? { year } : {}),
     ...(ves.fuelType ?? mot.fuelType ? { fuelType: ves.fuelType ?? mot.fuelType } : {}),
     ...(ves.colour ?? mot.primaryColour ? { colour: ves.colour ?? mot.primaryColour } : {}),
-    motHistory, source: "official",
+    motHistory, ...(motHistory.length ? { motHistorySource: "official" as const } : {}), source: "official",
     engineCapacity: ves.engineCapacity, taxStatus: ves.taxStatus, taxDueDate: ves.taxDueDate,
     vin: mot.vin,
   };

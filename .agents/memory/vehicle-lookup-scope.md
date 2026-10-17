@@ -45,3 +45,12 @@ scope; HTTP 401s can occur even when form encoding is correct.
 **How to apply:** Keep credentials server-only, retain the documented API host,
 and ask the workspace owner to refresh/check the tenant-specific credentials rather
 than switching hosts or masking the failure with unverified data.
+
+Public passport aliases must reuse the existing keeper-sharing and verification
+checks. Registration-only access must not expose private owner service history or
+workshop stamps.
+
+**Why:** Buyer reports contain keeper-supplied history beyond public MOT data.
+
+**How to apply:** Keep public route aliases pointed at the guarded passport service;
+do not add an unprotected VRM query that returns private passport records.

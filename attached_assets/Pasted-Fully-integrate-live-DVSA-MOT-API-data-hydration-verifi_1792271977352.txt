@@ -1,0 +1,28 @@
+Fully integrate live DVSA MOT API data hydration, verified MOT status pills, and standalone public passport routes across V5Vault while preserving 100% of the established UI layout:
+
+1. Automatic Vehicle Hydration on Addition / Lookup ('server/services/motApi.ts' & route handlers):
+   - Whenever a VRM is looked up or added to a user's garage/glovebox:
+     * Automatically query the DVSA MOT API using the cached OAuth token.
+     * Extract and populate: Make, Model, Primary Color, Fuel Type, Date of First Registration, 17-character VIN, Latest Odometer Reading, MOT Expiry Date, and Full MOT Test History array.
+     * Store the retrieved MOT dataset in the vehicle record for instant re-rendering.
+
+2. Verified MOT Status Pill Design & Integration:
+   - Update the MOT pill component in the Workshop Terminal, Driver Glovebox header, and Vehicle Passport cards:
+     * When MOT status is live and verified via DVSA API:
+       Render a sleek, dark-theme emerald badge matching V5Vault's pill geometry:
+       '<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>✓ DVSA Verified · MOT Valid to {expiryDate}</span>'
+     * If MOT is expired or failed:
+       Render in subtle rose theme: 'bg-rose-500/10 border border-rose-500/20 text-rose-400'.
+     * Ensure pill placement sits cleanly in the header meta row without causing text wrapping, height distortion, or layout shifts on mobile viewports.
+
+3. Standalone Public Vehicle Passport Routes:
+   - Route '/passport/:vrm' (Free Public Passport):
+     * Fetch live DVSA data via '/api/vehicle/lookup?vrm=:vrm'.
+     * Display current MOT status (PASS/FAIL banner), verified MOT pill, expiry date, latest mileage, vehicle specs, and advisory list.
+     * Include 'Upgrade to Full Buyer Report' CTA button.
+   - Route '/passport/:vrm/full' (Paid Buyer Report):
+     * Display complete historical MOT timeline, mileage rollback verification graph, advisory breakdown, and verified B2B workshop service stamps.
+
+4. Automated E2E & Quality Gate Verification:
+   - Update 'e2e/garage.spec.ts' and 'e2e/driver.spec.ts' to verify that adding/looking up a vehicle renders the '✓ DVSA Verified' pill with correct MOT expiry details.
+   - Run 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build' to confirm 100% test passes across all suites and clean production compilation.

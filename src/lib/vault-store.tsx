@@ -107,6 +107,7 @@ export interface Vehicle {
   motStatus?: string | undefined;
   odometerAvailable?: boolean | undefined;
   motHistory?: MotReading[];
+  motHistorySource?: "official" | "demo" | "user-provided" | undefined;
   source?: "demo" | "official" | "user-provided" | undefined;
   owner_user_id?: string | null;
   status?: "approved" | "pending" | "rejected";

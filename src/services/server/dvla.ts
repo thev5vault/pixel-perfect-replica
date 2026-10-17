@@ -327,6 +327,7 @@ async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehic
       fuelType: vehicle.fuelType || supplied.fuelType,
       motExpiry: vehicle.motExpiry || supplied.motExpiry,
       source: vehicle.vin && vehicle.motExpiry ? "official" : "user-provided",
+      motHistorySource: (vehicle.motHistory ?? []).length ? "official" : "user-provided",
       verification_tier: vehicle.vin && vehicle.motExpiry ? "government_data" : "provisional",
     });
   }
