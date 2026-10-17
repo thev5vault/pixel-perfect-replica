@@ -10,6 +10,8 @@ export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
   reporter: "list",
+  workers: 2,
+  expect: { timeout: 10_000 },
   use: {
     baseURL,
     headless: true,

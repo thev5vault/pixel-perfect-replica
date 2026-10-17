@@ -23,3 +23,13 @@ live DVLA/DVSA credentials are unavailable.
 
 **How to apply:** Keep its provenance visible in the app and exported passports;
 never label manually supplied values as official.
+
+Browser tests should compare normalized registration numbers rather than the
+formatted input value: desktop and mobile WebKit may submit the same VRM with
+different spacing.
+
+**Why:** The lookup field preserves display formatting on some browsers and
+canonicalizes it on others.
+
+**How to apply:** Strip spaces and punctuation in assertions about the API query;
+keep user-facing formatting checks separate.

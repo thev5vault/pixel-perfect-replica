@@ -9,7 +9,9 @@ const longDescription = `${longRecordMarker} ${"Extended inspection notes confir
 async function startSamplePreview(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /Direct GodMode Bypass/ }).click();
-  await page.goto("/vehicle");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole("link", { name: "Vehicle", exact: true }).click();
+  await expect(page).toHaveURL(/\/vehicle$/);
   await expect(page.getByRole("button", { name: "Open profile menu" })).toBeVisible();
 }
 

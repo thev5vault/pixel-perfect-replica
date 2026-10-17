@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "re
 import { Camera, Check, CheckCircle, CheckCircle2, FileText, Info, LoaderCircle, LockKeyhole, Search, ShieldCheck, Timer, Upload, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Field, PageHeader } from "@/components/vault/ui-bits";
-import { formatVrm, readImage, today } from "@/lib/vault-store";
+import { formatVrm, readImage, today, type MotReading } from "@/lib/vault-store";
 import {
   clearGarageDraft,
   enqueueGarageSubmission,
@@ -107,6 +107,7 @@ function GaragePage() {
   const [readyDraftKey, setReadyDraftKey] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState("");
   const [lookupDetails, setLookupDetails] = useState("");
+  const [lookupMotHistory, setLookupMotHistory] = useState<MotReading[]>([]);
   const [lookupSource, setLookupSource] = useState<"official" | "unverified" | null>(null);
   const [boundVin, setBoundVin] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -285,6 +286,7 @@ function GaragePage() {
     });
     if (formatVrm(form.vrm) !== vrm) {
       setBoundVin("");
+      setLookupMotHistory([]);
     }
   }
 
@@ -295,10 +297,7 @@ function GaragePage() {
     setError("");
     setLookupDetails("");
     try {
-      const response = await fetch("/api/garage/lookup", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vrm: form.vrm }),
-      });
+      const response = await fetch(`/api/vehicle/lookup?vrm=${encodeURIComponent(form.vrm)}`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Vehicle lookup failed.");
       const vehicle = payload.vehicle;
@@ -313,6 +312,7 @@ function GaragePage() {
         mileage: vehicle.odometerAvailable === false ? current.mileage : String(vehicle.odometer ?? current.mileage),
       }));
       setBoundVin(lookedUpVin);
+      setLookupMotHistory(Array.isArray(vehicle.motHistory) ? vehicle.motHistory : []);
       const detail = [
         vehicle.year,
         vehicle.make,
@@ -553,7 +553,7 @@ function GaragePage() {
               <Field label="Vehicle registration">
                 <div className="flex min-w-0 items-center gap-2">
                   <input id="garage-vehicle-registration" required minLength={2} maxLength={8} value={form.vrm} onChange={(event) => changeRegistration(event.target.value)} placeholder="AB14 CDE" className={`${GARAGE_INPUT_CLASS} min-h-[44px] flex-1 font-mono uppercase`} />
-                  <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 gap-1 px-2 text-[11px] whitespace-nowrap"><Search className="h-4 w-4" />{lookupBusy ? "Looking…" : "Fetch specs"}</button>
+                  <button type="button" onClick={() => void lookupVehicle()} disabled={lookupBusy || !form.vrm.trim()} className="btn-secondary min-h-[44px] shrink-0 gap-1 px-2 text-[11px] whitespace-nowrap">{lookupBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{lookupBusy ? "Looking…" : "Fetch specs"}</button>
                 </div>
               </Field>
               {boundVin && boundVin === form.vin && <div role="status" className="mt-2 flex min-w-0 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 font-mono text-xs text-emerald-400">
@@ -569,6 +569,15 @@ function GaragePage() {
                       ? <>Vehicle details supplied · Not an official DVLA lookup</>
                       : <>Demo sample data · Not official DVLA lookup</>}
               </p>}
+              {lookupMotHistory.length > 0 && <div className="mt-2 rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-xs">
+                <h4 className="font-semibold text-slate-200">MOT history</h4>
+                <div className="mt-2 space-y-2">
+                  {lookupMotHistory.slice(-3).reverse().map((reading, index) => <div key={`${reading.date}-${index}`} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-t border-slate-800 pt-2">
+                    <span className="text-slate-300">{reading.date} · {reading.result}{reading.mileage !== undefined ? ` · ${reading.mileage.toLocaleString("en-GB")} miles` : ""}</span>
+                    {reading.advisories?.length ? <ul className="w-full list-disc space-y-0.5 pl-4 text-amber-200/80">{reading.advisories.map((advisory, advisoryIndex) => <li key={`${advisoryIndex}-${advisory}`}>{advisory}</li>)}</ul> : null}
+                  </div>)}
+                </div>
+              </div>}
               {!validateVIN(form.vin) ? <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">17-character VIN required for permanent chassis log.</p> : boundVin !== form.vin && <p role="status" className="mt-2 text-[11px] leading-snug text-amber-200">Fetch specs to bind this VIN to the registration before stamping.</p>}
             </div>
             <Field label="Odometer (miles)"><input required inputMode="numeric" type="number" min={0} max={2_000_000} value={form.mileage} onChange={(event) => change("mileage", event.target.value)} placeholder="87420" className={`${GARAGE_INPUT_CLASS} min-h-[44px]`} /></Field>

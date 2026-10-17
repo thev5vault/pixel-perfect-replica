@@ -16,6 +16,7 @@ export interface VesData {
 export interface MotData {
   make?: string;
   model?: string;
+  firstUsedDate?: string;
   manufactureDate?: string;
   fuelType?: string;
   primaryColour?: string;
@@ -51,6 +52,7 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
   const year = ves.yearOfManufacture ?? (mot.manufactureDate ? Number(mot.manufactureDate.slice(0, 4)) : undefined);
   return {
     vrm, make: ves.make ?? mot.make ?? "Unknown make", model: mot.model ?? "Model unavailable",
+    ...(mot.firstUsedDate ? { registrationDate: mot.firstUsedDate.slice(0, 10) } : {}),
     odometer: latestReading?.mileage ?? 0,
     odometerAvailable: latestReading !== undefined,
     v5cDate: ves.dateOfLastV5CIssued ?? "",

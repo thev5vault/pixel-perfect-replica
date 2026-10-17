@@ -9,7 +9,7 @@ describe("vehicle lookup data", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv("GOV_API_ENABLED", "false");
-    for (const key of ["DVSA_API_KEY", "DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
+    for (const key of ["DVSA_API_KEY", "DVSA_CLIENT_ID", "DVSA_CLIENT_SECRET", "DVSA_SCOPE_URL", "DVSA_TOKEN_URL", "DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
     localStorage.clear();
   });
 
@@ -62,11 +62,16 @@ describe("vehicle lookup data", () => {
   it("uses DVSA MOT vehicle fields directly when DVLA VES is unavailable", async () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("DVSA_API_KEY", "test-dvsa-key");
+    vi.stubEnv("DVSA_CLIENT_ID", "test-client");
+    vi.stubEnv("DVSA_CLIENT_SECRET", "test-secret");
+    vi.stubEnv("DVSA_SCOPE_URL", "https://tapi.dvsa.gov.uk/.default");
+    vi.stubEnv("DVSA_TOKEN_URL", "https://login.microsoftonline.com/test/oauth2/v2.0/token");
     vi.stubEnv("DVLA_VES_API_KEY", "unavailable-ves-test-key");
-    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "test-token", expires_in: 3600 })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
       make: "AUDI",
       model: "A4",
-      manufactureDate: "2007-09-17",
+      firstUsedDate: "2007-09-17",
       fuelType: "Petrol",
       primaryColour: "Silver",
       vin: "WAUZZZ8K9EA000001",
@@ -86,14 +91,46 @@ describe("vehicle lookup data", () => {
     expect(result.vehicle).toMatchObject({
       make: "AUDI",
       model: "A4",
+      registrationDate: "2007-09-17",
       colour: "Silver",
       fuelType: "Petrol",
       odometer: 86420,
       source: "official",
     });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(String(fetcher.mock.calls[0]?.[0])).toContain("/history.mot.api.gov.uk/");
-    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ headers: { "X-API-Key": "test-dvsa-key" } });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(String(fetcher.mock.calls[1]?.[0])).toContain("/v1/trade/vehicles/registration/AB14CDE");
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    expect(String(fetcher.mock.calls[0]?.[1]?.body)).toContain("grant_type=client_credentials");
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+      headers: {
+        Authorization: "Bearer test-token",
+        "X-API-Key": "test-dvsa-key",
+        Accept: "application/json",
+      },
+    });
+  });
+
+  it("caches DVSA OAuth tokens and uses labelled fixture fallback when the live API is unavailable", async () => {
+    vi.stubEnv("GOV_API_ENABLED", "true");
+    vi.stubEnv("DVSA_API_KEY", "test-dvsa-key");
+    vi.stubEnv("DVSA_CLIENT_ID", "test-client");
+    vi.stubEnv("DVSA_CLIENT_SECRET", "test-secret");
+    vi.stubEnv("DVSA_SCOPE_URL", "https://tapi.dvsa.gov.uk/.default");
+    vi.stubEnv("DVSA_TOKEN_URL", "https://login.microsoftonline.com/test/oauth2/v2.0/token");
+    vi.resetModules();
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "cached-token", expires_in: 3600 })))
+      .mockResolvedValueOnce(new Response("", { status: 503 }));
+    vi.stubGlobal("fetch", fetcher);
+    const { lookupRegistration: freshLookup } = await import("@/services/server/dvla");
+
+    const result = await freshLookup("AB14 CDE");
+    expect(result.vehicle).toMatchObject({ source: "demo", vrm: "AB14CDE" });
+    expect(result.notice).toContain("Live DVSA lookup was unavailable");
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
   it("keeps usable MOT vehicle details when the separate VES provider is down", async () => {

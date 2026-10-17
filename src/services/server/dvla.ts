@@ -5,7 +5,9 @@ import { LG57_VYF, LG57_VYF_VIN, normalizeRegistration } from "@/lib/vehicle-cla
 import { normalizeVIN, validateVIN, vinMatchesMake } from "@/lib/vin";
 import { pool } from "./db";
 
-let tokenCache: { token: string; expires: number } | undefined;
+let legacyTokenCache: { token: string; expires: number } | undefined;
+let dvsaTokenCache: { token: string; expires: number } | undefined;
+let dvsaTokenRequest: Promise<string> | undefined;
 
 async function jsonRequest<T>(url: string, init: RequestInit, provider: string): Promise<T> {
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
@@ -16,7 +18,7 @@ async function jsonRequest<T>(url: string, init: RequestInit, provider: string):
 }
 
 async function motToken() {
-  if (tokenCache && tokenCache.expires > Date.now()) return tokenCache.token;
+  if (legacyTokenCache && legacyTokenCache.expires > Date.now()) return legacyTokenCache.token;
   const tokenUrl = process.env["MOT_HISTORY_TOKEN_URL"]!;
   if (!tokenUrl.startsWith("https://login.microsoftonline.com/")) throw new Error("MOT token URL must be the issued Microsoft OAuth endpoint.");
   const data = await jsonRequest<{ access_token: string; expires_in: number }>(tokenUrl, {
@@ -30,8 +32,54 @@ async function motToken() {
     }),
   }, "MOT authentication");
   if (!data.access_token) throw new Error("MOT authentication did not return an access token.");
-  tokenCache = { token: data.access_token, expires: Date.now() + Math.max(0, data.expires_in - 60) * 1000 };
+  legacyTokenCache = { token: data.access_token, expires: Date.now() + Math.max(0, data.expires_in - 60) * 1000 };
   return data.access_token;
+}
+
+async function dvsaAccessToken() {
+  if (dvsaTokenCache && dvsaTokenCache.expires > Date.now()) return dvsaTokenCache.token;
+  if (dvsaTokenRequest) return dvsaTokenRequest;
+  const tokenUrl = process.env["DVSA_TOKEN_URL"];
+  const clientId = process.env["DVSA_CLIENT_ID"];
+  const clientSecret = process.env["DVSA_CLIENT_SECRET"];
+  const scope = process.env["DVSA_SCOPE_URL"];
+  if (!tokenUrl || !clientId || !clientSecret || !scope) {
+    throw new Error("DVSA OAuth configuration is incomplete.");
+  }
+  if (!tokenUrl.startsWith("https://login.microsoftonline.com/")) {
+    throw new Error("DVSA token URL must be the issued Microsoft OAuth endpoint.");
+  }
+  dvsaTokenRequest = (async () => {
+    const response = await jsonRequest<{ access_token: string; expires_in: number }>(
+      tokenUrl,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+          scope,
+        }),
+      },
+      "DVSA authentication",
+    );
+    if (!response.access_token || !Number.isFinite(response.expires_in)) {
+      throw new Error("DVSA authentication returned an invalid access token.");
+    }
+    const lifetimeSeconds = Math.min(response.expires_in, 50 * 60);
+    dvsaTokenCache = { token: response.access_token, expires: Date.now() + Math.max(1, lifetimeSeconds - 30) * 1000 };
+    return response.access_token;
+  })();
+  try {
+    return await dvsaTokenRequest;
+  } finally {
+    dvsaTokenRequest = undefined;
+  }
+}
+
+function clearDvsaToken(token: string) {
+  if (dvsaTokenCache?.token === token) dvsaTokenCache = undefined;
 }
 
 export const samples: Record<string, Vehicle> = {
@@ -206,12 +254,25 @@ async function lookupLegacyGovernmentRegistration(vrm: string): Promise<{ vehicl
 }
 
 async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehicle; notice: string }> {
-  const response = await jsonRequest<MotData | MotData[]>(
-    `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(vrm)}`,
-    { headers: { "X-API-Key": apiKey } },
-    "DVSA MOT",
-  );
-  const mot = Array.isArray(response) ? response[0] : response;
+  const url = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(vrm)}`;
+  let token = await dvsaAccessToken();
+  let response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, "X-API-Key": apiKey, Accept: "application/json" },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (response.status === 401) {
+    clearDvsaToken(token);
+    token = await dvsaAccessToken();
+    response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, "X-API-Key": apiKey, Accept: "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+  }
+  if (!response.ok) {
+    throw new Error(`DVSA MOT lookup failed (${response.status}). ${response.status === 404 ? "Vehicle not found." : "Please try again later."}`);
+  }
+  const payload = await response.json() as MotData | MotData[];
+  const mot = Array.isArray(payload) ? payload[0] : payload;
   if (!mot) throw new Error("The DVSA lookup returned no vehicle record.");
   const vehicle = parseVehicleData(vrm, {}, mot);
   if (vehicle.vin && validateVIN(vehicle.vin) && !vinMatchesMake(vehicle.vin, vehicle.make)) {
@@ -239,10 +300,11 @@ async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehic
   return { vehicle, notice: "Vehicle and MOT history loaded from the enabled DVSA API. Values reflect the source response." };
 }
 
-/** Provider switch: official government APIs stay opt-in; fixtures never replace a failed live lookup. */
+/** Use official DVSA data when credentials are present; samples remain clearly labelled. */
 export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
   const vrm = normalizeRegistration(inputVrm);
-  if (process.env["GOV_API_ENABLED"] !== "true") {
+  const dvsaConfigured = Boolean(process.env["DVSA_API_KEY"]);
+  if (process.env["GOV_API_ENABLED"] !== "true" && !dvsaConfigured) {
     const supplied = suppliedVehicleRecords[vrm];
     if (supplied) {
       await persistSuppliedVehicle(supplied);
@@ -260,13 +322,26 @@ export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehic
       return await lookupDvsa(vrm, dvsaKey);
     } catch (error) {
       if (error instanceof Error && /VIN manufacturer prefix|VIN differs from/i.test(error.message)) throw error;
+      // Keep only known development fixtures as a clearly labelled fallback;
+      // never invent official vehicle identity for an arbitrary VRM.
+      if (/(404|429|5\d\d)/.test(error instanceof Error ? error.message : "")) {
+        try {
+          const sample = lookupMockRegistration(vrm);
+          return {
+            ...sample,
+            notice: `${sample.notice} Live DVSA lookup was unavailable; this is not official data.`,
+          };
+        } catch {
+          // Unknown registrations must not be populated with fictional specifications.
+        }
+      }
       throw new Error(`${error instanceof Error ? error.message : "DVSA lookup failed."} DVSA Live Sync pending activation — manual service entry active`);
     }
   }
   const legacyConfigured = Boolean(process.env["DVLA_VES_API_KEY"] ||
     process.env["MOT_HISTORY_API_KEY"] || process.env["MOT_HISTORY_CLIENT_ID"] ||
     process.env["MOT_HISTORY_CLIENT_SECRET"] || process.env["MOT_HISTORY_TOKEN_URL"]);
-  if (!legacyConfigured) throw new Error("Government lookup configuration is incomplete. DVSA Live Sync pending activation — manual service entry active");
+  if (!legacyConfigured) return lookupMockRegistration(vrm);
   try {
     return await lookupLegacyGovernmentRegistration(vrm);
   } catch (error) {

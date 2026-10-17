@@ -4,7 +4,7 @@ test("workshop Express Stamp, detail drawer, and tab navigation", async ({ page 
   await page.goto("/");
   await page.getByRole("button", { name: /Direct GodMode Bypass/ }).click();
   await page.goto("/garage");
-  await page.route("**/api/garage/lookup", (route) =>
+  await page.route("**/api/vehicle/lookup**", (route) =>
     route.fulfill({
       json: {
         vehicle: {
@@ -15,7 +15,7 @@ test("workshop Express Stamp, detail drawer, and tab navigation", async ({ page 
           year: 2007,
           odometer: 87420,
           motExpiry: "2027-02-16",
-          source: "sample",
+          source: "official",
         },
       },
     }),

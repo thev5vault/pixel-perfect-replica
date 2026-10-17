@@ -44,6 +44,7 @@ import { Route as ApiUserAccountRouteImport } from './routes/api.user.account'
 import { Route as ApiUserExportRouteImport } from './routes/api.user.export'
 import { Route as ApiUserProfileRouteImport } from './routes/api.user.profile'
 import { Route as ApiVaultCreateRouteImport } from './routes/api.vault.create'
+import { Route as ApiVehicleLookupRouteImport } from './routes/api.vehicle.lookup'
 import { Route as AuthPersonaSplatRouteImport } from './routes/auth.$persona.$'
 import { Route as ApiServicesRecordIdInvoiceRouteImport } from './routes/api.services.$recordId.invoice'
 import { Route as ApiServicesRecordIdReceiptRouteImport } from './routes/api.services.$recordId.receipt'
@@ -230,6 +231,11 @@ const ApiVaultCreateRoute = ApiVaultCreateRouteImport.update({
   path: '/api/vault/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVehicleLookupRoute = ApiVehicleLookupRouteImport.update({
+  id: '/api/vehicle/lookup',
+  path: '/api/vehicle/lookup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthPersonaSplatRoute = AuthPersonaSplatRouteImport.update({
   id: '/auth/$persona/$',
   path: '/auth/$persona/$',
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -365,6 +373,7 @@ export interface FileRoutesById {
   '/api/user/export': typeof ApiUserExportRoute
   '/api/user/profile': typeof ApiUserProfileRoute
   '/api/vault/create': typeof ApiVaultCreateRoute
+  '/api/vehicle/lookup': typeof ApiVehicleLookupRoute
   '/auth/$persona/$': typeof AuthPersonaSplatRoute
   '/api/services/$recordId/invoice': typeof ApiServicesRecordIdInvoiceRoute
   '/api/services/$recordId/receipt': typeof ApiServicesRecordIdReceiptRoute
@@ -407,6 +416,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/api/vehicle/lookup'
     | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/api/vehicle/lookup'
     | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/api/user/export'
     | '/api/user/profile'
     | '/api/vault/create'
+    | '/api/vehicle/lookup'
     | '/auth/$persona/$'
     | '/api/services/$recordId/invoice'
     | '/api/services/$recordId/receipt'
@@ -527,6 +539,7 @@ export interface RootRouteChildren {
   ApiUserExportRoute: typeof ApiUserExportRoute
   ApiUserProfileRoute: typeof ApiUserProfileRoute
   ApiVaultCreateRoute: typeof ApiVaultCreateRoute
+  ApiVehicleLookupRoute: typeof ApiVehicleLookupRoute
   AuthPersonaSplatRoute: typeof AuthPersonaSplatRoute
   ApiServicesRecordIdInvoiceRoute: typeof ApiServicesRecordIdInvoiceRoute
   ApiServicesRecordIdReceiptRoute: typeof ApiServicesRecordIdReceiptRoute
@@ -779,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVaultCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/vehicle/lookup': {
+      id: '/api/vehicle/lookup'
+      path: '/api/vehicle/lookup'
+      fullPath: '/api/vehicle/lookup'
+      preLoaderRoute: typeof ApiVehicleLookupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/$persona/$': {
       id: '/auth/$persona/$'
       path: '/auth/$persona/$'
@@ -850,6 +870,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUserExportRoute: ApiUserExportRoute,
   ApiUserProfileRoute: ApiUserProfileRoute,
   ApiVaultCreateRoute: ApiVaultCreateRoute,
+  ApiVehicleLookupRoute: ApiVehicleLookupRoute,
   AuthPersonaSplatRoute: AuthPersonaSplatRoute,
   ApiServicesRecordIdInvoiceRoute: ApiServicesRecordIdInvoiceRoute,
   ApiServicesRecordIdReceiptRoute: ApiServicesRecordIdReceiptRoute,

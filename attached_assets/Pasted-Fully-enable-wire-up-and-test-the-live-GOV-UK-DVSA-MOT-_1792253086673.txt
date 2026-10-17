@@ -1,0 +1,41 @@
+Fully enable, wire up, and test the live GOV.UK DVSA MOT History API (OAuth 2.0 Client Credentials Grant) across the V5Vault backend and frontend:
+
+1. Implement Server-Side OAuth 2.0 Token Manager ('server/services/dvsaAuth.ts'):
+   - Read 'DVSA_CLIENT_ID', 'DVSA_CLIENT_SECRET', 'DVSA_SCOPE_URL', and 'DVSA_TOKEN_URL' from 'process.env'.
+   - Build a robust token manager with in-memory caching:
+     * Request Bearer token via POST to 'DVSA_TOKEN_URL' with 'Content-Type: application/x-www-form-urlencoded'.
+     * Body parameters: 'grant_type=client_credentials', 'client_id', 'client_secret', 'scope'.
+     * Cache the returned 'access_token' in server memory with an expiration buffer (refresh automatically if token age > 50 minutes or upon receiving a 401 Unauthorized response).
+     * Never expose raw client secrets, token URLs, or Bearer tokens to the browser frontend.
+
+2. Build Live DVSA Vehicle Lookup Engine ('server/services/motApi.ts'):
+   - Format incoming VRMs (remove spaces, convert to uppercase).
+   - Query DVSA Trade Endpoint: 'https://tapi.dvsa.gov.uk/v1/trade/vehicles/registration/{vrm}'
+   - Headers:
+     * 'Authorization': 'Bearer {cachedAccessToken}'
+     * 'X-API-Key': process.env.DVSA_API_KEY
+     * 'Accept': 'application/json'
+   - Transform returned payload into normalized V5Vault vehicle schema:
+     * Extract: make, model, primaryColor, fuelType, firstUsedDate, vin (17-character chassis number), and full motTests array (testDate, odomoterValue, odometerUnit, testResult, advisories, defects).
+   - Robust Fallback System:
+     * If 'DVSA_API_KEY' is missing, or if DVSA returns 404 (unregistered plate), 429 (rate limited), or 5xx, gracefully return mock fallback spec so dev workflows, test suites, and offline modes never crash or break UI.
+
+3. Express API Route & Frontend Integration:
+   - Create/Update server route: 'GET /api/vehicle/lookup?vrm={vrm}' returning normalized JSON.
+   - In Express Core ('src/routes/garage.tsx'):
+     * Connect 'Fetch specs' button to query '/api/vehicle/lookup?vrm={vrm}'.
+     * On successful fetch:
+       1. Auto-fill Odometer field with latest verified MOT mileage.
+       2. Instantly display above-the-fold locked green badge directly below the VRM input: '<div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg mt-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> VIN Bound: {vin}</div>'.
+       3. Populate service history timeline with real MOT pass/fail records and advisory notes.
+
+4. Add Automated Testing for API & UI Lookup ('e2e/dvsa-api.spec.ts'):
+   - Add backend unit/integration tests for 'server/services/motApi.ts' testing both live token retrieval and mock fallback handling.
+   - Add Playwright E2E test:
+     * Load '/garage'.
+     * Enter VRM 'AB14 CDE', click 'Fetch specs'.
+     * Assert green '✓ VIN Bound' badge appears above the fold.
+     * Assert Odometer auto-populates with numeric mileage.
+
+5. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build' to confirm 100% test passes across all suites and clean production compilation.

@@ -10,7 +10,8 @@ import { lookupRegistration } from "@/services/server/dvla";
 describe("supplied vehicle lookup persistence", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
-    for (const key of ["DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) {
+    vi.stubEnv("GOV_API_ENABLED", "false");
+    for (const key of ["DVSA_API_KEY", "DVSA_CLIENT_ID", "DVSA_CLIENT_SECRET", "DVSA_SCOPE_URL", "DVSA_TOKEN_URL", "DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) {
       vi.stubEnv(key, "");
     }
     mockQuery.mockReset().mockResolvedValue({ rows: [], rowCount: 0 });

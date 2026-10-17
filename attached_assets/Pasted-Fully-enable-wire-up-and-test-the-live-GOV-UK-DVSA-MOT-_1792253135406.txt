@@ -1,0 +1,32 @@
+Fully enable, wire up, and test the live GOV.UK DVSA MOT History API (OAuth 2.0 Client Credentials Grant) while preserving 100% of V5Vault's established UI/UX design language:
+
+1. Implement Server-Side OAuth 2.0 Token Manager ('server/services/dvsaAuth.ts'):
+   - Read 'DVSA_CLIENT_ID', 'DVSA_CLIENT_SECRET', 'DVSA_SCOPE_URL', and 'DVSA_TOKEN_URL' from 'process.env'.
+   - Build token manager with in-memory caching:
+     * Request Bearer token via POST to 'DVSA_TOKEN_URL' using an OAuth 2.0 'client_credentials' grant ('Content-Type: application/x-www-form-urlencoded').
+     * Cache 'access_token' in server memory with auto-refresh buffer (tokens expire after 60 minutes; refresh at 50 minutes or on 401 response).
+     * Never transmit raw client secrets or bearer tokens to the frontend client.
+
+2. Build Live DVSA Vehicle Lookup Engine ('server/services/motApi.ts'):
+   - Format VRMs (remove spaces, uppercase).
+   - Query DVSA Trade Endpoint: 'https://tapi.dvsa.gov.uk/v1/trade/vehicles/registration/{vrm}'
+   - Headers: 'Authorization: Bearer {cachedAccessToken}', 'X-API-Key: process.env.DVSA_API_KEY', 'Accept: application/json'.
+   - Transform returned JSON into V5Vault schema: make, model, primaryColor, fuelType, firstUsedDate, vin (17-char chassis number), and motTests array.
+   - Robust Fallback System: Return internal mock spec if 'DVSA_API_KEY' is missing, or on 404/429/5xx, ensuring UI and tests never crash.
+
+3. Express Core Endpoint & Seamless UI Binding ('src/routes/garage.tsx'):
+   - Connect 'Fetch specs' button in Express Core to trigger 'GET /api/vehicle/lookup?vrm={vrm}'.
+   - Loading State: While fetching, display an inline subtle spinner inside the 'Fetch specs' button without causing layout shifts or resizing.
+   - On Lookup Success:
+     1. Auto-fill the Odometer field with latest verified MOT mileage.
+     2. Render the above-the-fold locked green badge directly below the VRM input matching existing theme styling:
+        '<div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg mt-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> VIN Bound: {vin}</div>'
+     3. Populate service history timeline and MOT advisory notes using existing card containers and typography.
+   - Error/Unregistered State: Display a clean inline alert inside the card frame if a VRM isn't found, avoiding disruptive browser popups.
+
+4. Automated E2E & Visual Testing ('e2e/dvsa-api.spec.ts'):
+   - Add backend unit tests verifying token retrieval and fallback handling.
+   - Add Playwright E2E test verifying VRM lookup populates Odometer and renders the locked green VIN badge in a real headless browser.
+
+5. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build' to confirm 100% test passes across all suites and clean production compilation.
