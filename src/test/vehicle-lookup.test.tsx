@@ -63,7 +63,8 @@ describe("vehicle lookup data", () => {
     vi.stubEnv("GOV_API_ENABLED", "true");
     vi.stubEnv("DVSA_API_KEY", "test-dvsa-key");
     vi.stubEnv("DVSA_CLIENT_ID", "test-client");
-    vi.stubEnv("DVSA_CLIENT_SECRET", "test-secret");
+    const testSecret = "test-secret~.with+symbols%&";
+    vi.stubEnv("DVSA_CLIENT_SECRET", testSecret);
     vi.stubEnv("DVSA_SCOPE_URL", "https://tapi.dvsa.gov.uk/.default");
     vi.stubEnv("DVSA_TOKEN_URL", "https://login.microsoftonline.com/test/oauth2/v2.0/token");
     vi.stubEnv("DVLA_VES_API_KEY", "unavailable-ves-test-key");
@@ -103,7 +104,11 @@ describe("vehicle lookup data", () => {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
-    expect(String(fetcher.mock.calls[0]?.[1]?.body)).toContain("grant_type=client_credentials");
+    const tokenForm = new URLSearchParams(String(fetcher.mock.calls[0]?.[1]?.body));
+    expect(tokenForm.get("grant_type")).toBe("client_credentials");
+    expect(tokenForm.get("client_id")).toBe("test-client");
+    expect(tokenForm.get("client_secret")).toBe(testSecret);
+    expect(tokenForm.get("scope")).toBe("https://tapi.dvsa.gov.uk/.default");
     expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
       headers: {
         Authorization: "Bearer test-token",

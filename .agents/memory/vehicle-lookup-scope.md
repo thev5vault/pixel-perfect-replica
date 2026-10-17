@@ -33,3 +33,15 @@ canonicalizes it on others.
 
 **How to apply:** Strip spaces and punctuation in assertions about the API query;
 keep user-facing formatting checks separate.
+
+The DVSA OAuth client-credentials body must be form-encoded, but a token-endpoint
+401 after encoding is an upstream credential/tenant rejection—not an MOT API host
+failure. The current official API host is `history.mot.api.gov.uk`; the `.default`
+OAuth scope uses `tapi.dvsa.gov.uk`.
+
+**Why:** Official DVSA documentation distinguishes the API host from its OAuth
+scope, and the live token endpoint returned 401 with the correctly encoded request.
+
+**How to apply:** Keep credentials server-only, retain the documented API host,
+and ask the workspace owner to refresh/check the tenant-specific credentials rather
+than switching hosts or masking the failure with unverified data.

@@ -49,18 +49,18 @@ async function dvsaAccessToken() {
   if (!tokenUrl.startsWith("https://login.microsoftonline.com/")) {
     throw new Error("DVSA token URL must be the issued Microsoft OAuth endpoint.");
   }
+  const tokenParams = new URLSearchParams();
+  tokenParams.append("grant_type", "client_credentials");
+  tokenParams.append("client_id", clientId);
+  tokenParams.append("client_secret", clientSecret);
+  tokenParams.append("scope", scope);
   dvsaTokenRequest = (async () => {
     const response = await jsonRequest<{ access_token: string; expires_in: number }>(
       tokenUrl,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-        body: new URLSearchParams({
-          grant_type: "client_credentials",
-          client_id: clientId,
-          client_secret: clientSecret,
-          scope,
-        }),
+        body: tokenParams.toString(),
       },
       "DVSA authentication",
     );

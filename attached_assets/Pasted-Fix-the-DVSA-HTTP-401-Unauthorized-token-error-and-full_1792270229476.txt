@@ -1,0 +1,32 @@
+Fix the DVSA HTTP 401 Unauthorized token error and fully enable live MOT history lookups across the B2B Terminal, Public Free Passport, and Paid Buyer Report:
+
+1. Fix Azure OAuth 2.0 Token Encoding ('server/services/dvsaAuth.ts'):
+   - Use 'URLSearchParams' to encode the POST body to 'DVSA_TOKEN_URL' so special characters (~ and .) in 'DVSA_CLIENT_SECRET' are safely escaped:
+     const params = new URLSearchParams();
+     params.append('grant_type', 'client_credentials');
+     params.append('client_id', process.env.DVSA_CLIENT_ID || '');
+     params.append('client_secret', process.env.DVSA_CLIENT_SECRET || '');
+     params.append('scope', process.env.DVSA_SCOPE_URL || '');
+
+     const res = await fetch(process.env.DVSA_TOKEN_URL || '', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+       body: params.toString(),
+     });
+   - Cache the returned 'access_token' in server memory with a 50-minute refresh buffer.
+
+2. Build Live Trade Lookup API ('server/services/motApi.ts'):
+   - Issue GET request to: 'https://tapi.dvsa.gov.uk/v1/trade/vehicles/registration/' + formattedVRM
+   - Pass dual authentication headers:
+     * 'Authorization': 'Bearer ' + cachedAccessToken
+     * 'X-API-Key': process.env.DVSA_API_KEY
+     * 'Accept': 'application/json'
+   - Extract vehicle make, model, primaryColor, fuelType, firstUsedDate, 17-character vin, and complete motTests array (dates, mileage, pass/fail results, advisories, defects).
+
+3. Enable Across All Three App Surfaces:
+   - B2B Workshop Terminal ('src/routes/garage.tsx'): Auto-fill Odometer and display green '✓ VIN Bound: {vin}' badge above the fold on 'Fetch specs'.
+   - Public Free Passport ('/passport/:vrm'): Display real MOT status, expiry date, verified mileage, and advisory notes.
+   - Paid Buyer Report ('/passport/:vrm/full'): Render historical failure timelines, mileage rollback checks, and verified garage stamps.
+
+4. Test & Verify:
+   - Run 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build' to confirm 100% clean build and active API token authentication.
