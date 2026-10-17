@@ -127,7 +127,7 @@ export function Dashboard() {
   const lastOf = (c: ServiceCategory) => history.find((s) => s.category === c);
   const lastService = lastOf("Servicing");
   const lastBrakes = lastOf("Brakes");
-  const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage));
+  const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage), ...motReadings.map((m) => m.mileage ?? 0));
   const motDate = vehicle.motExpiry ? new Date(`${vehicle.motExpiry.slice(0, 10)}T00:00:00`) : undefined;
   const motDays = motDate ? Math.ceil((motDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : -1;
   const latestMotPass = [...motReadings]
@@ -224,7 +224,7 @@ export function Dashboard() {
         >
           <div className="min-h-0 overflow-hidden">
             <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800/80 bg-slate-900/60 p-2">
-              <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 ? "Not recorded" : fmtMiles(odometer)} />
+              <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 && !motReadings.some((reading) => reading.mileage !== undefined) ? "Not recorded" : fmtMiles(odometer)} />
               <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
               <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
               <VehicleSpecification label="Transmission" value={vehicle.transmission || "Not recorded"} />

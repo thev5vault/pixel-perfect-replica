@@ -60,6 +60,19 @@ export async function claim(input: { vrm: string; reference?: string | undefined
     throw new Error("Vehicle already registered to an active keeper.");
   }
   if (row?.owner_user_id === user.id) {
+    try {
+      const { vehicle } = await lookupRegistration(vrm);
+      const savedVin = normalizeVIN(row.vin || row.data?.vin || "");
+      const liveVin = normalizeVIN(vehicle.vin || "");
+      if ((!savedVin || !liveVin || savedVin === liveVin) &&
+          (vehicle.source === "official" || vehicle.motHistorySource === "official")) {
+        const data = { ...row.data, ...vehicle, vrm: row.vrm, vin: savedVin || liveVin };
+        await pool.query("UPDATE vehicles SET data=$1,verification_tier=COALESCE($2,verification_tier) WHERE vin=$3 AND owner_user_id=$4",
+          [JSON.stringify(data), vehicle.verification_tier ?? null, row.vin, user.id]);
+      }
+    } catch {
+      // A transient live-provider error must not unlink an already claimed vehicle.
+    }
     return { status: "approved" as const, is_sample: Boolean(row.is_sample), message: "This vehicle is already linked to your account." };
   }
   if (!firstAccount && !/^\d{11}$/.test(reference)) {

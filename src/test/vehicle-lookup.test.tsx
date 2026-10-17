@@ -23,7 +23,26 @@ describe("vehicle lookup data", () => {
     expect(vehicle).toMatchObject({ model: "Golf", year: 2018, odometer: 62137, motStatus: "PASSED", motExpiry: "2026-01-01", source: "official" });
     expect(vehicle.motHistory?.[0]?.mileage).toBeUndefined();
     expect(vehicle.motHistory?.[1]?.advisories).toEqual(["ADVISORY: Tyre wear"]);
+    expect(vehicle.odometerAvailable).toBe(true);
+    expect(vehicle.engineCapacity).toBeUndefined();
     expect(parseVehicleData("TEST123", { make: "VW" }, {})).toMatchObject({ motExpiry: "", v5cDate: "", model: "Model unavailable", motHistory: [] });
+  });
+
+  it("hydrates DVSA engine capacity and binds all test readings as official history", () => {
+    const vehicle = parseVehicleData("LG57VYF", {}, {
+      make: "AUDI", model: "A4", engineSize: "2.0L", fuelType: "PETROL", primaryColour: "SILVER",
+      motTests: [
+        { completedDate: "2024-02-10T09:00:00", testResult: "FAILED", odometerValue: "108000", odometerUnit: "MI", odometerResultType: "READ", defects: [{ type: "MAJOR", text: "Brake pipe excessively corroded" }] },
+        { completedDate: "2025-02-12T09:00:00", testResult: "PASSED", expiryDate: "2026-02-11", odometerValue: "112000", odometerUnit: "MI", odometerResultType: "READ", defects: [{ type: "ADVISORY", text: "Tyre worn close to legal limit" }] },
+      ],
+    });
+    expect(vehicle).toMatchObject({
+      odometer: 112000, odometerAvailable: true, engineCapacity: 2000, fuelType: "PETROL", colour: "SILVER",
+      motHistorySource: "official", motHistory: [
+        { date: "2024-02-10", result: "Fail", mileage: 108000, advisories: ["MAJOR: Brake pipe excessively corroded"] },
+        { date: "2025-02-12", result: "Pass", mileage: 112000, advisories: ["ADVISORY: Tyre worn close to legal limit"] },
+      ],
+    });
   });
 
   it("provides explicit demo results only for sample plates", async () => {

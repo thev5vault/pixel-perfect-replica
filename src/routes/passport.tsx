@@ -130,7 +130,7 @@ function Certificate({ cert }: { cert: Cert }) {
   const labourTotal = history.reduce((a, s) => a + (s.labourCost ?? 0), 0);
   const chart = useMemo(
     () =>
-      [...motReadings.filter((r) => r.mileage !== undefined).map((r) => ({ date: r.date, mileage: r.mileage!, src: vehicle.source === "official" ? "Official MOT" : "Sample MOT" })), ...history.map((h) => ({ date: h.date, mileage: h.mileage, src: h.garage }))]
+      [...motReadings.filter((r) => r.mileage !== undefined).map((r) => ({ date: r.date, mileage: r.mileage!, src: vehicle.motHistorySource === "official" || vehicle.source === "official" ? "DVSA MOT" : "Development sample MOT" })), ...history.map((h) => ({ date: h.date, mileage: h.mileage, src: h.garage }))]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((p) => ({ ...p, t: new Date(p.date).getTime() })),
     [history, motReadings, vehicle.source],
@@ -194,8 +194,8 @@ function Certificate({ cert }: { cert: Cert }) {
       {(
         <>
           <section className="passport-section p-4">
-            <h3 className="mb-1 font-bold">DVLA Mileage Progression</h3>
-            <p className="mb-3 text-xs text-muted-foreground">MOT readings and logged records · {vehicle.source === "official" ? "official API lookup" : "sample MOT data"}.</p>
+            <h3 className="mb-1 font-bold">DVSA Mileage Progression</h3>
+            <p className="mb-3 text-xs text-muted-foreground">{vehicle.motHistorySource === "official" || vehicle.source === "official" ? "Verified live via GOV.UK DVSA MOT API" : "MOT readings and logged service records."}</p>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chart} margin={{ left: -10, right: 8, top: 5 }}>
@@ -234,12 +234,12 @@ function Certificate({ cert }: { cert: Cert }) {
                 </div>
               </section>}
           <RecordCards
-            title={vehicle.source === "official" ? "Official MOT & Mileage Log" : "Sample MOT & Mileage Log"}
+            title="DVSA MOT Test History"
             rows={[...motReadings].reverse().map((m, index) => ({
               key: `${m.date}-${index}`,
               title: "MOT test",
               date: fmtDate(m.date),
-              provider: vehicle.source === "official" ? "Official MOT record" : "Sample MOT record",
+              provider: vehicle.motHistorySource === "official" || vehicle.source === "official" ? "DVSA MOT record" : "Development sample MOT record",
               badge: m.mileage !== undefined ? fmtMiles(m.mileage) : undefined,
               summaryLabel: "Result",
               summary: m.result,

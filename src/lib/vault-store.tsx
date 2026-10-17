@@ -1,5 +1,5 @@
 import type React from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import receiptService from "@/assets/receipt-service.jpg";
 import receiptBrakes from "@/assets/receipt-brakes.jpg";
 import dynoSheet from "@/assets/dyno-sheet.jpg";
@@ -272,6 +272,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function VaultProvider({ children }: { children: ReactNode }) {
   const account = useAccount();
+  const hydrationAttempts = useRef(new Set<string>());
   const [hydrated, setHydrated] = useState(false);
   const [state, setState] = useState<Persisted>({
     vehicles: VEHICLES,
@@ -304,6 +305,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   const live = account?.state;
+  useEffect(() => {
+    const selected = live?.vehicles.find((item) => normalizeVrm(item.vrm) === normalizeVrm(state.activeVrm)) ?? live?.vehicles[0];
+    if (!account?.signedIn || !live?.user.id || !selected?.vin || selected.is_sample ||
+        (selected.motHistory?.length && selected.odometerAvailable !== false)) return;
+    const attemptKey = `${live.user.id}:${selected.vin}`;
+    if (hydrationAttempts.current.has(attemptKey)) return;
+    hydrationAttempts.current.add(attemptKey);
+    void account.claimVehicle(selected.vrm, "", selected.vin).catch(() => {
+      console.warn("Official vehicle history could not be refreshed; saved vehicle data remains available.");
+    });
+  }, [account?.signedIn, account?.claimVehicle, live, state.activeVrm]);
   const effectiveRole: Role = live?.development_role ?? (live?.user.role === "dev_admin" ? "superadmin" : live?.user.role === "verified_garage" && live.user.subscription_tier === "verified_garage" ? "Garage" : live?.user.subscription_tier === "pro_modder" || live?.user.subscription_tier === "verified_garage" ? "Pro" : live?.user.subscription_tier === "pro_diy" ? "DIY" : "Owner");
   const current = live ? { ...state, vehicles: live.vehicles, services: live.services, mods: live.mods, role: effectiveRole, unlocked: true, pin: "managed-auth", v5cRefs: {} } : state;
   const vehicle = current.vehicles.find((v) => v.vrm === state.activeVrm) ?? current.vehicles[0] ?? VEHICLES[0]!;

@@ -16,6 +16,8 @@ export interface VesData {
 export interface MotData {
   make?: string;
   model?: string;
+  engineCapacity?: number;
+  engineSize?: string | number;
   firstUsedDate?: string;
   manufactureDate?: string;
   fuelType?: string;
@@ -50,6 +52,10 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
   const latest = tests.at(-1);
   const latestReading = [...motHistory].reverse().find((m) => m.mileage !== undefined);
   const year = ves.yearOfManufacture ?? (mot.manufactureDate ? Number(mot.manufactureDate.slice(0, 4)) : undefined);
+  const rawMotEngineCapacity = Number(String(mot.engineSize ?? "").replace(/[^\d.]/g, ""));
+  const motEngineCapacity = mot.engineCapacity ?? (Number.isFinite(rawMotEngineCapacity) && rawMotEngineCapacity > 0
+    ? Math.round(rawMotEngineCapacity < 100 ? rawMotEngineCapacity * 1000 : rawMotEngineCapacity)
+    : undefined);
   return {
     vrm, make: ves.make ?? mot.make ?? "Unknown make", model: mot.model ?? "Model unavailable",
     ...(mot.firstUsedDate ? { registrationDate: mot.firstUsedDate.slice(0, 10) } : {}),
@@ -62,7 +68,7 @@ export function parseVehicleData(vrm: string, ves: VesData, mot: MotData): Vehic
     ...(ves.fuelType ?? mot.fuelType ? { fuelType: ves.fuelType ?? mot.fuelType } : {}),
     ...(ves.colour ?? mot.primaryColour ? { colour: ves.colour ?? mot.primaryColour } : {}),
     motHistory, ...(motHistory.length ? { motHistorySource: "official" as const } : {}), source: "official",
-    engineCapacity: ves.engineCapacity, taxStatus: ves.taxStatus, taxDueDate: ves.taxDueDate,
+    engineCapacity: ves.engineCapacity ?? motEngineCapacity, taxStatus: ves.taxStatus, taxDueDate: ves.taxDueDate,
     vin: mot.vin,
   };
 }

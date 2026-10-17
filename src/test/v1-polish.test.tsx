@@ -54,9 +54,9 @@ describe("V1 polish", () => {
     fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
     await act(async () => { vi.advanceTimersByTime(1100); });
     const doc = container.querySelector(".passport-document")!;
-    expect(doc).toHaveTextContent("DVLA Mileage Progression");
+    expect(doc).toHaveTextContent("DVSA Mileage Progression");
     expect(doc).toHaveTextContent("Service History");
-    expect(doc).toHaveTextContent("MOT & Mileage Log");
+    expect(doc).toHaveTextContent("DVSA MOT Test History");
     expect(doc).toHaveTextContent("No signed workshop stamp to verify");
     expect(doc).toHaveTextContent("Development sample document");
     expect(doc).not.toHaveTextContent("https://v5vault.app/p/");
