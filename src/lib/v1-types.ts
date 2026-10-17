@@ -16,6 +16,7 @@ export interface PublicPassport {
   public_url: string;
   is_sample: boolean;
   published: boolean;
+  buyer_report_unlocked?: boolean;
 }
 export interface InvestorMetrics {
   total_registered_users: number;

@@ -128,7 +128,7 @@ export async function checkout(input: { plan: PlanKey; vrm?: string | undefined;
   if (selectedPlan === "sales_pack") {
     if (!input.vrm) throw new Error("Select the vehicle for this sales pack.");
     const vrm = input.vrm.replace(/\s/g, "").toUpperCase();
-    const { ownerSnapshot } = await import("./passports"), snapshot = await ownerSnapshot(vrm, user);
+     const { salesPackSnapshot } = await import("./passports"), snapshot = await salesPackSnapshot(vrm, user);
     const vehicleId = (await pool.query("SELECT id FROM vehicles WHERE vrm=$1", [vrm])).rows[0]?.id;
     if (!vehicleId) throw new Error("Vehicle passport not found.");
     orderId = randomUUID();

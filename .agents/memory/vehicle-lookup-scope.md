@@ -54,3 +54,11 @@ workshop stamps.
 
 **How to apply:** Keep public route aliases pointed at the guarded passport service;
 do not add an unprotected VRM query that returns private passport records.
+
+A paid buyer report must be tied to the purchasing account and only be offered
+after the keeper has enabled sharing for a verified vehicle.
+
+**Why:** The sales-pack checkout can be started by a buyer who is not the keeper.
+
+**How to apply:** Bind the order and report entitlement to the authenticated buyer;
+never grant full report access merely because someone knows the registration.

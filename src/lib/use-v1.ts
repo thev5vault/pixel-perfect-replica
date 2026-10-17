@@ -35,8 +35,8 @@ export function useV1() {
         key, name: PLAN_DEFINITIONS[key].name, amount_pence: PLAN_DEFINITIONS[key].amount, currency: "gbp",
         interval: PLAN_DEFINITIONS[key].interval, price_id: `sample_${key}`,
       })) } : api.getBillingCatalog(),
-      checkout: async (plan: PlanKey, vrm?: string, billingInterval?: BillingInterval) => {
-        return api.startCheckout({ data: { plan, vrm, billingInterval } });
+      checkout: async (plan: PlanKey, vrm?: string, billingInterval?: BillingInterval, returnUrl?: string) => {
+        return api.startCheckout({ data: { plan, vrm, billingInterval, returnUrl } });
       },
       confirmCheckout: async (session_id: string) => {
         if (preview) return { fulfilled: false, message: "Sample previews do not create Stripe purchases." };

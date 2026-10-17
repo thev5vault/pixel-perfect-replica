@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, BadgeCheck, CalendarDays, Gauge, Shield, Wrench } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CalendarDays, Gauge, LoaderCircle, Shield, Wrench } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Pill, Plate } from "@/components/vault/ui-bits";
 import { useV1 } from "@/lib/use-v1";
 import type { PublicPassport } from "@/lib/v1-types";
 import { fmtDate, fmtMiles } from "@/lib/vault-store";
 import { MotStatusPill } from "@/components/vault/MotStatusPill";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/v/$vrm")({
   validateSearch: (search: Record<string, unknown>) => ({ sample: search["sample"] === true || search["sample"] === "true" }),
@@ -20,6 +21,7 @@ function PublicBuyerPassport() {
   const [passport, setPassport] = useState<PublicPassport | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
   const normalized = vrm.trim().toUpperCase();
   useEffect(() => {
     let active = true;
@@ -35,6 +37,21 @@ function PublicBuyerPassport() {
     const service = passport.services.map((entry) => ({ date: entry.date, mileage: entry.mileage, source: entry.garage }));
     return [...official, ...service].sort((a, b) => a.date.localeCompare(b.date));
   }, [passport]);
+  async function upgradeToFullReport() {
+    if (!passport || checkoutBusy) return;
+    setCheckoutBusy(true);
+    try {
+      const fullRoute = `/passport/${encodeURIComponent(normalized)}/full`;
+      const result = await v1.checkout("sales_pack", normalized, undefined, fullRoute);
+      if (!result.url) throw new Error(result.message || "Sales-pack checkout is unavailable.");
+      window.location.assign(result.url);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Checkout could not be started.";
+      toast.error(message);
+    } finally {
+      setCheckoutBusy(false);
+    }
+  }
   return <main className="mx-auto min-h-[100dvh] w-full max-w-5xl space-y-5 px-4 pb-28 pt-6 sm:px-6 sm:pt-10">
     <header className="flex items-center justify-between gap-3 border-b border-border pb-4">
       <div><p className="font-display text-lg font-extrabold tracking-tight">V5Vault</p><p className="text-xs text-muted-foreground">Buyer passport · private vehicle history</p></div>
@@ -68,6 +85,13 @@ function PublicBuyerPassport() {
         </p>}
         <div className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-background/40 p-3 text-xs text-muted-foreground"><Shield className="h-4 w-4 shrink-0 text-primary"/>Keeper contact details and V5C reference are never displayed. VIN {passport.vehicle.vin ? `ending ${passport.vehicle.vin.slice(-4).padStart(Math.min(4, passport.vehicle.vin.length), "•")}` : "not available"}.</div>
       </section>
+      {passport.published && !passport.is_sample && !passport.buyer_report_unlocked && <section className="vault-card flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
+        <div><p className="text-xs font-semibold uppercase tracking-wider text-primary">Full buyer report</p><p className="mt-1 text-sm text-muted-foreground">Unlock the complete shared history and download-ready provenance snapshot for this vehicle.</p></div>
+        <button type="button" onClick={() => void upgradeToFullReport()} disabled={checkoutBusy} className="btn-primary min-h-11 w-full shrink-0 sm:w-auto">
+          {checkoutBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />}
+          Upgrade to Full Buyer Report
+        </button>
+      </section>}
       <section className="vault-card p-4 sm:p-6">
         <div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wider text-primary">01 / Mileage</p><h2 className="mt-1 text-xl font-bold">MOT mileage trend</h2><p className="mt-1 text-xs text-muted-foreground">MOT readings and workshop odometer entries. Source labels reflect record provenance.</p></div>
         {mileage.length > 0 ? <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={mileage} margin={{ left: -14, right: 10, top: 8, bottom: 0 }}><CartesianGrid stroke="rgba(148,163,184,.2)" vertical={false}/><XAxis dataKey="date" tickFormatter={(date: string) => date.slice(0,4)} stroke="#94a3b8" fontSize={11}/><YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} stroke="#94a3b8" fontSize={11}/><Tooltip contentStyle={{ background: "#1e293b", border: "1px solid rgba(148,163,184,.3)", borderRadius: 10, color: "#f8fafc", fontSize: 12 }} labelFormatter={(d) => fmtDate(String(d))} formatter={(value: number, _name, item) => [fmtMiles(value), (item.payload as { source: string }).source]}/><Line type="monotone" dataKey="mileage" stroke="#67c1cb" strokeWidth={2.5} dot={{ r: 3, fill: "#67c1cb" }} activeDot={{ r: 5 }}/></LineChart></ResponsiveContainer></div> : <Empty title="No mileage trend yet" detail="MOT and workshop readings will appear when available." />}

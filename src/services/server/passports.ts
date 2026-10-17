@@ -33,6 +33,16 @@ export async function ownerSnapshot(vrm: string, user: UserAccount) {
   if (row.verification_state !== "VERIFIED") throw new Error("Logbook or Plate Updated: Please enter your new VRM and 11-digit V5C reference number to re-verify ownership and unlock live export features.");
   return snapshot(vrm, true);
 }
+export async function salesPackSnapshot(inputVrm: string, user: UserAccount) {
+  const vrm = inputVrm.toUpperCase().replace(/\s/g, "");
+  const row = (await pool.query("SELECT owner_user_id,status,verification_state,public_enabled,is_sample FROM vehicles WHERE vrm=$1", [vrm])).rows[0];
+  if (!row || row.is_sample || row.status !== "approved" || row.verification_state !== "VERIFIED") {
+    throw new Error("A verified vehicle passport is required for a sales pack.");
+  }
+  if (row.owner_user_id === user.id || user.role === "dev_admin") return ownerSnapshot(vrm, user);
+  if (!row.public_enabled) throw new Error("The keeper must enable public sharing before a buyer report can be purchased.");
+  return snapshot(vrm, true);
+}
 export async function publicPassport(inputVrm: string, sample = false): Promise<PublicPassport> {
   const vrm = inputVrm.toUpperCase().replace(/\s/g, "");
   if (sample) {
@@ -48,11 +58,18 @@ export async function publicPassport(inputVrm: string, sample = false): Promise<
     await ownerSnapshot(vrm,user);
     return snapshot(vrm,user.subscription_tier!=="free");
   }
+  try {
+    const buyer = await currentUser();
+    const purchased = (await pool.query("SELECT snapshot FROM sales_pack_orders WHERE vehicle_id=$1 AND user_id=$2 AND fulfilled_at IS NOT NULL ORDER BY created_at DESC LIMIT 1", [row.id, buyer.id])).rows[0];
+    if (purchased) return { ...purchased.snapshot, published: true, buyer_report_unlocked: true };
+  } catch {
+    // Anonymous visitors continue to see only the keeper's public snapshot.
+  }
   const owner = (await pool.query("SELECT * FROM user_accounts WHERE id=$1", [row.owner_user_id])).rows[0];
   const { paidTier } = await import("./billing"), entitlement = owner ? await paidTier(owner) : { tier: "free" };
   if (entitlement.tier === "free") {
     const order = (await pool.query("SELECT snapshot FROM sales_pack_orders WHERE vehicle_id=$1 AND user_id=$2 AND fulfilled_at IS NOT NULL ORDER BY created_at DESC LIMIT 1", [row.id, row.owner_user_id])).rows[0];
-    if (order) return { ...order.snapshot, published: true };
+     if (order) return { ...order.snapshot, published: true, buyer_report_unlocked: true };
   }
   return snapshot(vrm, entitlement.tier !== "free");
 }
