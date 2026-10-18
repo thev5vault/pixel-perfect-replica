@@ -14,6 +14,8 @@ import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { SharePassportModal } from "@/components/vault/SharePassportModal";
 import { MotStatusPill } from "@/components/vault/MotStatusPill";
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
+import { PassportMotHistory } from "@/components/PassportMotHistory";
+import { formatMotAdvisories } from "@/utils/motSanitizer";
 
 export const Route = createFileRoute("/passport")({
   head: () => ({
@@ -121,11 +123,6 @@ function PassportExportPage() {
 function Certificate({ cert }: { cert: Cert }) {
   const { vehicle, services, mods } = useVault();
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
-  const sameDayMotCounts = useMemo(() => motReadings.reduce((counts, reading) => {
-    const date = reading.date.slice(0, 10);
-    counts.set(date, (counts.get(date) ?? 0) + 1);
-    return counts;
-  }, new Map<string, number>()), [motReadings]);
   const meta = CERTS.find((c) => c.id === cert)!;
   const history = useMemo(() => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)), [services, vehicle.vrm]);
   const vMods = mods.filter((m) => m.vrm === vehicle.vrm);
@@ -201,6 +198,9 @@ function Certificate({ cert }: { cert: Cert }) {
               <Download className="h-4 w-4" /> Download PDF
             </button>
           </header>
+          <div className="passport-section grid grid-cols-2 gap-3 px-4 py-3 text-xs sm:grid-cols-3" aria-label="Vehicle certificate metadata">
+            <div><p className="font-semibold uppercase tracking-wide text-slate-500">MOT expiry</p><p className="mt-1 font-semibold text-slate-900">{vehicle.motExpiry ? fmtDate(vehicle.motExpiry) : "Not supplied"}</p></div>
+          </div>
 
       {(
         <>
@@ -244,24 +244,7 @@ function Certificate({ cert }: { cert: Cert }) {
                   <span>No Service Records</span><span aria-hidden="true" className="text-slate-500">·</span><span>Recorded Spend: £0.00</span>
                 </div>
               </section>}
-          <RecordCards
-            title="DVSA MOT Test History"
-            rows={[...motReadings].reverse().map((m, index) => {
-              const pass = /^pass\b/i.test(m.result);
-              const sameDay = (sameDayMotCounts.get(m.date.slice(0, 10)) ?? 0) > 1;
-              return {
-                key: `${m.date}-${index}`,
-                date: fmtDate(m.date),
-                badge: m.mileage !== undefined ? fmtMiles(m.mileage) : undefined,
-                outcome: sameDay ? (pass ? "RE-TEST PASS" : "INITIAL FAIL") : m.result,
-                details: [
-                  ...(m.advisories?.length ? [{ label: "Advisories", value: m.advisories.join("; ") }] : []),
-                  ...(m.defects?.length ? [{ label: "Defects", value: m.defects.join("; ") }] : []),
-                ],
-              };
-            })}
-            empty="No MOT history available."
-          />
+          <PassportMotHistory readings={motReadings} />
           <div className="print:hidden"><RedactionPreview vrm={vehicle.vrm} /></div>
         </>
       )}
@@ -371,7 +354,7 @@ function RecordCards({ title, rows, empty }: { title: string; rows: PassportCard
               </button>
               <div className={`mt-2 space-y-2 rounded-xl border border-slate-800 bg-slate-950/80 p-3 text-slate-100 ${expandedKey === row.key ? "block" : "hidden print:block"}`}>
                 {row.summary && <div><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{row.summaryLabel ?? "Details"}</p><p className="mt-0.5 break-words text-sm hyphens-auto">{row.summary}</p></div>}
-                {row.details?.map((detail) => <div key={detail.label}><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{detail.label}</p><p className="mt-0.5 break-words text-xs hyphens-auto">{detail.value}</p></div>)}
+                {row.details?.map((detail) => <div key={detail.label}><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{detail.label}</p>{/^(advisories|defects)$/i.test(detail.label) ? <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">{formatMotAdvisories(detail.value).map((item, index) => <li key={`${item}-${index}`} className="break-words hyphens-auto">{item}</li>)}</ul> : <p className="mt-0.5 break-words text-xs hyphens-auto">{detail.value}</p>}</div>)}
               </div>
             </article>
           ))}
