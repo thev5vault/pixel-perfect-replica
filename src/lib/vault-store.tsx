@@ -132,6 +132,7 @@ export interface MotReading {
   mileage?: number;
   result: string;
   advisories?: string[];
+  defects?: string[];
 }
 
 // Mock DVLA MOT history (auto-synced in production)

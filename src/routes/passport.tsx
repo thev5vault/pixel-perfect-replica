@@ -242,13 +242,13 @@ function Certificate({ cert }: { cert: Cert }) {
             title="DVSA MOT Test History"
             rows={[...motReadings].reverse().map((m, index) => ({
               key: `${m.date}-${index}`,
-              title: "MOT test",
               date: fmtDate(m.date),
-              provider: vehicle.motHistorySource === "official" || vehicle.source === "official" ? "DVSA MOT record" : "Development sample MOT record",
               badge: m.mileage !== undefined ? fmtMiles(m.mileage) : undefined,
-              summaryLabel: "Result",
-              summary: m.result,
-              details: m.advisories?.length ? [{ label: "Advisories", value: m.advisories.join("; ") }] : [],
+              outcome: m.result,
+              details: [
+                ...(m.advisories?.length ? [{ label: "Advisories", value: m.advisories.join("; ") }] : []),
+                ...(m.defects?.length ? [{ label: "Defects", value: m.defects.join("; ") }] : []),
+              ],
             }))}
             empty="No MOT history available."
           />
@@ -322,10 +322,11 @@ function Certificate({ cert }: { cert: Cert }) {
 
 type PassportCardRow = {
   key: string;
-  title: string;
+  title?: string;
   date?: string | undefined;
   provider?: string;
   badge?: string | undefined;
+  outcome?: string;
   summaryLabel?: string;
   summary?: string;
   details?: { label: string; value: string }[];
@@ -347,10 +348,11 @@ function RecordCards({ title, rows, empty }: { title: string; rows: PassportCard
                   {row.date && <span className="break-words">{row.date}</span>}
                   {row.badge && <span className="break-words rounded-full border border-cyan-800/20 bg-cyan-50 px-2 py-0.5 font-semibold text-cyan-900">{row.badge}</span>}
                 </span>
-                <span className="w-full break-words font-bold hyphens-auto">{row.title}</span>
+                 {row.title && <span className="w-full break-words font-bold hyphens-auto">{row.title}</span>}
                 {row.provider && <span className="w-full break-words text-sm text-slate-700 hyphens-auto">{row.provider}</span>}
                 <span className="flex w-full items-center justify-between gap-2 border-t border-slate-200 pt-1.5 text-xs">
-                  {row.summaryLabel && <span className="break-words text-slate-500">{row.summaryLabel}</span>}
+                   {row.outcome && <span className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[10px] font-bold tracking-wide ${/^pass\b/i.test(row.outcome) ? "border-emerald-500/30 bg-emerald-50 text-emerald-800" : "border-rose-500/30 bg-rose-50 text-rose-800"}`}>{/^pass\b/i.test(row.outcome) ? "PASS" : "FAIL"}</span>}
+                   {row.summaryLabel && <span className="break-words text-slate-500">{row.summaryLabel}</span>}
                   <span className="ml-auto inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 font-semibold text-cyan-400">
                     {expandedKey === row.key ? "Hide Details ˄" : "Details ˅"}
                     <ChevronDown aria-hidden="true" className={cn("h-3.5 w-3.5", expandedKey === row.key && "rotate-180")} />

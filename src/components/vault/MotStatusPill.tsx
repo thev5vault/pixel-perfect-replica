@@ -18,6 +18,6 @@ export function MotStatusPill({ source, motHistorySource, motStatus, motExpiry, 
     : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
   return <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-mono ${tone} ${className}`}>
     <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 animate-pulse rounded-full ${failed || expired ? "bg-rose-400" : "bg-emerald-400"}`} />
-    <span className="break-words">✓ DVSA Verified · {label}{motExpiry ? ` to ${fmtDate(motExpiry)}` : ""}</span>
+    <span className="whitespace-nowrap text-[11px] sm:text-xs">✓ DVSA Verified · {label}{motExpiry ? ` to ${fmtDate(motExpiry)}` : ""}</span>
   </span>;
 }

@@ -31,6 +31,7 @@ import { UpdateVehicleRegistrationDialog } from "@/components/vault/UpdateVehicl
 import { hasVerifiedVehicleRegistration } from "@/lib/vehicle-verification";
 import { AIScanButton, isoDateFromUkDate } from "@/components/service/AIScanButton";
 import { MotStatusPill } from "@/components/vault/MotStatusPill";
+import { MotHistory } from "@/components/vault/MotHistory";
 
 const STATUS_PILL_BASE = "flex w-full h-[30px] min-h-[30px] items-center justify-center px-3 text-[11px] font-bold tracking-wide rounded-full border text-center whitespace-nowrap uppercase transition-all shadow-sm select-none";
 
@@ -66,6 +67,38 @@ function VehicleSpecification({ icon, label, value }: { icon?: ReactNode; label:
       <p className="mt-1 break-words text-sm font-semibold text-slate-100">{value}</p>
     </div>
   );
+}
+
+function TransmissionSpecification({ transmission, vehicleKey }: { transmission: string | undefined; vehicleKey: string }) {
+  const storageKey = `v5vault_transmission:${vehicleKey}`;
+  const [selected, setSelected] = useState(() => {
+    if (typeof window === "undefined") return transmission || "";
+    return window.localStorage.getItem(storageKey) || transmission || "";
+  });
+  useEffect(() => {
+    setSelected(window.localStorage.getItem(storageKey) || transmission || "");
+  }, [storageKey, transmission]);
+  if (selected) return <div className="min-w-0 rounded-lg bg-slate-950/35 p-2.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Transmission</div>
+    <button type="button" aria-label={`Transmission ${selected}. Change to ${selected === "Manual" ? "Automatic" : "Manual"}`} onClick={() => {
+      const next = selected === "Manual" ? "Automatic" : "Manual";
+      window.localStorage.setItem(storageKey, next);
+      setSelected(next);
+    }} className="mt-1 min-h-8 rounded-lg border border-slate-800 bg-slate-900/70 px-2 text-sm font-semibold text-slate-100">
+      {selected}
+    </button>
+  </div>;
+  return <div className="min-w-0 rounded-lg bg-slate-950/35 p-2.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Transmission</div>
+    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-slate-500">Not recorded</span>
+      <button type="button" onClick={() => {
+        const next = "Manual";
+        window.localStorage.setItem(storageKey, next);
+        setSelected(next);
+      }} className="min-h-8 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 text-[11px] font-semibold text-cyan-300">+ Set Transmission</button>
+    </div>
+  </div>;
 }
 
 function DisplayPreferenceSetup({ account }: { account: ReturnType<typeof useAccount> }) {
@@ -227,7 +260,7 @@ export function Dashboard() {
               <VehicleSpecification icon={<Gauge aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />} label="Odometer" value={vehicle.odometerAvailable === false && history.length === 0 && !motReadings.some((reading) => reading.mileage !== undefined) ? "Not recorded" : fmtMiles(odometer)} />
               <VehicleSpecification label="Engine Specs" value={vehicle.engineCapacity ? `${vehicle.engineCapacity.toLocaleString("en-GB")} cc` : "Not recorded"} />
               <VehicleSpecification label="First Registered" value={vehicle.registrationDate ? fmtDate(vehicle.registrationDate) : vehicle.year ? String(vehicle.year) : "Not recorded"} />
-              <VehicleSpecification label="Transmission" value={vehicle.transmission || "Not recorded"} />
+              <TransmissionSpecification transmission={vehicle.transmission} vehicleKey={vehicle.vin || vehicle.vrm} />
               {vehicle.vin && <div className="col-span-2"><VehicleSpecification label="VIN Provenance" value={vehicle.vin} /></div>}
             </div>
           </div>
@@ -304,22 +337,7 @@ export function Dashboard() {
                 </div>}
           </section>
 
-          <section className="vault-card p-4">
-            <h2 className="flex items-center justify-between font-bold">
-              MOT History <span className="text-xs font-semibold text-success">{vehicle.source === "official" ? "Official API lookup" : "Sample history"}</span>
-            </h2>
-            <ul className="mt-3 divide-y text-sm">
-              {[...motReadings].reverse().map((m, i) => (
-                <li key={`${m.date}-${i}`} className="flex flex-wrap justify-between gap-3 py-2">
-                  <span>{fmtDate(m.date)}</span>
-                  <span className="text-muted-foreground">{m.mileage !== undefined ? fmtMiles(m.mileage) : "Mileage unavailable"}</span>
-                  <span className={m.result === "Pass" ? "text-success" : "text-warning"}>{m.result}</span>
-                  {m.advisories?.length ? <ul className="w-full list-disc pl-4 text-xs text-muted-foreground">{m.advisories.map((a, j) => <li key={j}>{a}</li>)}</ul> : null}
-                </li>
-              ))}
-            </ul>
-            {!motReadings.length && <p className="mt-3 text-sm text-muted-foreground">No MOT history available.</p>}
-          </section>
+          <MotHistory readings={motReadings} official={vehicle.motHistorySource === "official" || vehicle.source === "official"} />
           {history.length > 0 && <section aria-label="Timeline spend summary" className="my-3 grid w-full grid-cols-3 gap-1.5">
             <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/80 p-2 text-center">
               <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-slate-400">Total</span>
