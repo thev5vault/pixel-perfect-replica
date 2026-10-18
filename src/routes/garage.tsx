@@ -301,7 +301,7 @@ function GaragePage() {
     setError("");
     setLookupDetails("");
     try {
-      const response = await fetch(`/api/vehicle/lookup?vrm=${encodeURIComponent(form.vrm)}`);
+      const response = await fetch(`/api/vehicle/lookup?vrm=${encodeURIComponent(form.vrm)}&forceRefresh=true`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Vehicle lookup failed.");
       const vehicle = payload.vehicle;

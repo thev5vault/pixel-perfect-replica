@@ -327,8 +327,8 @@ export async function serviceAttachment(id:string,type:"receipt"|"invoice") {
 export async function markRead() {
   const user=await currentUser(); await pool.query("UPDATE account_notifications SET read=true WHERE user_id=$1",[user.id]);return {ok:true};
 }
-export async function requireGarage() {
-  const user=await currentUser();
+export async function requireGarage(authRequest?: Request) {
+  const user=await currentUser(authRequest);
   if(user.role!=="dev_admin" && (!canUseWorkshopFeatures(user) || (user.is_sample&&!development))) throw new Error("A VAT-verified Workshop account with an active subscription or trial is required.");
   return user;
 }

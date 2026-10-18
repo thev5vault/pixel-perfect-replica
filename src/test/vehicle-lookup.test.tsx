@@ -2,11 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { VaultProvider, useVault } from "@/lib/vault-store";
 import { parseVehicleData } from "@/services/vehicle-data";
-import { lookupMockRegistration, lookupRegistration } from "@/services/server/dvla";
+import { clearVehicleLookupCache, lookupMockRegistration, lookupRegistration } from "@/services/server/dvla";
 
 describe("vehicle lookup data", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
   beforeEach(() => {
+    clearVehicleLookupCache();
     vi.unstubAllEnvs();
     vi.stubEnv("GOV_API_ENABLED", "false");
     for (const key of ["DVSA_API_KEY", "DVSA_CLIENT_ID", "DVSA_CLIENT_SECRET", "DVSA_SCOPE_URL", "DVSA_TOKEN_URL", "DVLA_VES_API_KEY", "MOT_HISTORY_API_KEY", "MOT_HISTORY_CLIENT_ID", "MOT_HISTORY_CLIENT_SECRET", "MOT_HISTORY_TOKEN_URL"]) vi.stubEnv(key, "");
@@ -104,7 +105,7 @@ describe("vehicle lookup data", () => {
     vi.stubGlobal("fetch", fetcher);
     expect(await lookupRegistration("AB14CDE")).toMatchObject({ vehicle: { source: "official", make: "AUDI", motHistory: [] } });
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({ method: "POST", body: '{"registrationNumber":"AB14CDE"}' });
-    await expect(lookupRegistration("AB14CDE")).rejects.toThrow("DVSA Live Sync pending activation — manual service entry active");
+    await expect(lookupRegistration("AB14CDE", { forceRefresh: true })).rejects.toThrow("DVSA Live Sync pending activation — manual service entry active");
   });
 
   it("uses DVSA MOT vehicle fields directly when DVLA VES is unavailable", async () => {
@@ -232,7 +233,9 @@ describe("vehicle lookup data", () => {
     expect(await lookupRegistration("BUL200")).toMatchObject({ vehicle: { source: "official", model: "Golf" } });
     expect(fetcher.mock.calls[1]?.[1]).toMatchObject({ headers: { Authorization: "Bearer test-token", "X-API-Key": "test-api-key" } });
     await lookupRegistration("BUL200");
-    expect(fetcher).toHaveBeenCalledTimes(3); // Token reused for the second lookup.
+    expect(fetcher).toHaveBeenCalledTimes(2); // Successful vehicle response is cached for 24 hours.
+    await lookupRegistration("BUL200", { forceRefresh: true });
+    expect(fetcher).toHaveBeenCalledTimes(3); // Explicit workshop refresh bypasses the response cache.
   });
 
   it("attaches and persists a new vehicle without leaking the original MOT history", async () => {

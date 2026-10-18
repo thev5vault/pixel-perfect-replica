@@ -8,6 +8,8 @@ import { pool } from "./db";
 import { currentUser, serviceRow } from "./accounts";
 import { requestOrigin } from "./billing";
 import { lookupRegistration, samples } from "./dvla";
+import { getRequest } from "@tanstack/react-start/server";
+import { enforceAnonymousLookupLimit } from "./rateLimit";
 import { sampleAccount } from "@/lib/sample-account";
 import { fulfillSalesPack } from "./sales-fulfillment";
 import { stripeClient } from "./stripe-client";
@@ -50,6 +52,15 @@ export async function publicPassport(inputVrm: string, sample = false): Promise<
     const fixture=sampleAccount();
     return { ...passportData(samples[vrm]!, fixture.services.filter(s=>s.vrm===vrm), fixture.mods.filter(m=>m.vrm===vrm), requestOrigin(), true), published: true };
   }
+  const request = getRequest();
+  let authenticated = false;
+  try {
+    await currentUser(request);
+    authenticated = true;
+  } catch {
+    // Requests without a usable session follow the anonymous quota.
+  }
+  enforceAnonymousLookupLimit(request, authenticated);
   const row = (await pool.query("SELECT v.*,u.subscription_tier FROM vehicles v LEFT JOIN user_accounts u ON u.id=v.owner_user_id WHERE v.vrm=$1", [vrm])).rows[0];
   if (!row || row.is_sample || row.status !== "approved" || row.verification_state !== "VERIFIED") {
     try {

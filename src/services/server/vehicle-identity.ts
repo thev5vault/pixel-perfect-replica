@@ -4,12 +4,23 @@ import { normalizeVIN, validateVIN, vinMatchesMake } from "@/lib/vin";
 import { currentUser, requireGarage, createService } from "./accounts";
 import { pool } from "./db";
 import { getVehicleData } from "./dvla";
+import { enforceAnonymousLookupLimit } from "./rateLimit";
 
 const normalizeVRM = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-export async function mockVehicleLookup(vrm: string) {
-  await currentUser();
-  return getVehicleData(vrm);
+export async function mockVehicleLookup(vrm: string, request: Request, forceRefresh = false) {
+  let user;
+  try {
+    user = await currentUser(request);
+  } catch {
+    // Requests without a usable session follow the anonymous quota.
+  }
+  if (!user) enforceAnonymousLookupLimit(request, false);
+  if (forceRefresh) {
+    if (!user) throw new Error("Sign in to refresh vehicle specifications.");
+    await requireGarage(request);
+  }
+  return getVehicleData(vrm, { forceRefresh });
 }
 
 export async function createVehicleByVIN(input: {

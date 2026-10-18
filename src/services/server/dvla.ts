@@ -335,7 +335,7 @@ async function lookupDvsa(vrm: string, apiKey: string): Promise<{ vehicle: Vehic
 }
 
 /** Use official DVSA data when credentials are present; samples remain clearly labelled. */
-export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
+async function fetchVehicleData(inputVrm: string): Promise<{ vehicle: Vehicle; notice: string }> {
   const vrm = normalizeRegistration(inputVrm);
   const dvsaApiKey = cleanDvsaEnv(process.env["DVSA_API_KEY"]);
   const dvsaConfigured = Boolean(dvsaApiKey);
@@ -382,6 +382,38 @@ export async function getVehicleData(inputVrm: string): Promise<{ vehicle: Vehic
   } catch (error) {
     if (error instanceof Error && /VIN manufacturer prefix|VIN differs from/i.test(error.message)) throw error;
     throw new Error(`${error instanceof Error ? error.message : "Government lookup failed."} DVSA Live Sync pending activation — manual service entry active`);
+  }
+}
+
+const VEHICLE_CACHE_TTL = 24 * 60 * 60 * 1000;
+const vehicleLookupCache = new Map<string, { expiresAt: number; value: { vehicle: Vehicle; notice: string } }>();
+const vehicleLookupInflight = new Map<string, Promise<{ vehicle: Vehicle; notice: string }>>();
+
+export function clearVehicleLookupCache() {
+  vehicleLookupCache.clear();
+  vehicleLookupInflight.clear();
+}
+
+export async function getVehicleData(inputVrm: string, options: { forceRefresh?: boolean } = {}): Promise<{ vehicle: Vehicle; notice: string }> {
+  const vrm = normalizeRegistration(inputVrm);
+  const key = vrm.toUpperCase();
+  const cached = vehicleLookupCache.get(key);
+  if (!options.forceRefresh && cached && cached.expiresAt > Date.now()) return structuredClone(cached.value);
+  if (!options.forceRefresh && cached) vehicleLookupCache.delete(key);
+  if (!options.forceRefresh) {
+    const pending = vehicleLookupInflight.get(key);
+    if (pending) return structuredClone(await pending);
+  }
+  const lookup = fetchVehicleData(vrm);
+  if (!options.forceRefresh) vehicleLookupInflight.set(key, lookup);
+  try {
+    const result = await lookup;
+    if (result.vehicle.source === "official") {
+      vehicleLookupCache.set(key, { expiresAt: Date.now() + VEHICLE_CACHE_TTL, value: structuredClone(result) });
+    }
+    return result;
+  } finally {
+    if (vehicleLookupInflight.get(key) === lookup) vehicleLookupInflight.delete(key);
   }
 }
 

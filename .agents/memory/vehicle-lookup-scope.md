@@ -58,6 +58,16 @@ consent boundary for private owner/workshop history.
 return a DVSA-only snapshot to guests by default, and reserve full snapshots for
 the existing keeper share and purchase checks.
 
+Cache successful official vehicle lookup responses for 24 hours and limit
+anonymous public lookups to 20 per IP per hour. Only an authenticated workshop
+lookup explicitly requesting fresh specifications may bypass the response cache.
+
+**Why:** The user requested public passport access without allowing repeated
+anonymous traffic to exhaust DVSA quota or bypass normal workshop permissions.
+
+**How to apply:** Preserve the public read-only boundary, use the shared official
+lookup cache for guest routes, and require active workshop access for cache bypass.
+
 A paid buyer report must be tied to the purchasing account and only be offered
 after the keeper has enabled sharing for a verified vehicle.
 

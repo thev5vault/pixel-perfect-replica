@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 test("anonymous visitor can view the DVSA-only LG57 passport", async ({ page }) => {
+  const isolatedTestIp = `198.51.100.${Math.floor(Math.random() * 254) + 1}`;
+  await page.setExtraHTTPHeaders({ "x-real-ip": isolatedTestIp });
   await page.setViewportSize({ width: 402, height: 874 });
   await page.goto("/passport/LG57VYF");
 

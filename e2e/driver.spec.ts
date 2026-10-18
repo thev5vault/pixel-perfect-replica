@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 async function startSample(page: import("@playwright/test").Page) {
+  await page.clock.install({ time: new Date("2026-10-12T12:00:00.000Z") });
   await page.goto("/");
   await page.getByRole("button", { name: /Direct GodMode Bypass/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
