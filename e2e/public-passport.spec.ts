@@ -14,3 +14,11 @@ test("anonymous visitor can view the DVSA-only LG57 passport", async ({ page }) 
   await expect(page.getByText("Sign in to V5Vault")).toHaveCount(0);
   await expect(page.getByText("This snapshot is private to the owner")).toHaveCount(0);
 });
+
+test("anonymous visitor can open the full public Passport route without a session", async ({ page }) => {
+  await page.goto("/passport/LG57VYF/full");
+
+  await expect(page).toHaveURL(/\/v\/LG57VYF\?sample=false$/);
+  await expect(page.getByText("Buyer passport · public vehicle record")).toBeVisible();
+  await expect(page.getByText("Sign in to V5Vault")).toHaveCount(0);
+});

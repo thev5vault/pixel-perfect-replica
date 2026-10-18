@@ -17,6 +17,8 @@ describe("Passport MOT history", () => {
     const list = screen.getByRole("list");
     expect(within(list).getAllByText("INITIAL FAIL")).toHaveLength(1);
     expect(within(list).getAllByText("RE-TEST PASS")).toHaveLength(1);
+    const labels = [...container.querySelectorAll('[role="listitem"] span')].map((node) => node.textContent?.trim());
+    expect(labels.slice(0, 2)).toEqual(["RE-TEST PASS", "INITIAL FAIL"]);
     const firstTwoDates = [...container.querySelectorAll('[role="listitem"] p.font-semibold')].map((node) => node.textContent);
     expect(firstTwoDates[0]).toContain("10 Apr 2026");
     expect(firstTwoDates[1]).toContain("10 Apr 2026");

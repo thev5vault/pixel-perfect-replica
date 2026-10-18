@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "@/lib/account-store";
 import { VehicleLookupDialog } from "@/components/vault/VehicleLookupDialog";
 import { SharePassportModal } from "@/components/vault/SharePassportModal";
-import { MotStatusPill } from "@/components/vault/MotStatusPill";
+import { PassportCertificate } from "@/components/PassportCertificate";
 import { hasVerifiedVehicleRegistration, REVERIFICATION_NOTICE } from "@/lib/vehicle-verification";
 import { PassportMotHistory } from "@/components/PassportMotHistory";
 import { formatMotAdvisories } from "@/utils/motSanitizer";
@@ -168,13 +168,16 @@ function Certificate({ cert }: { cert: Cert }) {
             </div>
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <p className="break-words text-xs font-semibold uppercase tracking-wider text-slate-600">Certificate {reportId}</p>
-                <MotStatusPill source={vehicle.source} motHistorySource={vehicle.motHistorySource} motStatus={vehicle.motStatus} motExpiry={vehicle.motExpiry} className="mt-2" />
-                <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
-                <h2 className="break-words text-xl font-bold hyphens-auto">
-                  {vehicle.make} {vehicle.model}
-                </h2>
-                <p className="break-words text-xs text-muted-foreground">Issued {fmtDate(today())}</p>
+                <PassportCertificate
+                  certificateId={reportId}
+                  documentTitle={meta.title}
+                  vehicleMakeModel={`${vehicle.make} ${vehicle.model}`}
+                  issuedDate={fmtDate(today())}
+                  source={vehicle.source}
+                  motHistorySource={vehicle.motHistorySource}
+                  motStatus={vehicle.motStatus}
+                  motExpiry={vehicle.motExpiry}
+                />
               </div>
               <aside className="flex w-full max-w-full flex-col items-center rounded-md border-2 border-slate-950 bg-white p-2 text-center text-slate-950 sm:w-fit">
                 {link ? <><QRCodeSVG className="h-auto max-w-full" value={link} size={90} level="H" includeMargin /><p className="max-w-full break-words text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p><p className="mt-1 max-w-full break-words text-[8px]">Latest workshop stamp</p></> : <p className="flex min-h-[90px] w-full max-w-full items-center justify-center break-words text-[10px] font-semibold">No signed workshop stamp to verify</p>}

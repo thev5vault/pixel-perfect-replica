@@ -9,7 +9,7 @@ export function sortMotTests<T extends Pick<MotReading, "date" | "result">>(test
 
       const aIsPass = /^pass\b/i.test(a.test.result);
       const bIsPass = /^pass\b/i.test(b.test.result);
-      if (aIsPass !== bIsPass) return aIsPass ? 1 : -1;
+      if (aIsPass !== bIsPass) return aIsPass ? -1 : 1;
 
       return a.index - b.index;
     })

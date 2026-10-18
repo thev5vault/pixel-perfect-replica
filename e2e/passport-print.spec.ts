@@ -151,7 +151,7 @@ test("Standard, OEM and Master certificates keep long records readable in printe
   await page.getByRole("link", { name: "Passport", exact: true }).click();
   for (const certificate of certificates) {
     await page.getByRole("button", { name: certificate.name, exact: false }).click();
-    await expect(page.locator(".passport-document header p.text-primary")).toHaveText(
+    await expect(page.locator(".passport-document header h2")).toHaveText(
       certificate.name,
     );
     await expect(page.locator(".passport-document")).toContainText("Service History");

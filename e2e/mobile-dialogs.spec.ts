@@ -574,7 +574,7 @@ for (const width of [320, 390]) {
     for (const certificate of certificates) {
       await page.getByRole("button", { name: certificate.title, exact: false }).click();
       const document = page.locator(".passport-document");
-      await expect(document.locator("header p.text-primary")).toHaveText(certificate.title);
+      await expect(document.locator("header h2")).toHaveText(certificate.title);
       await renderVerificationQr(page);
       await checkPageHasNoHorizontalOverflow(page, `${certificate.title} at ${width}px`);
       await expect(document).toHaveCSS("min-width", "0px");
@@ -620,7 +620,7 @@ test("passport views reflow with enlarged text on a phone", async ({ page, brows
   await page.goto("/passport");
   const document = page.locator(".passport-document");
   await page.getByRole("button", { name: "Standard Passport", exact: false }).click();
-  await expect(document.locator("header p.text-primary")).toHaveText("Standard Passport");
+  await expect(document.locator("header h2")).toHaveText("Standard Passport");
   await increasePageTextScale(page);
   await checkPageHasNoHorizontalOverflow(page, "passport certificate at 150% text size");
 
@@ -634,12 +634,12 @@ test("passport views reflow with enlarged text on a phone", async ({ page, brows
     await expect(choice).toBeVisible();
     await checkInsideParent(choice, `${title} choice at enlarged text size`);
     if (title !== "Standard Passport") await choice.click();
-    await expect(document.locator("header p.text-primary")).toHaveText(title);
-    await expect(document.locator("header h2")).toHaveCSS("font-size", "30px");
+    await expect(document.locator("header h2")).toHaveText(title);
+    await expect(document.locator("header h2")).toHaveCSS("font-size", "27px");
     const download = document.getByRole("button", { name: "Download PDF" });
     await expect(download).toBeVisible();
     await checkInsideParent(
-      document.locator("header p.text-primary"),
+      document.locator("header h2"),
       `${title} heading at enlarged text size`,
     );
     await checkInsideParent(download, `${title} download control at enlarged text size`);

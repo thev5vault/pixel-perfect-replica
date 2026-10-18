@@ -37,7 +37,7 @@ describe("MOT history accordion", () => {
       { date: "2026-02-17", result: "Fail" },
       { date: "2026-02-17", result: "Pass" },
     ]} official />);
-    expect(screen.getByText("INITIAL FAIL")).toBeInTheDocument();
-    expect(screen.getByText("RE-TEST PASS")).toBeInTheDocument();
+    const orderedLabels = screen.getAllByText(/INITIAL FAIL|RE-TEST PASS/).map((node) => node.textContent);
+    expect(orderedLabels).toEqual(["RE-TEST PASS", "INITIAL FAIL"]);
   });
 });
