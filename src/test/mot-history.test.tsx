@@ -31,4 +31,13 @@ describe("MOT history accordion", () => {
     expect(within(drawer!).getByText("Brake pipe corroded")).toBeVisible();
     expect(screen.queryByText(/4\.7\.1/)).not.toBeInTheDocument();
   });
+
+  it("labels same-day failure and retest records distinctly", () => {
+    render(<MotHistory readings={[
+      { date: "2026-02-17", result: "Fail" },
+      { date: "2026-02-17", result: "Pass" },
+    ]} official />);
+    expect(screen.getByText("INITIAL FAIL")).toBeInTheDocument();
+    expect(screen.getByText("RE-TEST PASS")).toBeInTheDocument();
+  });
 });

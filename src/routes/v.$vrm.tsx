@@ -111,7 +111,23 @@ function PublicBuyerPassport() {
        </section>}
        <section className="vault-card overflow-hidden">
          <div className="border-b border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-primary">03 / Roadworthiness</p><h2 className="mt-1 text-xl font-bold">{passport.public_dvsa_only ? "DVSA MOT Test History" : "MOT record"}</h2><p className="mt-1 text-xs text-muted-foreground">{passport.public_dvsa_only ? "Verified live via GOV.UK DVSA MOT API" : passport.vehicle.source === "official" && !passport.is_sample ? "Official-source data supplied to V5Vault" : "Unverified or sample data"}</p></div>
-         {passport.mot_history.length ? <div className="divide-y divide-border">{[...passport.mot_history].reverse().map((mot, index) => <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={`${mot.date}-${index}`}><div><p className="font-semibold">{fmtDate(mot.date)}</p><p className="mt-1 text-sm text-muted-foreground">{mot.result}{mot.advisories?.length ? ` · ${mot.advisories.join("; ")}` : ""}</p></div><div className="text-right"><p className="font-mono text-sm">{mot.mileage !== undefined ? fmtMiles(mot.mileage) : "Mileage unavailable"}</p><Pill tone={passport.is_sample ? "warning" : "success"}>{passport.is_sample ? "Sample" : passport.public_dvsa_only ? "DVSA record" : "Source unverified here"}</Pill></div></div>)}</div> : <Empty title="No MOT history shared" detail="No MOT entries are available in this snapshot." />}
+          {passport.mot_history.length ? <div className="divide-y divide-border">{[...passport.mot_history].reverse().map((mot, index, all) => {
+            const pass = /^pass\b/i.test(mot.result);
+            const date = mot.date.slice(0, 10);
+            const sameDay = all.filter((item) => item.date.slice(0, 10) === date).length > 1;
+            const resultLabel = sameDay ? (pass ? "RE-TEST PASS" : "INITIAL FAIL") : pass ? "PASS" : "FAIL";
+            return <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={`${mot.date}-${index}`}>
+              <div className="min-w-0">
+                <p className="font-semibold">{fmtDate(mot.date)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{mot.result}{mot.advisories?.length ? ` · ${mot.advisories.join("; ")}` : ""}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <p className="font-mono text-sm">{mot.mileage !== undefined ? fmtMiles(mot.mileage) : "Mileage unavailable"}</p>
+                <Pill tone={sameDay ? (pass ? "success" : "warning") : pass ? "success" : "warning"}>{resultLabel}</Pill>
+                <Pill tone={passport.is_sample ? "warning" : "success"}>{passport.is_sample ? "Sample" : passport.public_dvsa_only ? "DVSA record" : "Source unverified here"}</Pill>
+              </div>
+            </div>;
+          })}</div> : <Empty title="No MOT history shared" detail="No MOT entries are available in this snapshot." />}
       </section>
       <footer className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-xs leading-relaxed text-muted-foreground"><p className="font-semibold text-warning">Important: not government certification</p><p className="mt-1">V5Vault presents records supplied by keepers, workshops and external sources. A stamp or mileage entry shown here does not independently certify the vehicle, its condition, ownership or roadworthiness. Verify important facts directly before purchase.</p><p className="mt-2">Snapshot generated {new Date(passport.generated_at).toLocaleDateString("en-GB")} · public information only.</p></footer>
     </>}

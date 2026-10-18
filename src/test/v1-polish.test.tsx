@@ -213,10 +213,11 @@ describe("V1 polish", () => {
     expect(accordion).toHaveClass("grid-rows-[1fr]");
   });
 
-  it("shows the latest passed MOT date and a grammatical due countdown", () => {
+  it("shows one concise MOT status with its expiry countdown", () => {
     render(<VaultProvider><Dashboard /></VaultProvider>);
-    expect(screen.getByText("MOT Due Soon")).toBeInTheDocument();
-    expect(screen.getByText(/Passed on 18 Nov 2025 · Due in \d+ days/)).toBeInTheDocument();
+    expect(screen.getByText("DUE SOON")).toBeInTheDocument();
+    expect(screen.getByText(/Expires 18 Nov 2026 · Due in \d+ days/)).toBeInTheDocument();
+    expect(screen.queryByText(/Passed on 18 Nov 2025/)).not.toBeInTheDocument();
   });
 
   it("shows the complete specification grid and brake card in Detailed View", () => {

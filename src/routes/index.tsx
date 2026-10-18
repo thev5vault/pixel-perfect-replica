@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, Camera, Car, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Plus, ShieldCheck, UserPlus, Wrench, Zap } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Camera, Car, CheckCircle2, Disc3, FileText, FolderClosed, FolderOpen, Gauge, Pencil, Plus, ShieldCheck, UserPlus, Wrench, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
@@ -84,8 +84,9 @@ function TransmissionSpecification({ transmission, vehicleKey }: { transmission:
       const next = selected === "Manual" ? "Automatic" : "Manual";
       window.localStorage.setItem(storageKey, next);
       setSelected(next);
+      toast.success(`Transmission set to ${next}`, { duration: 1500 });
     }} className="mt-1 min-h-8 rounded-lg border border-slate-800 bg-slate-900/70 px-2 text-sm font-semibold text-slate-100">
-      {selected}
+      <span className="inline-flex items-center gap-1.5">{selected}<Pencil aria-hidden="true" className="h-3 w-3 text-slate-400" /></span>
     </button>
   </div>;
   return <div className="min-w-0 rounded-lg bg-slate-950/35 p-2.5">
@@ -96,6 +97,7 @@ function TransmissionSpecification({ transmission, vehicleKey }: { transmission:
         const next = "Manual";
         window.localStorage.setItem(storageKey, next);
         setSelected(next);
+        toast.success(`Transmission set to ${next}`, { duration: 1500 });
       }} className="min-h-8 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 text-[11px] font-semibold text-cyan-300">+ Set Transmission</button>
     </div>
   </div>;
@@ -163,14 +165,6 @@ export function Dashboard() {
   const odometer = Math.max(vehicle.odometer, ...history.map((h) => h.mileage), ...motReadings.map((m) => m.mileage ?? 0));
   const motDate = vehicle.motExpiry ? new Date(`${vehicle.motExpiry.slice(0, 10)}T00:00:00`) : undefined;
   const motDays = motDate ? Math.ceil((motDate.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : -1;
-  const latestMotPass = [...motReadings]
-    .filter((reading) => /^pass\b/i.test(reading.result))
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const motDetail = vehicle.motExpiry
-    ? motDays >= 0
-      ? `${latestMotPass ? `Passed on ${fmtDate(latestMotPass.date)}` : `MOT due on ${fmtDate(vehicle.motExpiry)}`} · Due in ${motDays} ${motDays === 1 ? "day" : "days"}`
-      : `Expired on ${fmtDate(vehicle.motExpiry)}`
-    : "Expiry date unavailable";
   const insuranceDays = insuranceExpiry ? Math.ceil((new Date(`${insuranceExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
   const effectiveTaxExpiry = taxExpiry || vehicle.taxDueDate?.slice(0, 10) || "";
   const taxDays = effectiveTaxExpiry ? Math.ceil((new Date(`${effectiveTaxExpiry}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000) : undefined;
@@ -296,16 +290,7 @@ export function Dashboard() {
           status={lastBrakes ? "Good Condition" : "Check Needed"}
           meta={lastBrakes ? `Checked: ${fmtDate(lastBrakes.date)}` : "No record"}
         />}
-        <HealthCard
-          icon={<AlertTriangle className="h-5 w-5" />}
-          title="MOT Status"
-          ok={motDays > 42}
-          status={!vehicle.motExpiry ? vehicle.motStatus ?? "Unknown" : motDays < 0 ? "MOT Expired" : motDays > 42 ? "MOT Valid" : "MOT Due Soon"}
-          meta={motDetail}
-            badge={<MotStatusPill source={vehicle.source} motHistorySource={vehicle.motHistorySource} motStatus={vehicle.motStatus} motExpiry={vehicle.motExpiry} />}
-          forceWarn
-          easy={easyView}
-        />
+        <MotStatusCard expiry={vehicle.motExpiry} daysRemaining={motDays} fallbackStatus={vehicle.motStatus} source={vehicle.source} motHistorySource={vehicle.motHistorySource} />
       </section>
 
       {vehicle.is_scrapped && <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-950/25 p-4 text-sm text-amber-100">This vehicle is marked as scrapped. Its passport and history remain readable, but new service and modification records are blocked.</div>}
@@ -421,6 +406,37 @@ function HealthCard({
       </div>
     </div>
   );
+}
+
+function MotStatusCard({
+  expiry,
+  daysRemaining,
+  fallbackStatus,
+  source,
+  motHistorySource,
+}: {
+  expiry: string | undefined;
+  daysRemaining: number;
+  fallbackStatus: string | undefined;
+  source: "official" | "demo" | "user-provided" | undefined;
+  motHistorySource: "official" | "demo" | "user-provided" | undefined;
+}) {
+  const hero = !expiry ? (fallbackStatus || "UNKNOWN").toUpperCase()
+    : daysRemaining < 0 ? "EXPIRED"
+    : daysRemaining <= 42 ? "DUE SOON" : "MOT VALID";
+  const tone = hero === "EXPIRED" ? "text-rose-400" : hero === "DUE SOON" ? "text-amber-300" : "text-emerald-300";
+  const meta = !expiry ? "Expiry date unavailable"
+    : daysRemaining < 0 ? `Expired ${fmtDate(expiry)} · ${Math.abs(daysRemaining)} days ago`
+    : daysRemaining <= 42 ? `Expires ${fmtDate(expiry)} · Due in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`
+    : `Expires ${fmtDate(expiry)} · ${daysRemaining} days remaining`;
+  return <section className="vault-card min-w-0 p-4" aria-label="MOT Status">
+    <div className="flex min-w-0 items-center justify-between gap-2">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-300">MOT Status</h2>
+      <MotStatusPill source={source} motHistorySource={motHistorySource} motStatus={fallbackStatus} motExpiry={expiry} />
+    </div>
+    <p className={`mt-3 text-xl font-extrabold tracking-wide ${tone}`}>{hero}</p>
+    <p className="mt-1 break-words text-xs text-slate-400">{meta}</p>
+  </section>;
 }
 
 

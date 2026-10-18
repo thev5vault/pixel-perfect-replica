@@ -121,6 +121,11 @@ function PassportExportPage() {
 function Certificate({ cert }: { cert: Cert }) {
   const { vehicle, services, mods } = useVault();
   const motReadings = vehicle.motHistory ?? (vehicle.source==="demo"?MOT_READINGS:[]);
+  const sameDayMotCounts = useMemo(() => motReadings.reduce((counts, reading) => {
+    const date = reading.date.slice(0, 10);
+    counts.set(date, (counts.get(date) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>()), [motReadings]);
   const meta = CERTS.find((c) => c.id === cert)!;
   const history = useMemo(() => services.filter((s) => s.vrm === vehicle.vrm).sort((a, b) => b.date.localeCompare(a.date)), [services, vehicle.vrm]);
   const vMods = mods.filter((m) => m.vrm === vehicle.vrm);
@@ -166,12 +171,13 @@ function Certificate({ cert }: { cert: Cert }) {
             </div>
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
+                <p className="break-words text-xs font-semibold uppercase tracking-wider text-slate-600">Certificate {reportId}</p>
                 <MotStatusPill source={vehicle.source} motHistorySource={vehicle.motHistorySource} motStatus={vehicle.motStatus} motExpiry={vehicle.motExpiry} className="mt-2" />
+                <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-primary">{meta.title}</p>
                 <h2 className="break-words text-xl font-bold hyphens-auto">
                   {vehicle.make} {vehicle.model}
                 </h2>
-                <p className="break-words text-xs text-muted-foreground">Certificate {reportId} · issued {fmtDate(today())}</p>
+                <p className="break-words text-xs text-muted-foreground">Issued {fmtDate(today())}</p>
               </div>
               <aside className="flex w-full max-w-full flex-col items-center rounded-md border-2 border-slate-950 bg-white p-2 text-center text-slate-950 sm:w-fit">
                 {link ? <><QRCodeSVG className="h-auto max-w-full" value={link} size={90} level="H" includeMargin /><p className="max-w-full break-words text-[9px] font-extrabold leading-tight">Scan to Verify Authenticity</p><p className="mt-1 max-w-full break-words text-[8px]">Latest workshop stamp</p></> : <p className="flex min-h-[90px] w-full max-w-full items-center justify-center break-words text-[10px] font-semibold">No signed workshop stamp to verify</p>}
@@ -240,16 +246,20 @@ function Certificate({ cert }: { cert: Cert }) {
               </section>}
           <RecordCards
             title="DVSA MOT Test History"
-            rows={[...motReadings].reverse().map((m, index) => ({
-              key: `${m.date}-${index}`,
-              date: fmtDate(m.date),
-              badge: m.mileage !== undefined ? fmtMiles(m.mileage) : undefined,
-              outcome: m.result,
-              details: [
-                ...(m.advisories?.length ? [{ label: "Advisories", value: m.advisories.join("; ") }] : []),
-                ...(m.defects?.length ? [{ label: "Defects", value: m.defects.join("; ") }] : []),
-              ],
-            }))}
+            rows={[...motReadings].reverse().map((m, index) => {
+              const pass = /^pass\b/i.test(m.result);
+              const sameDay = (sameDayMotCounts.get(m.date.slice(0, 10)) ?? 0) > 1;
+              return {
+                key: `${m.date}-${index}`,
+                date: fmtDate(m.date),
+                badge: m.mileage !== undefined ? fmtMiles(m.mileage) : undefined,
+                outcome: sameDay ? (pass ? "RE-TEST PASS" : "INITIAL FAIL") : m.result,
+                details: [
+                  ...(m.advisories?.length ? [{ label: "Advisories", value: m.advisories.join("; ") }] : []),
+                  ...(m.defects?.length ? [{ label: "Defects", value: m.defects.join("; ") }] : []),
+                ],
+              };
+            })}
             empty="No MOT history available."
           />
           <div className="print:hidden"><RedactionPreview vrm={vehicle.vrm} /></div>
@@ -351,7 +361,7 @@ function RecordCards({ title, rows, empty }: { title: string; rows: PassportCard
                  {row.title && <span className="w-full break-words font-bold hyphens-auto">{row.title}</span>}
                 {row.provider && <span className="w-full break-words text-sm text-slate-700 hyphens-auto">{row.provider}</span>}
                 <span className="flex w-full items-center justify-between gap-2 border-t border-slate-200 pt-1.5 text-xs">
-                   {row.outcome && <span className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[10px] font-bold tracking-wide ${/^pass\b/i.test(row.outcome) ? "border-emerald-500/30 bg-emerald-50 text-emerald-800" : "border-rose-500/30 bg-rose-50 text-rose-800"}`}>{/^pass\b/i.test(row.outcome) ? "PASS" : "FAIL"}</span>}
+                   {row.outcome && <span className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[10px] font-bold tracking-wide ${/pass/i.test(row.outcome) ? "border-emerald-500/30 bg-emerald-50 text-emerald-800" : "border-rose-500/30 bg-rose-50 text-rose-800"}`}>{row.outcome}</span>}
                    {row.summaryLabel && <span className="break-words text-slate-500">{row.summaryLabel}</span>}
                   <span className="ml-auto inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 font-semibold text-cyan-400">
                     {expandedKey === row.key ? "Hide Details ˄" : "Details ˅"}

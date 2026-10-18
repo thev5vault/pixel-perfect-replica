@@ -1,0 +1,30 @@
+Perform a master UI audit fix and layout de-duplication across Driver Glovebox and Passport views:
+
+1. De-duplicate MOT Status Card & Fix Pill Overflow ('src/components/MotStatusCard.tsx' & 'src/components/MotStatusPill.tsx'):
+   - Shorten the status pill globally to simply '✓ DVSA Verified' (decoupling verification status from expiry date).
+     * Styling: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 whitespace-nowrap'.
+   - Refactor the MOT Status card on '/vehicle' into a clean, non-repetitive 3-part hierarchy:
+     * Card Top Bar: Left title 'MOT Status', Right pill '<MotStatusPill />'.
+     * Hero Status: Large bold status indicator ('MOT VALID' in emerald, 'DUE SOON' in amber, or 'EXPIRED' in rose).
+     * Single Meta Line: 'Expires {expiryDate} · {daysRemaining} days remaining' (e.g. 'Expires 16 Feb 2027 · Due in 122 days').
+   - Remove redundant inner banners and duplicate 'Passed on {date}' subtext lines.
+
+2. Same-Day MOT Re-Test Badging ('src/components/MotHistory.tsx'):
+   - When multiple MOT records share the exact same calendar date (e.g. initial fail + same-day re-test pass on 17 Feb 2026, 7 Feb 2022, 5 Feb 2021):
+     * Display an explicit 'RE-TEST PASS' pill on the passing record and an 'INITIAL FAIL' pill on the failing record.
+     * Ensure same-day records are clearly distinguished in both Driver Glovebox and Public Passport timeline components.
+
+3. Fix Passport Certificate Header Collision ('src/routes/passport.tsx' / 'src/components/Passport.tsx'):
+   - Restructure the top header section of 'Standard Passport', 'OEM Provenance Certificate', and 'Master Build Sheet' cards:
+     * Line 1: Certificate ID (e.g. 'Certificate LG57VYF-MASTER-36N').
+     * Line 2: Compact '✓ DVSA Verified' status pill with top margin ('mt-2') so it never collides or overlaps with certificate title text.
+
+4. Transmission Toggle Affordance ('src/components/VehicleSpecs.tsx'):
+   - Add a subtle edit indicator icon next to the Transmission spec value: 'Manual ✎' or 'Automatic ✎'.
+   - Trigger a brief 1.5-second toast notification on tap: 'Transmission set to {Manual|Automatic}'.
+
+5. Smooth Accordion Collapse Scroll Behavior ('src/routes/vehicle.tsx'):
+   - When the user taps 'Show Recent MOTs' to collapse the expanded 19-year history, trigger smooth window re-anchoring ('window.scrollTo({ top: motCardRef.current.offsetTop - 80, behavior: 'smooth' })') to prevent viewport disorientation.
+
+6. Quality Gate Verification:
+   - Run 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build' to confirm 100% test suite pass and clean mobile build compilation.

@@ -20,3 +20,4 @@
 - [Share modal testing](share-passport-modal-testing.md) — prefer provider-backed or browser tests; mocked account and preview hooks made consent-state tests brittle.
 - [Owner and workshop separation](owner-workshop-separation.md) — keep consumer navigation and profile features separate from the verified B2B workshop terminal.
 - [Route scroll restoration](route-scroll-restoration.md) — keep router position restoration disabled when every route transition must start at the top.
+- [MOT status and verification UI](mot-status-verification-ui.md) — keep DVSA source verification separate from expiry/pass status to avoid duplicate MOT messaging.

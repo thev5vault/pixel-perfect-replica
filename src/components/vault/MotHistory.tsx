@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { MotReading } from "@/lib/vault-store";
 import { fmtDate, fmtMiles } from "@/lib/vault-store";
@@ -18,6 +18,7 @@ export function MotHistory({
   official?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
   const ordered = useMemo(
     () => [...readings].sort((a, b) => b.date.localeCompare(a.date)),
     [readings],
@@ -25,7 +26,7 @@ export function MotHistory({
   const visible = showAll ? ordered : ordered.slice(0, 3);
 
   return (
-    <section className="vault-card p-4" aria-label="MOT History">
+    <section ref={cardRef} className="vault-card p-4" aria-label="MOT History">
       <h2 className="flex items-center justify-between gap-3 font-bold">
         <span>MOT History</span>
         <span className="text-right text-xs font-semibold text-emerald-400">
@@ -37,6 +38,8 @@ export function MotHistory({
           {visible.map((reading, index) => {
             const findings = [...(reading.advisories ?? []), ...(reading.defects ?? [])].map(cleanAdvisory).filter(Boolean);
             const pass = /^pass\b/i.test(reading.result);
+            const sameDay = ordered.filter((test) => test.date.slice(0, 10) === reading.date.slice(0, 10)).length > 1;
+            const resultLabel = sameDay ? (pass ? "RE-TEST PASS" : "INITIAL FAIL") : pass ? "PASS" : "FAIL";
             return (
               <li key={`${reading.date}-${index}`} className="py-2.5">
                 <div className="flex min-w-0 items-center justify-between gap-3">
@@ -47,7 +50,7 @@ export function MotHistory({
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold ${pass ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-rose-500/30 bg-rose-500/10 text-rose-300"}`}>
-                    {pass ? "PASS" : "FAIL"}
+                    {resultLabel}
                   </span>
                 </div>
                 {findings.length > 0 && (
@@ -72,7 +75,21 @@ export function MotHistory({
         <button
           type="button"
           aria-expanded={showAll}
-          onClick={() => setShowAll((current) => !current)}
+          onClick={() => {
+            const collapsing = showAll;
+            setShowAll(!showAll);
+            if (collapsing) requestAnimationFrame(() => {
+              const card = cardRef.current;
+              const main = card?.closest("main");
+              if (card && main) {
+                const cardTop = card.getBoundingClientRect().top;
+                const mainTop = main.getBoundingClientRect().top;
+                main.scrollTo({ top: main.scrollTop + cardTop - mainTop - 80, behavior: "smooth" });
+              } else if (card) {
+                window.scrollTo({ top: window.scrollY + card.getBoundingClientRect().top - 80, behavior: "smooth" });
+              }
+            });
+          }}
           className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3 text-xs font-semibold text-cyan-400 hover:bg-slate-800"
         >
           {showAll ? "Show Recent MOTs" : `View All ${ordered.length} Historic MOTs`}
