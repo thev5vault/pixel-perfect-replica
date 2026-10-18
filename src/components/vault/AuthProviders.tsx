@@ -5,6 +5,7 @@ import { publishableKeyFromHost } from "@clerk/react/internal";
 import { dark } from "@clerk/themes";
 import { AccountProvider } from "@/lib/account-store";
 import { SignupRecovery } from "./SignupRecovery";
+import { SessionRestoreScreen } from "./SessionRestoreScreen";
 
 // The themes package permits undefined cssLayerName; React's strict appearance
 // type does not. We don't use a CSS layer, so omit that optional property.
@@ -41,7 +42,7 @@ function BrowserProviders({children}:{children:ReactNode}) {
       elements: {
         rootBox: { width: "100%" },
         cardBox: { width: "100%", background: "transparent", boxShadow: "none", borderRadius: "1rem" },
-        card: { width: "100%", maxWidth: "28rem", margin: "0 auto", borderRadius: "1rem", border: "1px solid #1e293b", backgroundColor: "rgba(15,23,42,0.95)", padding: "1.5rem", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)" },
+        card: { width: "100%", maxWidth: "28rem", margin: "0 auto", borderRadius: "1rem", border: "1px solid #1e293b", backgroundColor: "rgba(15,23,42,0.95)", padding: "clamp(1rem, 4vw, 1.5rem)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)" },
         headerTitle: { fontSize: "20px", fontWeight: 700, color: "#ffffff" },
         headerSubtitle: { fontSize: "14px", color: "#94a3b8" },
         socialButtonsBlockButton: { backgroundColor: "#1e293b", color: "#ffffff", borderColor: "#334155", "&:hover": { backgroundColor: "#334155" } },
@@ -55,7 +56,7 @@ function BrowserProviders({children}:{children:ReactNode}) {
   </ClerkProvider>;
 }
 export function AuthProviders({children}:{children:ReactNode}) {
-  return <ClientOnly fallback={<div className="flex h-[100dvh] items-center justify-center bg-slate-950 text-slate-400">Loading V5Vault…</div>}>
+  return <ClientOnly fallback={<SessionRestoreScreen />}>
     <BrowserProviders>{children}</BrowserProviders>
   </ClientOnly>;
 }

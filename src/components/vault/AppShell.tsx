@@ -11,6 +11,7 @@ import { VehicleLookupDialog } from "./VehicleLookupDialog";
 import { UnlockGate } from "./UnlockGate";
 import { toast } from "sonner";
 import { accountHome, isAuthEntry, shouldHoldAuthEntryForHydration } from "@/lib/auth-routing";
+import { SessionRestoreScreen } from "./SessionRestoreScreen";
 
 const OWNER = [
   { to: "/vehicle", label: "Vehicle", icon: Car },
@@ -59,10 +60,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (path.startsWith("/verify/")) return <>{children}</>;
   if (shouldHoldAuthEntryForHydration(path, account?.authLoaded)) {
-    return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-400" role="status">Restoring your session…</div>;
+    return <SessionRestoreScreen />;
   }
   if (account?.loading && account.signedIn && !account.state) {
-    return <div className="min-h-[100dvh] animate-pulse bg-slate-950" aria-label="Loading account"><div className="mx-auto mt-24 h-28 max-w-xl rounded-2xl bg-slate-800/60" /></div>;
+    return <SessionRestoreScreen />;
   }
   if (account?.signedIn && !account.state) return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><h1 className="text-xl font-bold">Your account could not be loaded</h1><p className="mt-2 text-sm text-muted-foreground">{account.error ?? "Please try again."}</p><button className="btn-primary mt-5 w-full" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div></div>;
   if (!account && !vault.hydrated) return <div className="min-h-[100dvh] bg-slate-950" />;

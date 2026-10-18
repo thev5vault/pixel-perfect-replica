@@ -38,7 +38,7 @@ export function PasskeySignInButton({ onAuthenticated }: { onAuthenticated?: () 
       type="button"
       onClick={() => void signInWithPasskey()}
       disabled={busy}
-      className="btn-ghost mt-4 w-full"
+      className="btn-ghost mt-3 w-full sm:mt-4"
       aria-label="Sign in with Face ID or Touch ID"
     >
       <Fingerprint className="h-4 w-4" />

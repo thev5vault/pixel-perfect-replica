@@ -367,6 +367,21 @@ button > svg {
   --color-ring: #0e7490;
 }
 
+@keyframes auth-restore-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.auth-restore-screen {
+  animation: auth-restore-enter 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-restore-screen {
+    animation: none;
+  }
+}
+
 .passport-document::before {
   position: absolute;
   z-index: 0;

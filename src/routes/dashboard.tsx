@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { useAccount } from "@/lib/account-store";
+import { SessionRestoreScreen } from "@/components/vault/SessionRestoreScreen";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardHandoff,
@@ -17,11 +18,5 @@ function DashboardHandoff() {
     }
   }, [account?.authLoaded, account?.signedIn, navigate]);
 
-  return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-950 px-5 text-center text-slate-300">
-      <p role="status">
-        {account?.authLoaded ? "Opening your V5Vault dashboard…" : "Restoring your V5Vault session…"}
-      </p>
-    </main>
-  );
+  return <SessionRestoreScreen />;
 }

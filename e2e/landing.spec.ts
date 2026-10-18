@@ -16,9 +16,20 @@ test("landing page CTAs and mobile visual baseline", async ({ page }) => {
 
 test("persona choices navigate directly to their auth routes", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("button", { name: "Workshop Terminal", exact: false }).first().click();
+  await expect(page).toHaveURL(/\/auth\/workshop$/);
+  await expect(page.getByRole("dialog", { name: "Choose your V5Vault role" })).toHaveCount(0);
+
+  await page.goto("/");
   await page.getByRole("button", { name: /Choose Driver Passport/ }).click();
   await expect(page).toHaveURL(/\/auth\/driver$/);
   await page.goto("/");
   await page.getByRole("button", { name: /Choose Workshop Terminal/ }).click();
   await expect(page).toHaveURL(/\/auth\/workshop$/);
+});
+
+test("only the generic header actions open the role chooser", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Choose your V5Vault role" })).toBeVisible();
 });
