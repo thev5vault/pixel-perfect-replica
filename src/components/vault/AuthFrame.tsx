@@ -10,7 +10,7 @@ export function AuthFrame({ mode, children, signInUrl = "/sign-in", signUpUrl = 
   const signup = mode === "sign-up";
   const root = useRef<HTMLElement>(null);
   useEffect(() => root.current ? watchAuthInputs(root.current) : undefined, []);
-  return <main ref={root} className="vault-auth relative flex min-h-[100dvh] max-h-[100dvh] w-full items-start justify-center overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-950 px-4 py-6 sm:items-center sm:py-10">
+  return <main ref={root} className="vault-auth relative flex min-h-[100dvh] max-h-[100dvh] w-full items-start justify-center overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-950 px-4 py-5 sm:items-center sm:py-10">
     <div className="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
     <div className="relative my-auto w-full min-w-0 max-w-md">
       <Link to="/" onClick={clearPendingSignup} className="mb-3 flex items-center justify-center gap-2 text-lg font-bold sm:mb-6 sm:gap-3"><V5VaultLogo className="h-9 w-9 sm:h-10 sm:w-10" /> V5Vault</Link>
