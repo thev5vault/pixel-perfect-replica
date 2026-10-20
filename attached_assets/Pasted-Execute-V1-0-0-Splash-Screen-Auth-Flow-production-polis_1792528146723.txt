@@ -1,0 +1,24 @@
+Execute V1.0.0 Splash Screen & Auth Flow production polish across Driver Passport and Workshop Terminal onboarding routes, and publish release tag:
+
+1. Environment Gate Debug Banners ('src/components/GodModeBanner.tsx' & 'src/routes/auth.tsx'):
+   - Gate GodMode debug banners so 'Direct GodMode Bypass' renders strictly in development mode ('import.meta.env.DEV').
+   - Ensure production builds ('NODE_ENV === "production"') render zero debug cards or bypass banners on splash screen and auth modals.
+
+2. Preserve B2B Workshop Role Context ('src/routes/auth.tsx'):
+   - Ensure URL query parameters ('?role=workshop' or '?role=driver') and auth mode ('?mode=signin' or '?mode=signup') are strictly preserved across footer link navigation:
+     * Tapping 'New to V5Vault? Create account' on '/auth?role=workshop' MUST route directly to 'Create Workshop Account (30-Day Free Trial (£9.99/mo))'.
+     * Tapping 'Already registered? Sign in' on the Workshop signup view MUST return directly to 'Sign in to Verified Workshop Terminal Portal'.
+
+3. Direct CTA Routing on Splash Screen ('src/routes/splash.tsx'):
+   - Tapping 'Workshop Terminal ↗' or 'Choose Workshop Terminal ↗' on the splash page must route directly to '/auth?role=workshop&mode=signin', bypassing the intermediary 'Choose your V5Vault role' modal.
+   - Reserve the 'Choose your V5Vault role' modal exclusively for generic top header 'Sign in' or 'Create Account' button taps.
+
+4. Auth Modal Visual Layout & Loading Transition Polish ('src/components/AuthModal.tsx' & 'src/context/AuthContext.tsx'):
+   - Mobile Modal Height: Streamline vertical padding ('py-5 px-4') and reduce gap spacing so the full auth card (Google button, email input, Passkey button, and footer link) fits cleanly inside 100vh on mobile without scrolling.
+   - Unified Loading State: Replace fullscreen dark overlay loaders during session checks with inline button spinners to eliminate screen flickering.
+
+5. Tag Publishing & Quality Gate Verification:
+   - Execute 'git tag -f -a v1.0.0 -m "V1.0.0 Production Release - Auth & Onboarding Operational"'
+   - Push tag to remote: 'git push origin v1.0.0 --force'
+   - Run complete test suite: 'npm test', 'npx tsc --noEmit', 'npx playwright test', and 'npm run build'.
+   - Confirm 100% pass across unit tests, TypeScript compilation, production build, and Playwright E2E visual tests.
