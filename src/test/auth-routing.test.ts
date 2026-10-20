@@ -16,4 +16,8 @@ describe("auth entry hydration", () => {
     expect(shouldHoldAuthEntryForHydration("/", true)).toBe(false);
     expect(shouldHoldAuthEntryForHydration("/vehicle", false)).toBe(false);
   });
+
+  it("does not show the restore screen again after initial hydration", () => {
+    expect(shouldHoldAuthEntryForHydration("/auth/driver", false, true)).toBe(false);
+  });
 });

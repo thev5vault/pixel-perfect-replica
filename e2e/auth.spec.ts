@@ -29,6 +29,7 @@ test("auth mode links preserve the selected driver or workshop persona", async (
   await expect(page.getByRole("heading", {
     name: "Sign in to Verified Workshop Terminal Portal",
   })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByText("Access your workshop terminal & service logging dashboard.")).toBeVisible();
 
   await page.getByRole("link", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/auth\/workshop\?mode=signup$/);

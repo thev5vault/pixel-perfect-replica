@@ -4,8 +4,8 @@ export function isAuthEntry(path: string) {
   return path === "/" || path === "/dashboard" || /^\/(?:sign-(in|up)|auth\/(?:driver|workshop))(\/|$)/.test(path);
 }
 
-export function shouldHoldAuthEntryForHydration(path: string, authLoaded: boolean | undefined) {
-  return path !== "/" && isAuthEntry(path) && authLoaded === false;
+export function shouldHoldAuthEntryForHydration(path: string, authLoaded: boolean | undefined, initialHydrationResolved = false) {
+  return !initialHydrationResolved && path !== "/" && isAuthEntry(path) && authLoaded === false;
 }
 
 export function authRedirectForIntent(search: string): "/vehicle" | "/workshop/setup" | "/dashboard" {

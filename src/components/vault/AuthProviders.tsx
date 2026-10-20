@@ -27,7 +27,7 @@ function BrowserProviders({children}:{children:ReactNode}) {
     signInUrl={isWorkshopAuth ? "/auth/workshop" : "/auth/driver"} signUpUrl={isWorkshopAuth ? "/auth/workshop?mode=signup" : "/auth/driver?mode=signup"}
     signInForceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard"
     localization={{
-      signIn: { start: { title: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", titleCombined: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", subtitle: "Access your V5Vault vehicle passport." } },
+      signIn: { start: { title: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", titleCombined: authTitle && isPersonaAuth && !isSignup ? authTitle : "Sign in to V5Vault", subtitle: isWorkshopAuth ? "Access your workshop terminal & service logging dashboard." : "Access your V5Vault vehicle passport." } },
       signUp: { start: { title: authTitle && isSignup ? authTitle : "Create your V5Vault account", titleCombined: authTitle && isSignup ? authTitle : "Create your V5Vault account", subtitle: "Keep your vehicle history with V5Vault." } },
     }}
     appearance={{

@@ -706,7 +706,7 @@ function SnapReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 function PublicLanding() {
   const account = useAccount();
   const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
-  const [roleChoiceSource, setRoleChoiceSource] = useState<"driver" | "workshop">("driver");
+  const [roleChoiceMode, setRoleChoiceMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
     if (!roleChoiceOpen) return;
@@ -715,8 +715,8 @@ function PublicLanding() {
     return () => { document.documentElement.style.overflow = previousOverflow; };
   }, [roleChoiceOpen]);
 
-  const openRoleChoices = (source: "driver" | "workshop") => {
-    setRoleChoiceSource(source);
+  const openRoleChoices = (mode: "signin" | "signup") => {
+    setRoleChoiceMode(mode);
     setRoleChoiceOpen(true);
   };
 
@@ -726,7 +726,8 @@ function PublicLanding() {
       window.location.assign(destination);
       return;
     }
-    window.location.assign(role === "vehicle-owner" ? "/auth/driver?mode=signup" : "/auth/workshop?mode=signup");
+    const path = role === "vehicle-owner" ? "/auth/driver" : "/auth/workshop";
+    window.location.assign(roleChoiceMode === "signin" ? path : `${path}?mode=signup`);
   };
 
   return (
@@ -735,8 +736,8 @@ function PublicLanding() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <div className="flex items-center gap-3" aria-label="V5Vault home"><V5VaultLogo className="h-10 w-10" /><span className="font-display text-lg font-extrabold tracking-tight">V5Vault</span></div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => openRoleChoices("driver")} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</button>
-          <button type="button" onClick={() => openRoleChoices("driver")} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-cyan-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><UserPlus aria-hidden="true" className="h-4 w-4" />Create Account</button>
+          <button type="button" onClick={() => openRoleChoices("signin")} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Sign in</button>
+          <button type="button" onClick={() => openRoleChoices("signup")} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-cyan-500 px-4 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><UserPlus aria-hidden="true" className="h-4 w-4" />Create Account</button>
         </div>
       </header>
 
@@ -749,7 +750,7 @@ function PublicLanding() {
             <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">The immutable digital history for vehicle owners and verified workshops.</p>
             <div className="mt-8 grid gap-3 sm:max-w-xl sm:grid-cols-2">
               <button type="button" onClick={() => window.location.assign("/auth/driver")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-cyan-300/45 bg-slate-900 px-5 text-left font-semibold text-slate-100 shadow-[0_14px_40px_rgba(34,211,238,.12)] transition-transform hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
-                <span className="flex items-center gap-3"><Car aria-hidden="true" className="mr-2 h-4 w-4 text-cyan-400" />Driver Passport</span>
+                 <span className="flex items-center gap-3"><Car aria-hidden="true" className="mr-2 h-4 w-4 text-cyan-400" />Vehicle Owner (Driver Glovebox)</span>
                 <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-cyan-300" />
               </button>
               <button type="button" onClick={() => window.location.assign("/auth/workshop")} className="group flex min-h-[68px] items-center justify-between gap-4 rounded-xl border border-amber-400/40 bg-slate-900/80 px-5 text-left font-semibold text-slate-100 transition-colors hover:border-amber-300/70 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
@@ -788,13 +789,13 @@ function PublicLanding() {
       <section aria-label="V5Vault roles" className="border-y border-slate-800 bg-slate-900/45">
         <div className="mx-auto grid max-w-6xl gap-4 px-5 py-12 sm:px-8 md:grid-cols-2 md:gap-6">
           <article className="vault-card flex flex-col border-slate-700/80 p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">For vehicle owners</p><h2 className="mt-3 text-2xl font-bold tracking-tight">Digital Glovebox &amp; Provenance</h2></div><Car aria-hidden="true" className="mt-1 h-6 w-6 shrink-0 text-cyan-300" /></div>
+            <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">Vehicle Owner (Driver Glovebox)</p><h2 className="mt-3 text-2xl font-bold tracking-tight">Digital Glovebox &amp; Provenance</h2></div><Car aria-hidden="true" className="mt-1 h-6 w-6 shrink-0 text-cyan-300" /></div>
             <ul className="mt-6 space-y-3 text-sm leading-6 text-slate-300">
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />Live MOT &amp; service history timeline</li>
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />Modder&apos;s Vault for ECU maps &amp; build specs</li>
               <li className="flex gap-3"><CheckCircle2 aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-cyan-400" />1-tap buyer passport share link</li>
             </ul>
-            <button type="button" onClick={() => window.location.assign("/auth/driver")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-cyan-300/35 px-4 text-sm font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Driver Passport <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
+            <button type="button" onClick={() => window.location.assign("/auth/driver")} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-lg border border-cyan-300/35 px-4 text-sm font-semibold text-cyan-200 transition-colors hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Choose Vehicle Owner (Driver Glovebox) <ArrowUpRight aria-hidden="true" className="h-4 w-4" /></button>
           </article>
 
           <article className="vault-card flex flex-col border-cyan-300/25 bg-slate-900/90 p-6 sm:p-8">
@@ -819,15 +820,17 @@ function PublicLanding() {
 
       <Dialog open={roleChoiceOpen} onOpenChange={setRoleChoiceOpen}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-slate-700 bg-slate-950 p-5 text-slate-100 shadow-2xl sm:p-8">
-          <DialogTitle className="font-display text-2xl font-bold tracking-tight">Choose your V5Vault role</DialogTitle>
+          <DialogTitle className="font-display text-2xl font-bold tracking-tight">{roleChoiceMode === "signin" ? "Sign in to V5Vault" : "Choose your V5Vault role"}</DialogTitle>
           <DialogDescription className="mt-2 text-sm leading-6 text-slate-400">
-            {roleChoiceSource === "driver" ? "Start with a vehicle passport or choose the workshop tools." : "Choose the workshop terminal or continue as a vehicle owner."}
+            {roleChoiceMode === "signin"
+              ? "Select your account type to access your dashboard."
+              : "Choose the workshop terminal or continue as Vehicle Owner (Driver Glovebox)."}
           </DialogDescription>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <button type="button" onClick={() => onPublicRoleChoice("vehicle-owner")} className="flex min-h-[108px] flex-col items-start justify-between rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 text-left transition-colors hover:border-cyan-300/60 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
               <Car aria-hidden="true" className="h-5 w-5 text-cyan-300" />
-              <span className="text-base font-semibold">Vehicle Owner</span>
-              <span className="text-xs text-slate-400">Build a portable vehicle passport</span>
+               <span className="text-base font-semibold">Vehicle Owner (Driver Glovebox)</span>
+               <span className="text-xs text-slate-400">Access your vehicle records and history</span>
             </button>
             <button type="button" onClick={() => onPublicRoleChoice("verified-workshop")} className="flex min-h-[108px] flex-col items-start justify-between rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 text-left transition-colors hover:border-cyan-300/60 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
               <Wrench aria-hidden="true" className="h-5 w-5 text-cyan-300" />

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "@tanstack/react-router";
 import { Bell, Building2, CalendarDays, Car, ChevronDown, FileBadge, Lock, LogOut, Settings, ShieldCheck, Terminal, Wrench, Zap } from "lucide-react";
 import {
@@ -38,6 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [connectOpen, setConnectOpen] = useState(false);
   const [working, setWorking] = useState(false);
+  const hasResolvedInitialAuth = useRef(false);
+  if (account?.authLoaded) hasResolvedInitialAuth.current = true;
   const signed = Boolean(account?.signedIn && account.state);
    const isPublicPassportAlias = /^\/passport\/[^/]+(?:\/full)?\/?$/.test(path);
    const isPublic = isAuthEntry(path) || path.startsWith("/verify") || path.startsWith("/v/") || isPublicPassportAlias;
@@ -59,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
    }, [signed, account?.authLoaded, account?.state, path, navigate]);
 
   if (path.startsWith("/verify/")) return <>{children}</>;
-  if (shouldHoldAuthEntryForHydration(path, account?.authLoaded)) {
+   if (shouldHoldAuthEntryForHydration(path, account?.authLoaded, hasResolvedInitialAuth.current)) {
     return <SessionRestoreScreen />;
   }
   if (account?.loading && account.signedIn && !account.state) {
