@@ -5,6 +5,7 @@ test("driver auth route renders inside the V5Vault card", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Sign in to Driver Glovebox" })).toBeVisible({
     timeout: 45_000,
   });
+  await expect(page.getByText("Access your vehicle records and history.")).toBeVisible();
   await expect(page).toHaveScreenshot("driver-auth.png", { animations: "disabled" });
 });
 
@@ -57,4 +58,23 @@ test("mobile auth actions and footer links fit within the viewport", async ({ pa
   await page.goto("/auth/workshop?mode=signup");
   await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeInViewport();
   await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeInViewport();
+});
+
+test("private routes show role-specific sign-in prompts and public passports remain guest-accessible", async ({ page }) => {
+  await page.goto("/vehicle");
+  await expect(page.getByRole("heading", { name: "Sign in to Vehicle Owner (Driver Glovebox)" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue to sign in" })).toHaveAttribute("href", "/auth/driver");
+
+  await page.goto("/garage");
+  await expect(page.getByRole("heading", { name: "Sign in to Verified Workshop Terminal Portal" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue to sign in" })).toHaveAttribute("href", "/auth/workshop");
+
+  await page.goto("/passport/AB12CDE");
+  await expect(page).toHaveURL(/\/v\/AB12CDE(?:\?sample=false)?$/);
+  await expect(page.getByText("Buyer passport · public vehicle record")).toBeVisible();
+  await expect(page.getByText("Restoring session…")).toHaveCount(0);
+
+  await page.goto("/passport/AB12CDE/full");
+  await expect(page).toHaveURL(/\/v\/AB12CDE(?:\?sample=false)?$/);
+  await expect(page.getByText("Buyer passport · public vehicle record")).toBeVisible();
 });

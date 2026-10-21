@@ -1,0 +1,32 @@
+Execute V1.0.0 Splash Screen, Auth Flow, and Route Guard production polish locally on the development server (STRICTLY LOCAL — NO GIT PUSH / NO REMOTE COMMANDS):
+
+IMPORTANT EXECUTION CONSTRAINTS:
+- DO NOT execute 'git push', DO NOT attempt remote git authentication, DO NOT publish or create remote tags.
+- Keep all modifications strictly local in the working directory and preview environment so it is 100% ready for publishing later.
+
+1. Production Environment Gating ('src/components/GodModeBanner.tsx' & 'src/routes/auth.tsx'):
+   - Gate GodMode debug banners so 'Direct GodMode Bypass' renders strictly in development mode ('import.meta.env.DEV').
+   - Ensure production builds ('NODE_ENV === "production"') render zero debug cards or bypass banners on splash screen and auth modals.
+
+2. Direct CTA Navigation on Splash Page ('src/routes/splash.tsx'):
+   - Explicit Section CTAs: Tapping 'Vehicle Owner (Driver Glovebox) ↗' or 'Choose Driver Passport ↗' must route directly to '/auth?role=driver&mode=signin'.
+   - Workshop CTAs: Tapping 'Workshop Terminal ↗' or 'Choose Workshop Terminal ↗' must route directly to '/auth?role=workshop&mode=signin'.
+   - Reserve the 'Sign in to V5Vault' / 'Choose your V5Vault role' modal strictly for generic top-header 'Sign in' or 'Create Account' button clicks.
+
+3. Session Hydration Overlay Fix ('src/context/AuthContext.tsx'):
+   - Restrict the fullscreen dark overlay 'Restoring session...' strictly to the initial application cold boot.
+   - Prevent client-side page transitions, modal toggles, and role switches from triggering visual fullscreen screen flicker.
+
+4. Auth Modal Visual Layout & Subtitle Alignment ('src/components/AuthModal.tsx' & 'src/routes/auth.tsx'):
+   - Mobile Viewport Height: Compact vertical padding ('py-5 px-4') and flex gap spacing so the full auth card (Google button, email input, Passkey button, and footer link) fits cleanly inside 100vh on mobile displays without vertical scrolling.
+   - Role Context Preservation: Ensure bottom cross-links ('New to V5Vault? Create account' / 'Already registered? Sign in') strictly preserve active URL query parameters ('?role=workshop' or '?role=driver').
+   - Subtitle Standardization: Set 'Access your vehicle records and history' for Driver Glovebox, and 'Access your workshop terminal & service logging dashboard' for B2B Workshop Terminal.
+
+5. Protected & Public Route Guards ('src/routes/guards.tsx'):
+   - Protect private routes ('/vehicle', '/garage', '/vault', '/admin') by cleanly redirecting logged-out visitors to their respective role sign-in prompts.
+   - Keep public buyer passports ('/passport/:vrm' and '/passport/:vrm/full') 100% accessible to guest sessions without triggering login redirects or hydration overlays.
+
+6. Local Quality Gate Verification (No Git Remote Commands):
+   - Run complete local verification: 'npm test', 'npx tsc --noEmit', and 'npm run build'.
+   - Confirm 100% pass across unit tests, TypeScript type checks, and production bundle build.
+   - Leave the local preview server running so all fixes can be manually tested on device.

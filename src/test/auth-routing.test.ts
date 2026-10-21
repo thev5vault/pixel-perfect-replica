@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldHoldAuthEntryForHydration } from "@/lib/auth-routing";
+import { shouldHoldAuthEntryForHydration, signInRouteForPrivatePath } from "@/lib/auth-routing";
 
 describe("auth entry hydration", () => {
   it("holds the post-auth dashboard while Clerk restores a session", () => {
@@ -19,5 +19,13 @@ describe("auth entry hydration", () => {
 
   it("does not show the restore screen again after initial hydration", () => {
     expect(shouldHoldAuthEntryForHydration("/auth/driver", false, true)).toBe(false);
+  });
+
+  it("selects the matching sign-in route for private owner, workshop and admin pages", () => {
+    expect(signInRouteForPrivatePath("/vehicle")).toBe("/auth/driver");
+    expect(signInRouteForPrivatePath("/vault")).toBe("/auth/driver");
+    expect(signInRouteForPrivatePath("/garage")).toBe("/auth/workshop");
+    expect(signInRouteForPrivatePath("/workshop/setup")).toBe("/auth/workshop");
+    expect(signInRouteForPrivatePath("/admin")).toBe("/sign-in");
   });
 });

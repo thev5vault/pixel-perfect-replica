@@ -10,7 +10,7 @@ import { V5VaultLogo } from "./V5VaultLogo";
 import { VehicleLookupDialog } from "./VehicleLookupDialog";
 import { UnlockGate } from "./UnlockGate";
 import { toast } from "sonner";
-import { accountHome, isAuthEntry, shouldHoldAuthEntryForHydration } from "@/lib/auth-routing";
+import { accountHome, isAuthEntry, shouldHoldAuthEntryForHydration, signInRouteForPrivatePath } from "@/lib/auth-routing";
 import { SessionRestoreScreen } from "./SessionRestoreScreen";
 
 const OWNER = [
@@ -70,8 +70,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (account?.signedIn && !account.state) return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><h1 className="text-xl font-bold">Your account could not be loaded</h1><p className="mt-2 text-sm text-muted-foreground">{account.error ?? "Please try again."}</p><button className="btn-primary mt-5 w-full" onClick={() => void account.refresh().catch(() => {})}>Retry</button></div></div>;
   if (!account && !vault.hydrated) return <div className="min-h-[100dvh] bg-slate-950" />;
   if (account && !signed && isPublic) return <>{children}</>;
-   if (account && !signed && !isPublic && !isWorkshopTerminal) {
-    return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">Sign in to V5Vault</h1><p className="mt-2 text-sm text-muted-foreground">Your vehicle records belong to your account, not this device.</p><a href="/sign-in" className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
+   if (account && !signed && !isPublic) {
+     const signInRoute = signInRouteForPrivatePath(path);
+     const workshopSignIn = signInRoute === "/auth/workshop";
+     const adminSignIn = signInRoute === "/sign-in";
+     return <div className="flex min-h-[100dvh] items-center justify-center p-6"><div className="vault-card max-w-sm p-6 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-primary" /><h1 className="mt-3 text-xl font-bold">{workshopSignIn ? "Sign in to Verified Workshop Terminal Portal" : adminSignIn ? "Sign in to V5Vault" : "Sign in to Vehicle Owner (Driver Glovebox)"}</h1><p className="mt-2 text-sm text-muted-foreground">{workshopSignIn ? "Access your workshop terminal & service logging dashboard." : adminSignIn ? "Sign in with an authorized administrator account." : "Access your vehicle records and history."}</p><a href={signInRoute} className="btn-primary mt-5 w-full">Continue to sign in</a></div></div>;
   }
   if (signed && isPublic && !isAuthEntry(path)) return <>{children}</>;
   if (signed && isPublic) return <div className="min-h-[100dvh] bg-slate-950" />;
