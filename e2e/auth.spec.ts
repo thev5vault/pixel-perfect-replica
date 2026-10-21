@@ -49,6 +49,20 @@ test("auth mode links preserve the selected driver or workshop persona", async (
   });
 });
 
+test("role switcher preserves the active sign-in or sign-up mode", async ({ page }) => {
+  await page.goto("/auth/driver");
+  const roleSwitch = page.getByRole("navigation", { name: "Choose account type" });
+  await expect(roleSwitch.getByRole("link", { name: "Vehicle Owner" })).toHaveAttribute("aria-current", "page");
+  await roleSwitch.getByRole("link", { name: "Verified Workshop" }).click();
+  await expect(page).toHaveURL(/\/auth\/workshop$/);
+  await expect(page.getByRole("heading", { name: "Sign in to Verified Workshop Terminal Portal" })).toBeVisible();
+
+  await page.goto("/auth/workshop?mode=signup");
+  await page.getByRole("navigation", { name: "Choose account type" }).getByRole("link", { name: "Vehicle Owner" }).click();
+  await expect(page).toHaveURL(/\/auth\/driver\?mode=signup$/);
+  await expect(page.getByRole("heading", { name: "Create Driver Account" })).toBeVisible();
+});
+
 test("mobile auth actions and footer links fit within the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/auth/driver");

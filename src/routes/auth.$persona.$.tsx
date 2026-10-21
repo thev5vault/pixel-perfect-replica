@@ -13,7 +13,7 @@ function PersonaAuthPage() {
   const signInUrl = base;
   const signUpUrl = `${base}?mode=signup`;
 
-  return <AuthFrame mode={signUp ? "sign-up" : "sign-in"} signInUrl={signInUrl} signUpUrl={signUpUrl}>
+  return <AuthFrame mode={signUp ? "sign-up" : "sign-in"} signInUrl={signInUrl} signUpUrl={signUpUrl} role={workshop ? "workshop" : "driver"}>
     {signUp
       ? <SignUp routing="path" path={base} signInUrl={signInUrl} forceRedirectUrl={redirect} fallbackRedirectUrl={redirect} />
       : <SignIn routing="path" path={base} signUpUrl={signUpUrl} forceRedirectUrl={redirect} fallbackRedirectUrl={redirect} />}
